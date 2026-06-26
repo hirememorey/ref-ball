@@ -1,0 +1,36 @@
+# Python
+**/__pycache__/
+**/*.pyc
+*.py[cod]
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment / secrets
+.env
+.env.*
+*.db
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+.cursor/
+
+# Logs
+*.log
+logs/
+
+# Derived / scraped data (reproducible via pipeline)
+output/
+data/cache/
+data/raw/
+data/processed/
+!data/.gitkeep
