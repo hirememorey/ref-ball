@@ -50,6 +50,9 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | `src/player_official_profiles.py` | Per-official × player FTA interaction profiles | `fetch` / `build` / `summary` |
 | `src/defensive_adjustment.py` | Opponent-DEF_RATING-adjusted FTA deltas | `build` / `summary` |
 | `src/official_calling_profiles.py` | Per-official aggregate calling profiles (Step 4) | `build` / `summary` |
+| `src/crew_predictive_model.py` | Game-level SF prediction from crew (Step 5) | `build` / `summary` / `diagnose` / `interactions` |
+| `src/player_crew_predictive_model.py` | Player-level FTA/36 prediction from crew (Step 5b) | `build` / `summary` / `diagnose` |
+| `src/l2m_validation.py` | L2M INC cross-check vs suppressor metrics (Step 6) | `build` / `summary` |
 | `src/feasibility_study.py` | Video clip classifier feasibility (shelved) | Not executed |
 | `src/nocall_model.py` | Layer 3 video model (stub) | Not implemented |
 | `src/analyze.py` | Three-track analysis (stub) | Not implemented |
@@ -90,52 +93,72 @@ Near-miss players not included (insufficient FTA/36 or GP): Jalen Brunson (4.79)
 - **Amplifier paradox.** Top amplifiers (Spooner, McCutchen) have lower overall SF rates (r=−0.29). Player×official interaction is separate from overall foul-calling volume.
 - **Defensive adjustment minor.** Raw vs adjusted r=0.969. Opponent quality is not a confound.
 - **No individual-level playoff whistle.** 40/82 officials with RS/PO splits show 50/50 direction. Mean rs_po_delta ≈ 0. FTA playoff drop may be crew-composition-driven, not individual-behavior-driven.
-- **Layer 1 cross-validation.** suppressor_score vs sf_pct_of_fouls: r=+0.30. Moderate alignment; player-level metric captures signal beyond overall foul rates.
+- **Layer 1 cross-validation (internal).** suppressor_score vs sf_pct_of_fouls: r=+0.30. Moderate alignment; player-level metric captures signal beyond overall foul rates.
+- **Step 5 — game-level prediction weak.** Honest temporal holdout: OLS R²≈0.005 for game SF count; league average is competitive. Crew-pair interaction effects are real (53/529 pairs |z|>1.96, 2× expected).
+- **Step 5b — player-level prediction modest.** Temporal holdout: R²=0.13 (crew + baseline) vs 0.12 (baseline only). Static/leaky upper bound R²≈0.31. Westbrook, CP3, Harden benefit most.
+- **Step 6 — L2M validation mixed.** `suppressor_score` vs L2M INC/(INC+CC): r=+0.02, p=0.86 (not confirmed). `sf_per_game` vs L2M INC rate: r=−0.45, p<0.001 (Layer 1 validated). Player-conditioned L2M test also not significant.
 
 ---
 
 ## Recommended Next Steps (Priority Order)
 
-Steps 1–4 are **complete**. Steps 5–7 remain.
+Steps 1–6 are **complete**. Step 7 remains.
 
-### Step 5: Predictive model — crew → game FTA environment
+### Step 5: Predictive model — crew → game FTA environment — **COMPLETE**
 
-**Input:** 3-official crew assignment + season type (RS/PO) + optional matchup context
+**Scripts:** `src/crew_predictive_model.py`, `src/player_crew_predictive_model.py`
 
-**Output:**
-- Expected SF/game for the crew
-- Expected FTA/36 for each target player in the game
-- Crew-level suppressor/amplifier index
+**Game-level (SF count):**
+- Train 2014–22, test 2023–24 + 2024–25
+- Best honest model: OLS additive, RMSE=4.53 vs baseline 4.56, R²≈0.005
+- Conclusion: game-level SF volume is mostly context-driven; crew features add little
 
-**Validation:** Season holdout (train seasons 2014–2022, predict 2023–24). Same structure as cranky-scott-foster's rolling holdout.
+**Player-level (FTA/36):**
+- 11,493 player-games (temporal profiles), 2,675 test
+- Best honest model: baseline + crew mean adj delta, RMSE=3.96, R²=0.13 vs baseline R²=0.12
+- 12/20 target players improve with crew info; Westbrook, CP3, Harden largest lift
 
-**Suggested first model:** Regularized linear model or gradient boosting on per-official historical profiles from `official_calling_profiles.parquet`. Keep it simple until signal is confirmed.
+**Crew interactions:**
+- Additive residuals tested on all modeling-season games (not just test holdout)
+- 529 pairs with ≥20 shared games; 53 significant (expected 26.5)
 
-**Key design question:** Is the effect additive (3 individual profiles sum to a crew profile) or interactive (some officials amplify each other)? Start with additive and test residuals for interaction effects.
+```bash
+make model-crew                  # static profiles + train
+make model-crew-temporal         # honest prior-season profiles
+make model-crew-diagnose
+make model-player-crew           # player FTA/36 (temporal)
+make model-player-crew-diagnose
+```
 
-**Implementation:**
-1. Create `src/crew_predictive_model.py`
-2. For each game with crew data, look up the 3 officials' historical profiles
-3. Train: predict actual game SF rate or player-level FTA from crew features
-4. Evaluate: RMSE, correlation, calibration — compare to baseline (league-average SF rate)
-5. Holdout: train on 2014–2022, test on 2023–24
+**Outputs:** `data/processed/model/` (game), `data/processed/model/player/` (player)
 
 ---
 
-### Step 6: L2M validation cross-check
+### Step 6: L2M validation cross-check — **COMPLETE**
 
-Use L2M INC shooting fouls as ground truth: do officials with high suppressor scores on full-game FTA also have higher INC SF rates in L2M clutch games?
+**Script:** `src/l2m_validation.py`
 
-**Data:** `l2m_events.parquet` + `crew_assignments.parquet`
+Joins L2M shooting-foul events → crew assignments → `official_calling_profiles` and `defensive_adjusted_interactions`.
 
-**Not yet implemented.** Join and compute per-official `INC_SF / (INC_SF + CC_SF)` in L2M games. Correlate with suppressor scores.
+**Official-level results (n=79 qualified):**
+| Metric | vs L2M INC/(INC+CC) | r | p |
+|---|---|---|---|
+| `suppressor_score` | primary test | +0.02 | 0.86 |
+| `mean_adj_fta36_delta` | | −0.02 | 0.90 |
+| `sf_per_game` (Layer 1) | | **−0.45** | **<0.001** |
+| `sf_pct_of_fouls` (Layer 1) | | **−0.42** | **<0.001** |
 
-**Implementation:**
-1. Load `l2m_events.parquet`, filter to shooting fouls
-2. Join with `crew_assignments.parquet` on `game_id`
-3. Per official: count INC vs CC shooting fouls in L2M games
-4. Compute `inc_sf_rate = INC_SF / (INC_SF + CC_SF)`
-5. Correlate with `suppressor_score` and `mean_adj_fta36_delta` from `official_calling_profiles.parquet`
+**Player-conditioned (4,348 target-player L2M events, 1,129 adjudicated):**
+- Crew mean adj Δ vs INC: r=−0.03, p=0.37 (not significant)
+
+**Conclusion:** Layer 1 volume metrics validate against L2M. Player-derived suppressor score does **not** — cannot claim L2M ground-truth validation for the core player×official metric. Reframe suppressor scores as full-game FTA tools validated by predictive holdout, not L2M.
+
+```bash
+make l2m-validate
+make l2m-validate-summary
+```
+
+**Outputs:** `data/processed/model/l2m/`
 
 ---
 
@@ -167,6 +190,13 @@ PYTHONPATH=. .venv/bin/python src/defensive_adjustment.py build
 # Official calling profiles (aggregate)
 PYTHONPATH=. .venv/bin/python src/official_calling_profiles.py build
 PYTHONPATH=. .venv/bin/python src/official_calling_profiles.py summary
+
+# Step 5: predictive models
+make model-crew-temporal
+make model-player-crew
+
+# Step 6: L2M validation
+make l2m-validate
 ```
 
 Or via Makefile:
@@ -174,6 +204,9 @@ Or via Makefile:
 make profile                          # Layer 1 ref profiles
 make profile-calling                  # Official calling profiles
 make profile-calling-summary          # Print top suppressors/amplifiers
+make model-crew-temporal                # Game-level SF model (honest holdout)
+make model-player-crew                  # Player-level FTA/36 model
+make l2m-validate                       # L2M cross-check
 ```
 
 ---
@@ -184,9 +217,9 @@ make profile-calling-summary          # Print top suppressors/amplifiers
 |---|---|
 | `src/nocall_model.py` (Layer 3 video) | User chose predictive FTA path over video classification |
 | `src/feasibility_study.py` | Written but never executed; video deps not installed |
-| `src/analyze.py` (Tracks A/B/C) | Superseded by player_official_profiles + official_calling_profiles pipeline; rewrite after Step 5 |
+| `src/analyze.py` (Tracks A/B/C) | Superseded by Steps 5–6 pipeline; rewrite optional |
 | Layer 2 foul-type classification | Deferred to Paper 2; player-level FTA is the proxy for now |
-| Import cranky-scott-foster taxonomy | Useful for Step 6 conditioning, not blocking Step 5 |
+| Import cranky-scott-foster taxonomy | Useful for conditioned L2M re-test; not blocking Step 7 |
 
 ---
 
@@ -197,7 +230,7 @@ make profile-calling-summary          # Print top suppressors/amplifiers
 3. **Official name matching** — PBP uses abbreviated names (e.g. `R.Garretson`); crew uses full names (e.g. `Rodney Garretson`). `player_official_profiles.py` has a mapping step; verified working with full crew
 4. ~~**Duplicate TARGET_PLAYERS**~~ — **Fixed.** Centralized in `config/target_players.py`
 5. ~~**Hardcoded DHC path**~~ — **Fixed.** `defensive_adjustment.py` now uses `config.PROJECT_ROOT.parent / "does-harden-choke"`
-6. ~~**Makefile gaps**~~ — **Partially fixed.** Added `profile-calling` and `profile-calling-summary` targets. Still missing targets for `fetch_crew_all`, `player_official_profiles`, and `defensive_adjustment`
+6. ~~**Makefile gaps**~~ — **Fixed.** Added targets for `model-crew`, `model-player-crew`, `l2m-validate`, `profile-calling`
 7. **`config/` package shadows `config.py`** — `config/__init__.py` re-exports root `config.py` module attributes. If adding new root-level config, must update `config/__init__.py`
 8. **rs_po_delta coverage** — Only 40/82 officials with ≥3 players have RS/PO splits. PO sample sizes are thin (median 22.5 games per player). May need to relax thresholds or aggregate differently for Step 5.
 
@@ -227,6 +260,11 @@ test -f ../does-harden-choke/data/processed/analysis_table.csv && echo "DHC anal
 
 # Official calling profiles
 PYTHONPATH=. .venv/bin/python src/official_calling_profiles.py summary
+
+# Step 5–6 summaries
+make model-crew-diagnose
+make model-player-crew-diagnose
+make l2m-validate-summary
 ```
 
 ---

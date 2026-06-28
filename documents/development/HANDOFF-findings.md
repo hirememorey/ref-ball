@@ -70,3 +70,52 @@ Correlation between player-derived suppressor metrics and Layer 1 foul-rate metr
 - `suppressor_score` vs `sf_pct_of_fouls`: **r = +0.30**
 
 Moderate alignment — officials who suppress player FTA also call slightly fewer shooting fouls as a share of all fouls, but the player-level metric captures signal beyond what overall foul rates reveal.
+
+### Step 5: Predictive models (June 2026)
+
+**Game-level SF count — weak signal.** Honest temporal holdout (train 2014–22, test 2023–24 + 2024–25):
+
+| Model | RMSE | R² |
+|---|---|---|
+| League average | 4.56 | — |
+| OLS additive (crew features) | 4.53 | 0.005 |
+
+Crew assignment does not meaningfully predict game-level shooting foul volume. Context (teams, pace, style) dominates.
+
+**Player-level FTA/36 — modest signal.** Same holdout, 2,675 test player-games:
+
+| Model | RMSE | R² |
+|---|---|---|
+| Player baseline only | 3.98 | 0.12 |
+| Baseline + crew mean adj delta | **3.96** | **0.13** |
+| Static/leaky upper bound (ridge) | 3.53 | 0.31 |
+
+12 of 20 target players improve with crew info. Largest RMSE lift: Russell Westbrook (−0.33), Chris Paul (−0.15), James Harden (−0.13).
+
+**Crew interaction effects beyond additive model:**
+- 529 official pairs with ≥20 shared L2M-era games
+- 53 pairs with |z|>1.96 on additive residuals (expected 26.5 at 5%)
+- Examples: amplifier pairs `J.Goble|M.Lindsay` (z=+3.6), suppressor pairs `E.Malloy|N.Buchert` (z=−3.9)
+
+### Step 6: L2M validation (June 2026)
+
+Cross-check player-derived suppressor metrics against league-audited L2M shooting-foul outcomes (2,698 games, 79 qualified officials).
+
+**Primary hypothesis not confirmed:**
+
+| Comparison | r | p |
+|---|---|---|
+| `suppressor_score` vs L2M INC/(INC+CC) | +0.02 | 0.86 |
+| `mean_adj_fta36_delta` vs L2M INC rate | −0.02 | 0.90 |
+| Player×official adj Δ vs L2M INC rate | +0.00 | 0.98 |
+
+**Layer 1 volume metrics validated:**
+
+| Comparison | r | p |
+|---|---|---|
+| `sf_per_game` vs L2M INC rate | **−0.45** | **<0.001** |
+| `sf_pct_of_fouls` vs L2M INC rate | **−0.42** | **<0.001** |
+
+Officials who call more shooting fouls in full-game PBP data have lower missed-foul (INC) rates in L2M clutch situations. The player×official suppressor score does not replicate this pattern — it measures a different phenomenon (full-game player-specific FTA shifts) that does not map cleanly onto L2M clutch adjudication.
+
+**Paper implication:** Do not claim L2M validation for `suppressor_score`. Use L2M validation for Layer 1 metrics. Present player×official effects as full-game predictive/descriptive findings (Step 5b holdout), not L2M-grounded.

@@ -19,7 +19,7 @@ The dataset has three layers, each with a different novelty moat:
 | **Layer 2: Foul-type classification** | Mechanism/severity/location/body part for called fouls | Medium (requires video classification at scale) | Deferred — player-level FTA is the proxy for now |
 | **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
 
-**Current build order:** Layer 1 + crew → player×official FTA profiles → official calling profiles → predictive crew model → L2M validation → does-harden-choke merge. Layer 3 (video no-call model) and Layer 2 (foul-type classification) are deferred. Steps 1–4 are complete; Step 5 (predictive model) is next.
+**Current build order:** Layer 1 + crew → player×official FTA profiles → official calling profiles → **predictive crew models (Steps 5–6 complete)** → does-harden-choke merge (Step 7). Layer 3 (video no-call model) and Layer 2 (foul-type classification) are deferred. **Step 7 is next.**
 
 ## The Paper Sequence
 
@@ -32,7 +32,7 @@ Each paper builds on the dataset from the previous one. We do not need all three
 - Per-official called SF rates (full game, Layer 1)
 - Per-official × player FTA deltas, opponent-defense-adjusted
 - RS vs PO comparison per official
-- Validation against L2M INC shooting fouls (league-audited ground truth)
+- Validation against L2M INC shooting fouls (league-audited ground truth) — **Layer 1 validated; player-derived suppressor score not confirmed (see Step 6)**
 - Does not require foul-type classification or a video model
 
 ### Paper 2 — "Refs miss different *types* of fouls" (Layer 1 + Layer 2 + Layer 3)
@@ -89,11 +89,13 @@ The parenthesized name after the foul classification is the official who blew th
 7. Player×official     →  src/player_official_profiles.py  →  player_official_interactions.parquet
 8. Defense adjustment  →  src/defensive_adjustment.py      →  defensive_adjusted_interactions.parquet
 9. Official profiles   →  src/official_calling_profiles.py →  official_calling_profiles.parquet
-10. Predictive model   →  (not yet built)                  →  crew predictions
-11. Analyze            →  src/analyze.py                   →  output/figures/ + output/tables/
+10. Game crew model    →  src/crew_predictive_model.py     →  data/processed/model/
+11. Player crew model  →  src/player_crew_predictive_model.py → data/processed/model/player/
+12. L2M validation    →  src/l2m_validation.py            →  data/processed/model/l2m/
+13. Analyze           →  src/analyze.py                   →  output/figures/ + output/tables/
 ```
 
-Steps 1–4 and L2M fetch are **complete**. Steps 5–8 have been **rebuilt on full crew** with 40 target players. Step 9 (official calling profiles) is built. Step 10 (predictive model) is the next code to write.
+Steps 1–9 are **complete**. Steps 10–12 (predictive models + L2M validation) are **built and run**. Step 13 (`analyze.py`) remains a stub. **Step 7 (does-harden-choke merge) is next.**
 
 ### 1. Ingest (Layer 1 — built)
 
@@ -144,6 +146,17 @@ PYTHONPATH=. .venv/bin/python src/defensive_adjustment.py summary
 **Output:** `data/processed/player_official/` — per-player game logs, interaction pairs, defense-adjusted deltas.
 
 **Target players:** 40 high-FTA players defined in `config/target_players.py` (FTA/36 ≥ 5.0, ≥ 400 career games, 2014-15 onward). All IDs verified via `commonplayerinfo` API.
+
+### 2a. Predictive models + L2M validation (Steps 5–6 — built)
+
+```bash
+make model-crew-temporal         # game-level SF model (honest holdout)
+make model-player-crew             # player FTA/36 model (temporal)
+make model-crew-diagnose           # compare static vs temporal signal
+make l2m-validate                  # L2M INC cross-check
+```
+
+**Outputs:** `data/processed/model/`, `data/processed/model/player/`, `data/processed/model/l2m/`
 
 ### 2b. No-call model (Layer 3 — shelved)
 
@@ -232,7 +245,8 @@ ref-ball is a **sibling project**, not a replacement:
 **ref-ball adds:**
 - Full crew assignments for all 13K+ games (`fetch_crew_all.py`)
 - Per-official × player FTA interaction profiles
-- Predictive crew → game officiating model (in progress)
+- Predictive crew models (game-level SF + player-level FTA/36) with season holdout
+- L2M validation cross-check (Layer 1 validated; suppressor score not confirmed)
 
 ### cranky-scott-foster
 
@@ -245,7 +259,7 @@ Another sibling project on the same L2M data. Key distinction:
 | Finding | Signal is primarily structural context, not referee identity | Official×player FTA heterogeneity is significant (p=0.000003 on full data) |
 | Reuse | Taxonomy, crew features, experience tiers — import for conditioning, don't rebuild | — |
 
-ref-ball's claim must be tested *conditional on decision context* to avoid conflating assignment composition with competence. See HANDOFF Step 6.
+ref-ball's claim must be tested *conditional on decision context* to avoid conflating assignment composition with competence. See HANDOFF Step 6 (L2M validation complete; CSF taxonomy conditioning still open).
 
 ## Foul-type taxonomy (deferred to Paper 2)
 
@@ -282,6 +296,12 @@ ref-ball/
 │       ├── crew_assignments.parquet # Full 3-person crew per game (13,464 games)
 │       ├── l2m_events.parquet       # L2M ground truth (56K events)
 │       ├── ref_profiles.parquet     # Layer 1 per-official called-foul profiles
+│       ├── model/                   # Step 5–6 model outputs (gitignored parquet)
+│       │   ├── game_crew_dataset.parquet
+│       │   ├── evaluation.parquet
+│       │   ├── crew_interactions.parquet
+│       │   ├── player/              # Player-level FTA/36 predictions
+│       │   └── l2m/                 # L2M validation tables
 │       └── player_official/         # Player×official interaction pipeline
 │           ├── player_games/        # Per-player game logs (FTA, minutes)
 │           ├── player_official_interactions.parquet
@@ -296,6 +316,9 @@ ref-ball/
 │   ├── player_official_profiles.py  # Per-official × player FTA profiles
 │   ├── defensive_adjustment.py      # Opponent-DEF_RATING adjustment
 │   ├── official_calling_profiles.py  # Per-official aggregate profiles (Step 4)
+│   ├── crew_predictive_model.py      # Game-level SF prediction (Step 5)
+│   ├── player_crew_predictive_model.py # Player-level FTA/36 prediction (Step 5b)
+│   ├── l2m_validation.py             # L2M INC cross-check (Step 6)
 │   ├── feasibility_study.py         # Video feasibility (shelved)
 │   ├── nocall_model.py              # Layer 3 stub
 │   ├── analyze.py                   # Three-track analysis stub
@@ -320,20 +343,24 @@ ref-ball/
 
 5. **No-call attribution is game-level, not play-level.** PBP doesn't record which official was responsible for a non-called play. Sufficient for rate-based analysis.
 
-6. **L2M INC as validation, not primary data.** 685 INC shooting fouls validate whether suppressor/amplifier officials also miss more calls in clutch situations.
+6. **L2M INC as validation, not primary data.** Step 6 complete: Layer 1 `sf_per_game` correlates with L2M INC rate (r=−0.45, p<0.001). Player-derived `suppressor_score` does **not** validate against L2M (r=+0.02, p=0.86). Use L2M to validate volume metrics, not player×official suppressor scores.
 
-7. **Foul-type taxonomy deferred.** Player-level FTA is the proxy for manufactured-contact tendency until Layer 2 is built.
+7. **Predictive unit is player-game, not game-level SF.** Game-level SF count from crew assignment is barely predictable (R²≈0.01 honest holdout). Player-level FTA/36 improves modestly with crew features (R² 0.13 temporal vs 0.12 baseline-only).
 
-8. **Dataset is the asset, papers are downstream.** Build once, query for Papers 1–3.
+8. **Crew interaction effects exist.** 529 official pairs with ≥20 shared games; 53 significant at |z|>1.96 (2× expected). Additive crew model is insufficient for some pairs.
+
+9. **Foul-type taxonomy deferred.** Player-level FTA is the proxy for manufactured-contact tendency until Layer 2 is built.
+
+10. **Dataset is the asset, papers are downstream.** Build once, query for Papers 1–3.
 
 ## Open questions
 
-1. **Does official heterogeneity survive taxonomy conditioning?** cranky-scott-foster found context dominates error rates. ref-ball must test whether official×player FTA effects persist within decision categories (HANDOFF Step 6).
+1. **Does official heterogeneity survive taxonomy conditioning?** cranky-scott-foster found context dominates error rates. CSF taxonomy import for L2M conditioning not yet done.
 
-2. **Predictive model architecture.** Start with regularized linear / gradient boosting on per-official historical profiles. Season holdout validation. Key question: additive (3 profiles sum) vs interactive (crew effects).
+2. **Paper framing after Steps 5–6.** Predictive R² is modest; strongest findings are descriptive heterogeneity, crew-pair interactions, and Layer 1 L2M validation. Sloan paper likely needs reframing around measurement + interactions, not game-level forecasting.
 
-3. **Playoff assignment confound.** NBA assigns officials to playoff games strategically. RS→PO comparisons are descriptive, not causal. No individual-level "playoff whistle" found (rs_po_delta ≈ 0) — FTA drop may be crew-composition-driven.
+3. **Playoff assignment confound.** NBA assigns officials to playoff games strategically. RS→PO comparisons are descriptive, not causal. No individual-level "playoff whistle" found (rs_po_delta ≈ 0) — FTA drop may be crew-composition-driven (Step 7).
 
 4. **Release strategy.** Publish dataset (citations) vs. keep proprietary (advantage). Decide before Sloan submission.
 
-5. **Crew vs individual decomposition.** Is the suppressor/amplifier effect additive across a 3-person crew, or are there interaction effects? Test in Step 5.
+5. **Crew vs individual decomposition.** **Answered (Step 5):** interaction effects beyond additive model are statistically real (2× expected significant pairs). Additive model is a useful baseline but incomplete.

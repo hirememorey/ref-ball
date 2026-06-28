@@ -1,6 +1,6 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze
+.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal
 
 venv:
 	python3 -m venv .venv
@@ -65,3 +65,31 @@ analyze:
 
 analyze-track:
 	PYTHONPATH=. $(PYTHON) src/analyze.py --track $(TRACK)
+
+# --- Step 5: crew predictive model ---
+
+model-crew:
+	PYTHONPATH=. $(PYTHON) src/crew_predictive_model.py build
+
+model-crew-temporal:
+	PYTHONPATH=. $(PYTHON) src/crew_predictive_model.py build --temporal
+
+model-crew-diagnose:
+	PYTHONPATH=. $(PYTHON) src/crew_predictive_model.py diagnose
+
+# --- Step 5b: player-level crew FTA/36 model ---
+
+model-player-crew:
+	PYTHONPATH=. $(PYTHON) src/player_crew_predictive_model.py build
+
+model-player-crew-static:
+	PYTHONPATH=. $(PYTHON) src/player_crew_predictive_model.py build --static
+
+model-player-crew-diagnose:
+	PYTHONPATH=. $(PYTHON) src/player_crew_predictive_model.py diagnose
+
+l2m-validate:
+	PYTHONPATH=. $(PYTHON) src/l2m_validation.py build
+
+l2m-validate-summary:
+	PYTHONPATH=. $(PYTHON) src/l2m_validation.py summary
