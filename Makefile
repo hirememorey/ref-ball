@@ -52,6 +52,12 @@ profile:
 profile-official:
 	PYTHONPATH=. $(PYTHON) src/ref_profiles.py --official $(OFFICIAL)
 
+profile-calling:
+	PYTHONPATH=. $(PYTHON) src/official_calling_profiles.py build
+
+profile-calling-summary:
+	PYTHONPATH=. $(PYTHON) src/official_calling_profiles.py summary
+
 # --- Analyze: three-track analysis ---
 
 analyze:
