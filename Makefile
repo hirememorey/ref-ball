@@ -1,43 +1,61 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: venv scrape-harden scrape-harden-po scrape-giannis scrape-giannis-po classify-harden classify-giannis analyze serve
+.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze
 
 venv:
 	python3 -m venv .venv
 	$(PYTHON) -m pip install -r requirements.txt
 
-# --- Scraping: build clip manifests from NBA video API ---
+# --- Fetch: download PBP JSON from NBA Stats API (Layer 1 source data) ---
 
-scrape-harden:
-	PYTHONPATH=. $(PYTHON) src/foul_scraper.py --player "James Harden" --season 2019-20 --games 5
+fetch-pbp:
+	PYTHONPATH=. $(PYTHON) src/fetch_pbp.py
 
-scrape-harden-po:
-	PYTHONPATH=. $(PYTHON) src/foul_scraper.py --player "James Harden" --season 2019-20 --games 5 --season-type Playoffs
+fetch-pbp-season:
+	PYTHONPATH=. $(PYTHON) src/fetch_pbp.py --season $(SEASON)
 
-scrape-giannis:
-	PYTHONPATH=. $(PYTHON) src/foul_scraper.py --player "Giannis Antetokounmpo" --season 2023-24 --games 5
+fetch-pbp-playoffs:
+	PYTHONPATH=. $(PYTHON) src/fetch_pbp.py --season-type Playoffs
 
-scrape-giannis-po:
-	PYTHONPATH=. $(PYTHON) src/foul_scraper.py --player "Giannis Antetokounmpo" --season 2023-24 --games 5 --season-type Playoffs
+# --- Fetch L2M: Last Two Minute reports + crew assignments (validation ground truth) ---
 
-# --- Classification: generate HTML tools ---
+fetch-l2m:
+	PYTHONPATH=. $(PYTHON) src/fetch_l2m.py
 
-classify-harden:
-	PYTHONPATH=. $(PYTHON) src/foul_classifier.py --manifest data/processed/manifest_james_harden_rs.json
+fetch-l2m-season:
+	PYTHONPATH=. $(PYTHON) src/fetch_l2m.py --season $(SEASON)
 
-classify-giannis:
-	PYTHONPATH=. $(PYTHON) src/foul_classifier.py --manifest data/processed/manifest_giannis_antetokounmpo_rs.json
+# --- Ingest: parse PBP JSON into structured records with official attribution (Layer 1) ---
 
-# --- Analysis: compare RS vs PO foul-type composition ---
+ingest:
+	PYTHONPATH=. $(PYTHON) src/ingest.py
+
+ingest-season:
+	PYTHONPATH=. $(PYTHON) src/ingest.py --season $(SEASON)
+
+# --- No-call model: train, predict, validate (Layer 3) ---
+
+train-nocall:
+	PYTHONPATH=. $(PYTHON) src/nocall_model.py train
+
+predict-nocalls:
+	PYTHONPATH=. $(PYTHON) src/nocall_model.py predict
+
+validate-nocall:
+	PYTHONPATH=. $(PYTHON) src/nocall_model.py validate
+
+# --- Profile: build per-official profiles ---
+
+profile:
+	PYTHONPATH=. $(PYTHON) src/ref_profiles.py
+
+profile-official:
+	PYTHONPATH=. $(PYTHON) src/ref_profiles.py --official $(OFFICIAL)
+
+# --- Analyze: three-track analysis ---
 
 analyze:
 	PYTHONPATH=. $(PYTHON) src/analyze.py
 
-analyze-harden:
-	PYTHONPATH=. $(PYTHON) src/analyze.py --player "James Harden"
-
-# --- Serve classifier HTML ---
-
-serve:
-	@echo "Serving classifier at http://localhost:8080/"
-	$(PYTHON) -m http.server 8080 --directory output
+analyze-track:
+	PYTHONPATH=. $(PYTHON) src/analyze.py --track $(TRACK)

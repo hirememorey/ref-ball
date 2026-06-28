@@ -13,6 +13,7 @@ import hashlib
 import json
 import logging
 import random
+import re
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -228,6 +229,49 @@ class NBAStatsClient:
             },
         )
 
+    def get_league_game_log(
+        self,
+        season: str,
+        season_type: str = "Regular Season",
+    ) -> Dict[str, Any]:
+        """Fetch league-wide game log (one row per team-game) to enumerate game IDs.
+
+        Uses the leaguegamelog endpoint. Returns two rows per game (home + away),
+        so game IDs must be de-duplicated by the caller.
+        """
+        return self._make_request(
+            "leaguegamelog",
+            {
+                "Counter": "0",
+                "DateFrom": "",
+                "DateTo": "",
+                "Direction": "ASC",
+                "LeagueID": "00",
+                "PlayerOrTeam": "T",
+                "Season": season,
+                "SeasonType": season_type,
+                "Sorter": "DATE",
+                "SeasonSegment": "",
+                "Outcome": "",
+                "Location": "",
+                "VsConference": "",
+                "VsDivision": "",
+                "PORound": "0",
+                "GameSegment": "",
+                "Period": "0",
+                "ShotClockRange": "",
+                "LastNGames": "0",
+                "Month": "0",
+                "OpponentTeamID": "0",
+                "TeamID": "0",
+                "MeasureType": "Base",
+                "PerMode": "Totals",
+                "PaceAdjust": "N",
+                "PlusMinus": "N",
+                "Rank": "N",
+            },
+        )
+
     def get_play_by_play(
         self,
         game_id: str | int,
@@ -247,6 +291,117 @@ class NBAStatsClient:
             "videoeventsasset",
             {"GameEventID": str(event_id), "GameID": gid},
         )
+
+    def get_l2m_report(self, game_id: str | int) -> Dict[str, Any]:
+        """Fetch official NBA Last Two Minute report JSON from official.nba.com.
+
+        This is a separate host from stats.nba.com and uses its own cache key
+        namespace to avoid collisions.
+        """
+        gid = normalize_game_id(game_id)
+        cache_path = self._cache_path("l2m_report", {"GameID": gid})
+        ttl = timedelta(days=self.cache_days_season)
+        cached = self._read_cache(cache_path, ttl)
+        if cached is not None:
+            return cached
+
+        url = f"https://official.nba.com/l2m/json/{gid}.json"
+        retry_statuses = {429, 500, 502, 503, 504}
+        last_error: Exception | None = None
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                self._wait()
+                logger.info("GET l2m_report %s (attempt %d/%d)", gid, attempt, self.max_attempts)
+                response = self.session.get(
+                    url,
+                    headers={
+                        "Accept": "application/json, text/plain, */*",
+                        "Referer": f"https://official.nba.com/l2m/L2MReport.html?gameId={gid}",
+                    },
+                    timeout=self.timeout,
+                )
+                if response.status_code in retry_statuses:
+                    wait = int(response.headers.get("Retry-After", 0)) or min(60, 2**attempt)
+                    logger.warning("HTTP %s on l2m %s; sleeping %ss", response.status_code, gid, wait)
+                    time.sleep(wait + random.uniform(0, 1))
+                    continue
+                response.raise_for_status()
+                data = response.json()
+                self._write_cache(cache_path, data)
+                return data
+            except (RetryError, HTTPError, requests.RequestException) as exc:
+                last_error = exc
+                if attempt >= self.max_attempts:
+                    break
+                wait = min(60, 2**attempt) + random.uniform(0, 1)
+                logger.warning("l2m %s failed (attempt %d/%d): %s; retrying in %.1fs", gid, attempt, self.max_attempts, exc, wait)
+                time.sleep(wait)
+        raise last_error or RuntimeError(f"Failed to fetch l2m for {gid}")
+
+    def get_game_officials(self, game_id: str | int) -> List[Dict[str, Any]]:
+        """Fetch referee assignments for a game from www.nba.com game page.
+
+        boxscoresummaryv2 is unreliable for officials. The www.nba.com game
+        page embeds __NEXT_DATA__ JSON with game.officials array.
+        Returns list of {official_id, official_name, first_name, last_name, jersey_num, role}.
+        """
+        gid = normalize_game_id(game_id)
+        cache_path = self._cache_path("game_officials", {"GameID": gid})
+        ttl = timedelta(days=self.cache_days_season)
+        cached = self._read_cache(cache_path, ttl)
+        if cached is not None:
+            return cached
+
+        url = f"https://www.nba.com/game/{gid}/play-by-play"
+        last_error: Exception | None = None
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                self._wait()
+                logger.info("GET game_officials %s (attempt %d/%d)", gid, attempt, self.max_attempts)
+                response = self.session.get(
+                    url,
+                    headers={
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                        "Referer": "https://www.nba.com/games",
+                    },
+                    timeout=self.timeout,
+                )
+                if response.status_code in {500, 502, 503, 504} and attempt < self.max_attempts:
+                    wait = min(15, 2**attempt)
+                    logger.warning("HTTP %s on game page %s; retry in %.1fs", response.status_code, gid, wait)
+                    time.sleep(wait)
+                    continue
+                response.raise_for_status()
+                match = re.search(
+                    r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>',
+                    response.text,
+                )
+                if not match:
+                    raise ValueError("No __NEXT_DATA__ in game page")
+                data = json.loads(match.group(1))
+                game = data.get("props", {}).get("pageProps", {}).get("game", {})
+                officials = game.get("officials", [])
+                rows = []
+                for i, o in enumerate(officials):
+                    rows.append({
+                        "game_id": gid,
+                        "official_id": o.get("personId"),
+                        "official_name": o.get("name") or "",
+                        "first_name": o.get("firstName") or "",
+                        "last_name": o.get("familyName") or "",
+                        "jersey_num": str(o.get("jerseyNum") or "").strip(),
+                        "role": "crew_chief" if i == 0 else f"official_{i + 1}",
+                    })
+                self._write_cache(cache_path, rows)
+                return rows
+            except (RetryError, HTTPError, requests.RequestException, ValueError, json.JSONDecodeError) as exc:
+                last_error = exc
+                if attempt >= self.max_attempts:
+                    break
+                wait = min(30, 2**attempt) + random.uniform(0, 1)
+                logger.warning("game_officials %s failed (attempt %d/%d): %s; retrying in %.1fs", gid, attempt, self.max_attempts, exc, wait)
+                time.sleep(wait)
+        raise last_error or RuntimeError(f"Failed to fetch officials for {gid}")
 
 
 def create_client() -> NBAStatsClient:
