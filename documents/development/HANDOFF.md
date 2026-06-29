@@ -8,7 +8,7 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 
 **Primary aim (current):** Understand how individual NBA referees interpret specific types of contact differently. The aggregate question (do refs call different games?) is answered — ANOVA p=0.000003. The next question is *why*: do refs differ in how they interpret specific contact types?
 
-**Active frontier:** **Step 10 — landing foul LLM grader (built, pending validation).** Manual ground truth is complete (99/100 clips classified, merged with 35 legacy v3 labels → 134-row ground truth). `src/landing_foul_llm_grader.py` implements the spatial landing-foul prompt (plus a sequence fallback) and is smoke-tested; the next action is a real API validation run at 85%+ precision / 70%+ recall on binary YES/NO, then scale to per-official measurement (Steps 11–12).
+**Active frontier:** **Step 10 — landing foul LLM grader (first validation complete, prompt iteration).** Manual ground truth is complete (99/100 clips classified, merged with 35 legacy v3 labels → 134-row ground truth). First API run (2026-06-29): Vertex `gemini-3.5-flash`, spatial prompt, 93-clip primary set — **58% accuracy, 55% precision, 98% recall**. Recall clears the 70% target; precision misses 85%. Model is YES-biased (38 contest/pump-fake false positives). **Next:** `--prompt-mode sequence`, then `--few-shot`, before per-official scale-up (Steps 11–12).
 
 **Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 5-7), L2M validation, and does-harden-choke merge. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
 
@@ -35,6 +35,7 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | Landing foul classifier | `output/landing_foul_classifier.html` | 100 clips embedded | **Built** — regenerate via `make landing-classifier` |
 | Landing foul classifications | `data/landing_foul_classifications.csv` | 99 clips (48 YES, 45 NO, 6 UNCLEAR) | **Complete** — exported 2026-06-29; 1 manifest clip unlabeled |
 | Merged ground truth | `data/landing_foul_ground_truth.csv` | 134 rows (49 YES, 79 NO, 6 UNCLEAR) | **Complete** — `make landing-merge` (99 classifier + 35 v3, 1 overlap) |
+| Landing foul LLM results | `data/processed/landing_foul_llm_results_vertex_gemini-3_5-flash.json` | 93 clips (spatial validation) | **First run** — 2026-06-29; gitignored (regenerate via validate command) |
 
 ### External dependencies (sibling projects)
 
@@ -116,7 +117,7 @@ Near-miss players not included (insufficient FTA/36 or GP): Jalen Brunson (4.79)
 
 ## Recommended Next Steps (Priority Order)
 
-Steps 1-9 are **complete** (one manifest clip still unlabeled — see Step 9 notes). **Step 10 (LLM grader) is built and smoke-tested — the next action is a real API validation run.** Steps 11-12 follow after validation.
+Steps 1-9 are **complete** (one manifest clip still unlabeled — see Step 9 notes). **Step 10 first validation complete** — spatial prompt misses precision target; iterate prompt before Steps 11-12.
 
 ### Step 8: Merge does-harden-choke tooling — COMPLETE
 
@@ -179,18 +180,61 @@ python -m http.server 8080 --directory output
 # Export CSV → data/landing_foul_classifications.csv → make landing-merge
 ```
 
-### Step 10: Landing foul LLM grader — BUILT, pending validation
+### Step 10: Landing foul LLM grader — FIRST VALIDATION COMPLETE, prompt iteration next
 
 **Goal:** Binary YES/NO landing foul classification from video. Adapt the pattern in `foul_type_llm_grader.py` (timing axis) with a **spatial** prompt.
 
-**Status:** `src/landing_foul_llm_grader.py` is built and smoke-tested (data loading, validate-only filtering, normalization all verified without API calls). Two prompt modes implemented: `spatial` (default) and `sequence` (event-ordering fallback: DEFENDER_CLOSEOUT → SHOOTER_DESCENDING → CONTACT). Providers: Gemini (native video upload, recommended), Vertex (gcloud ADC + GCS), OpenAI (frames), Anthropic (frames). Makefile targets: `landing-grade`, `landing-grade-validate`. **Not yet run against a real API** — needs `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) and a first validation pass.
+**Status:** `src/landing_foul_llm_grader.py` is built and validated against the API. Two prompt modes implemented: `spatial` (default) and `sequence` (event-ordering fallback: DEFENDER_CLOSEOUT → SHOOTER_DESCENDING → CONTACT). Four providers: **Vertex** (gcloud ADC + GCS, **recommended**), Gemini API (Files API), OpenAI (frames), Anthropic (frames). Makefile targets: `landing-grade`, `landing-grade-validate`.
+
+**First validation run (2026-06-29):**
+
+| Setting | Value |
+|---|---|
+| Provider / model | Vertex `gemini-3.5-flash` |
+| Prompt mode | `spatial` (default) |
+| Set | Primary — 93 YES/NO clips (`landing_classifier` source) |
+| Runtime | ~26 min (~17s/clip) |
+| Output | `data/processed/landing_foul_llm_results_vertex_gemini-3_5-flash.json` |
+
+| Metric | Result | Target | Status |
+|---|---|---|---|
+| Accuracy | 58.1% (54/93) | — | — |
+| Precision (YES) | 55.3% (47/85) | ≥ 85% | **Miss** |
+| Recall (YES) | 97.9% (47/48) | ≥ 70% | **Pass** |
+| F1 (YES) | 70.7% | — | — |
+| Model UNCLEAR | 0/93 | — | — |
+
+**Confusion matrix (rows=GT, cols=Pred):**
+
+|  | Pred NO | Pred YES |
+|---|---|---|
+| GT NO (45) | 7 | 38 |
+| GT YES (48) | 1 | 47 |
+
+**Failure mode:** Heavy YES bias. The model predicts `UNDER_SHOOTER` + `DURING_DESCENT_OR_LANDING` at HIGH confidence on most jump-shot contests. The 38 false positives are predominantly human-labeled contest / pump-fake / shooter-initiated fouls. Only 1 false negative: Giannis `0022001038_483` (labeled contest on arm at release).
 
 **Implementation notes:**
 - Loads clips from `data/processed/landing_foul_manifest.json` (100 Step 9 clips) + Harden/Giannis player manifests for v3 legacy rows' video URLs — all 134 ground-truth rows resolve to a video URL.
 - `--validate-only` grades only ground-truth clips. Primary set (default) = `landing_classifier` source rows only → **93 YES/NO** clips. `--extended` adds the 35 v3 legacy rows → **128 YES/NO**. `--include-unclear` adds the 6 UNCLEAR rows (reported separately, excluded from primary metrics).
 - Validation prints accuracy, precision/recall/F1 on YES (vs the 85%/70% targets), confusion matrix, UNCLEAR-prediction count, and per-clip mismatch detail with observations + GT notes.
 - `--few-shot` selects balanced YES/NO examples (noted clips preferred), held out from the graded set when validating.
-- Results → `data/processed/landing_foul_llm_results_<provider>_<model>.json`.
+- Results → `data/processed/landing_foul_llm_results_<provider>_<model>.json` (gitignored).
+
+**Provider setup:**
+
+| Provider | Auth | Model notes | Video handling |
+|---|---|---|---|
+| **Vertex** (recommended) | gcloud ADC — no API key | Use `gemini-3.5-flash` | GCS upload via `VertexGeminiGrader` |
+| Gemini API | `GEMINI_API_KEY` or `GOOGLE_API_KEY` | `gemini-2.5-flash` | Gemini Files API |
+| OpenAI | `OPENAI_API_KEY` | frame-based | ffmpeg 3fps, 15 frames |
+| Anthropic | `ANTHROPIC_API_KEY` | frame-based | ffmpeg 2fps, 10 frames |
+
+**Vertex setup (same as does-harden-choke `foul_type_llm_grader.py`):**
+1. Install [gcloud CLI](https://cloud.google.com/sdk/docs/install)
+2. `gcloud auth application-default login`
+3. `gcloud config set project project-3984c931-3755-423f-966`
+4. Videos upload to GCS bucket `project-3984c931-3755-423f-966-foul-type-grader-tmp` (1-day lifecycle auto-delete)
+5. **Do not use `gemini-2.5-flash` on Vertex** — per-part `mediaResolution` is rejected (400). Use `gemini-3.5-flash`.
 
 **Evaluation protocol (binary metrics):**
 - **Primary set:** YES + NO rows only — **93 clips** from Step 9 export (exclude 6 UNCLEAR unless `--include-unclear`)
@@ -200,23 +244,27 @@ python -m http.server 8080 --directory output
 
 **Run validation:**
 ```bash
-# Primary set (93 clips), Gemini native video
+# Primary set (93 clips) — Vertex, recommended
 PYTHONPATH=. .venv/bin/python src/landing_foul_llm_grader.py \
-  --provider gemini --model gemini-2.5-flash --validate-only
+  --provider vertex --model gemini-3.5-flash --validate-only
 # or via Makefile:
-make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash
 
-# Small smoke run first (3 clips, real API):
-make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash LIMIT=3
+# Small smoke run (3 clips):
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash LIMIT=3
 
-# Sequence-prompt fallback if spatial underperforms:
-make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash PROMPT_MODE=sequence
+# Prompt iteration (next — precision missed on spatial):
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash PROMPT_MODE=sequence
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash FEW_SHOT=1
 
 # Extended set (128 clips incl v3 legacy):
-make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash EXTENDED=1
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash EXTENDED=1
+
+# Gemini API alternative (requires GEMINI_API_KEY):
+make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash
 ```
 
-If precision/recall miss targets: iterate the spatial prompt, then try `--prompt-mode sequence`, then `--few-shot`. Re-label the 6 UNCLEAR clips (and the 1 unlabeled `0022000114`/603) if more positive signal is needed.
+**Iteration order (precision missed):** sequence prompt → few-shot → spatial prompt edits → re-label 6 UNCLEAR + 1 unlabeled `0022000114`/603 if more signal needed. Do **not** proceed to Step 11 until precision ≥ 85%.
 
 ### Step 11: Scale to per-official measurement — PENDING
 
@@ -444,6 +492,8 @@ make landing-merge && python3 -c "import pandas as pd; df=pd.read_csv('data/land
 
 - Python 3.13, venv at `.venv/`
 - Installed: pandas, pyarrow, numpy, requests, tqdm, scipy
-- **Needed for Layer 2:** google-generativeai (Gemini API), openai, anthropic — for `foul_type_llm_grader.py`
-- **Not installed:** torch, sklearn, opencv (not needed for current path)
+- **LLM grading (Layer 2):** No extra pip packages required for Vertex or Gemini API — both use raw `requests`. Optional: `openai`, `anthropic` for frame-based providers. Vertex uses gcloud ADC (see Step 10 provider table).
+- **Not installed:** torch, sklearn, opencv, google-generativeai (not needed — API calls are direct HTTP)
+- **System:** `ffmpeg` required for OpenAI/Anthropic frame extraction (not needed for Vertex/Gemini native video)
+- **gcloud:** Required for Vertex provider. Project `project-3984c931-3755-423f-966`, ADC via `gcloud auth application-default login`.
 - NBA API: use `NBAStatsClient` in `src/nba_client.py` (same pattern as does-harden-choke — rate limits are endpoint-specific, not global)

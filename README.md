@@ -18,10 +18,10 @@ The dataset has three layers, each with a different novelty moat:
 |---|---|---|---|
 | **Layer 1: Per-official attribution** | Official name parsed from PBP `description` field | Weak (anyone can parse it) | **Complete** — 13,278 games ingested, 13,464 with crew |
 | **Player x official profiles** | FTA/36 deltas per player under each official, defense-adjusted | Medium (requires crew + game logs) | **Built (40 players)** — full crew, 3,846 pairs, ANOVA p=0.000003 |
-| **Layer 2: Contact-type classification** | LLM-graded foul categories from video (starting with landing fouls) | Strong (multimodal LLM + video at scale) | **Active** — Step 9 ground truth complete (99 clips); landing foul LLM grader is next build |
+| **Layer 2: Contact-type classification** | LLM-graded foul categories from video (starting with landing fouls) | Strong (multimodal LLM + video at scale) | **Active** — Step 10 spatial validation run complete (58% accuracy); prompt iteration before scale-up |
 | **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
 
-**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (99/100 clips classified, merged). Step 10 landing foul LLM grader is **built and smoke-tested** — the next action is a real API validation run at 85%+ precision before scaling to per-official measurement.
+**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (99/100 clips classified, merged). Step 10 landing foul LLM grader has a **first Vertex validation run** (spatial prompt, 93 clips): recall 98% but precision 55% — iterate prompt (`sequence`, `few-shot`) to hit 85%+ precision before per-official scale-up (Steps 11–12).
 
 ## The Paper Sequence
 
@@ -123,7 +123,7 @@ LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 9-12 — ACTIVE)
 14. Variance analysis       →  (TBD)                             →  (TBD)
 ```
 
-Steps 1-9 are **complete**. Step 12 (LLM grader) is **built and smoke-tested** — pending a real API run to validate at 85%+ precision / 70%+ recall. Steps 13-14 (per-official scale, variance analysis) follow after LLM validation.
+Steps 1-9 are **complete**. Step 12 (LLM grader) has a **first validation run** (2026-06-29, Vertex `gemini-3.5-flash`, spatial prompt): 58% accuracy, 55% precision / 98% recall on YES — recall clears the 70% bar but precision misses the 85% target. **Next:** prompt iteration (`--prompt-mode sequence`, `--few-shot`). Steps 13-14 (per-official scale, variance analysis) follow after precision target is met.
 
 ### 1. Ingest (Layer 1 — built)
 
@@ -200,11 +200,29 @@ python -m http.server 8080 --directory output
 # Export → data/landing_foul_classifications.csv (99 clips labeled as of 2026-06-29)
 make landing-merge                # → data/landing_foul_ground_truth.csv (134 rows)
 
-# Step 10 (built, pending validation): spatial landing foul LLM grader
-# Validate on ground truth: target 85%+ precision, 70%+ recall on YES/NO
+# Step 10: landing foul LLM grader (Vertex recommended — no API key)
+# Primary validation set: 93 YES/NO clips from Step 9 export
+PYTHONPATH=. .venv/bin/python src/landing_foul_llm_grader.py \
+  --provider vertex --model gemini-3.5-flash --validate-only
+# → data/processed/landing_foul_llm_results_vertex_gemini-3_5-flash.json
+
+# Or via Makefile (set PROVIDER + MODEL):
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash
+
+# Small smoke run:
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash LIMIT=3
+
+# Prompt iteration (precision missed 85% target on spatial run):
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash PROMPT_MODE=sequence
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash FEW_SHOT=1
+
+# Gemini API alternative (requires GEMINI_API_KEY or GOOGLE_API_KEY):
 make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash
-# → data/processed/landing_foul_llm_results_gemini_gemini-2_5-flash.json
 ```
+
+**First validation results (2026-06-29):** Vertex `gemini-3.5-flash`, spatial prompt, primary set (93 clips). Accuracy 58.1%, precision 55.3%, recall 97.9%, F1 70.7%. Model is YES-biased (85 YES predictions vs 48 GT YES) — 38 false positives are mostly contest / pump-fake / shooter-initiated fouls labeled NO by humans. Only 1 false negative (`0022001038_483`, Giannis). Recall clears target; precision does not. See [HANDOFF.md](documents/development/HANDOFF.md) for provider notes and iteration options.
+
+**Vertex setup (recommended, same as does-harden-choke):** `gcloud auth application-default login`, `gcloud config set project project-3984c931-3755-423f-966`. Videos upload to GCS bucket `project-3984c931-3755-423f-966-foul-type-grader-tmp` (1-day auto-delete). Use `gemini-3.5-flash` on Vertex — `gemini-2.5-flash` rejects per-part `mediaResolution` on the Vertex endpoint.
 
 **Ground truth snapshot (2026-06-29):** 48 YES, 45 NO, 6 UNCLEAR in `data/landing_foul_classifications.csv` (99/100 manifest clips). Merged file adds 35 legacy v3 clips → 134 total (49 YES, 79 NO, 6 UNCLEAR). One manifest clip unlabeled: `0022000114` event 603. The 48% YES rate reflects enrichment sampling, not league prevalence.
 
@@ -293,7 +311,7 @@ Landing fouls are the ideal starting category because:
 ### Implementation plan
 
 1. **Ground truth (manual, 100 clips) — COMPLETE:** 99 clips classified via HTML tool → `data/landing_foul_classifications.csv`. Merged with v3 labels via `make landing-merge` → `data/landing_foul_ground_truth.csv` (134 rows).
-2. **LLM prompt design (Step 10) — NEXT:** Spatial-observation prompt — shot type, defender position at descent, contact moment. New `landing_foul_llm_grader.py` (adapt pattern from timing-axis `foul_type_llm_grader.py`). Gemini native video upload. Target 85%+ precision, 70%+ recall on binary YES/NO (exclude UNCLEAR from primary metrics).
+2. **LLM prompt design (Step 10) — IN PROGRESS:** `landing_foul_llm_grader.py` built. First validation (spatial prompt, Vertex `gemini-3.5-flash`, 93 clips): 55% precision / 98% recall — recall clears 70% target, precision misses 85% target. **Next:** try `--prompt-mode sequence` (event-ordering fallback), then `--few-shot`. Do not scale to per-official measurement until precision ≥ 85%.
 3. **Scale (Step 11):** ~100-150 shooting foul clips per official across 10-15 officials spanning suppressor/amplifier spectrum. Sample by official, not player.
 4. **Analysis (Step 12):** ANOVA on per-official landing foul rates. Correlation with suppressor/amplifier profiles.
 
@@ -410,7 +428,7 @@ ref-ball/
 
 1. **Does official heterogeneity survive taxonomy conditioning?** cranky-scott-foster found context dominates error rates. CSF taxonomy import for L2M conditioning not yet done.
 
-2. **Can the LLM reliably grade landing fouls?** The spatial signal (defender under shooter's landing zone) should be more gradable than the temporal boundary (BEFORE/DURING) that topped out at 71%. Target: 85%+ precision. Untested.
+2. **Can the LLM reliably grade landing fouls?** First run (spatial prompt): 55% precision, 98% recall — better recall than the timing axis (71% binary) but heavy YES bias on contest fouls. Precision target (85%) not yet met. Sequence prompt and few-shot are the next tests.
 
 3. **Do landing foul calling rates vary significantly across officials?** This is the core Paper 2 hypothesis. If yes, it provides a mechanism for the suppressor/amplifier effects. If no, landing fouls may be too well-defined (every ref agrees) and a more ambiguous category is needed.
 

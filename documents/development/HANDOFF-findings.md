@@ -163,3 +163,28 @@ The foul-type classification work in does-harden-choke established several findi
 - Landing fouls should be more gradable because the signal is spatial (defender under landing zone) and the temporal window is wide (~1 second)
 
 **Sample size:** 36 manually classified clips total (20 Harden, 16 Giannis). Insufficient for scale but enough to validate the descriptive hypothesis and kill the timing axis.
+
+### Landing foul LLM grader — first validation (ref-ball Step 10, 2026-06-29)
+
+**Run:** Vertex `gemini-3.5-flash`, spatial prompt, primary set (93 YES/NO clips from Step 9 manual export).
+
+| Metric | Result | Target |
+|---|---|---|
+| Accuracy | 58.1% | — |
+| Precision (YES) | 55.3% | ≥ 85% |
+| Recall (YES) | 97.9% | ≥ 70% |
+| F1 (YES) | 70.7% | — |
+
+**Confusion:** 7 TN, 38 FP, 1 FN, 47 TP. Zero UNCLEAR predictions.
+
+**Key findings:**
+- Recall clears target — model catches nearly all true landing fouls (1 miss: Giannis `0022001038_483`, classified as arm contest at release).
+- Precision fails badly — model is YES-biased. 38/45 GT-NO clips predicted YES. Failure mode matches DHC timing grader's opposite problem: instead of missing BEFORE fouls, it over-calls landing fouls on standard closeout contests.
+- False positives share a pattern: human notes say "contest", "pump-fake", or "shooter-initiated"; model consistently outputs `shot_type=JUMP_SHOT`, `defender_position_at_landing=UNDER_SHOOTER`, `contact_moment=DURING_DESCENT_OR_LANDING` at HIGH confidence.
+- Spatial framing alone is insufficient — the model cannot distinguish landing-zone contact from contest contact on the descent, despite explicit negative examples in the prompt.
+
+**Next iteration (per HANDOFF Step 10):**
+1. `--prompt-mode sequence` — event-ordering worked for timing axis (71% vs 40-50% for observation prompts)
+2. `--few-shot` — balanced YES/NO video examples from ground truth
+3. Spatial prompt edits emphasizing contest vs landing-zone distinction
+4. Do not scale to per-official measurement until precision ≥ 85%
