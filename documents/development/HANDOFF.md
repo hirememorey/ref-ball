@@ -8,7 +8,7 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 
 **Primary aim (current):** Understand how individual NBA referees interpret specific types of contact differently. The aggregate question (do refs call different games?) is answered — ANOVA p=0.000003. The next question is *why*: do refs differ in how they interpret specific contact types?
 
-**Active frontier:** **Step 9 — manual landing foul ground truth.** Tooling is built: 100 three-point shooting foul clips are sampled and ready to classify. After ~100 clips are labeled, build the landing foul LLM grader (Step 10) and validate at 85%+ precision before scaling to per-official measurement (Steps 11–12).
+**Active frontier:** **Step 10 — landing foul LLM grader.** Manual ground truth is complete (99/100 clips classified, merged with 35 legacy v3 labels → 134-row ground truth). Build a spatial landing-foul prompt (adapt `foul_type_llm_grader.py`), validate at 85%+ precision / 70%+ recall on binary YES/NO, then scale to per-official measurement (Steps 11–12).
 
 **Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 5-7), L2M validation, and does-harden-choke merge. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
 
@@ -33,8 +33,8 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | v3 foul-type ground truth | `data/foul_type_classifications.csv` | 36 clips (Harden + Giannis) | **Complete** — 1 LANDING, 35 non-LANDING |
 | Landing foul manifest | `data/processed/landing_foul_manifest.json` | 100 clips (reproducible) | **Built** — 3-FT shooting fouls, 53 officials, 2019–25 |
 | Landing foul classifier | `output/landing_foul_classifier.html` | 100 clips embedded | **Built** — regenerate via `make landing-classifier` |
-| Landing foul ground truth | `data/landing_foul_classifications.csv` | 0 (pending manual export) | **Pending** — user classifies via HTML tool |
-| Merged ground truth | `data/landing_foul_ground_truth.csv` | 36 rows (v3 only until export) | **Partial** — `make landing-merge` after export |
+| Landing foul classifications | `data/landing_foul_classifications.csv` | 99 clips (48 YES, 45 NO, 6 UNCLEAR) | **Complete** — exported 2026-06-29; 1 manifest clip unlabeled |
+| Merged ground truth | `data/landing_foul_ground_truth.csv` | 134 rows (49 YES, 79 NO, 6 UNCLEAR) | **Complete** — `make landing-merge` (99 classifier + 35 v3, 1 overlap) |
 
 ### External dependencies (sibling projects)
 
@@ -115,7 +115,7 @@ Near-miss players not included (insufficient FTA/36 or GP): Jalen Brunson (4.79)
 
 ## Recommended Next Steps (Priority Order)
 
-Steps 1-8 are **complete**. Step 9 tooling is **built**; **manual classification is the immediate next task**. Steps 10-12 follow.
+Steps 1-9 are **complete** (one manifest clip still unlabeled — see Step 9 notes). **Step 10 (LLM grader) is the immediate next task.** Steps 11-12 follow after validation.
 
 ### Step 8: Merge does-harden-choke tooling — COMPLETE
 
@@ -132,7 +132,7 @@ Migrated active foul-type tooling from does-harden-choke into ref-ball. DHC is n
 9. Added freeze note to DHC README
 10. Verified all imports and data paths
 
-### Step 9: Landing foul ground truth — TOOLING COMPLETE, MANUAL CLASSIFICATION NEXT
+### Step 9: Landing foul ground truth — COMPLETE (2026-06-29)
 
 **Sampling strategy (enrichment, not population representativeness):** Scan local PBP JSON for shooting fouls followed by exactly 3 free throw attempts (= 3-point shooting foul). This enriches for perimeter closeout fouls where landing space violations are most common. Sample 100 clips across seasons 2019–25 with per-game caps and season diversity. Document enrichment when interpreting base rates — this is a validation set for the LLM grader, not a prevalence estimate.
 
@@ -141,32 +141,65 @@ Migrated active foul-type tooling from does-harden-choke into ref-ball. DHC is n
 2. `src/landing_foul_classifier.py` — binary YES / NO / UNCLEAR + note; keyboard shortcuts Y/N/U
 3. `src/landing_foul_merge.py` — merges browser export with 36 v3 labels (LANDING → YES, else NO)
 
-**Run the classifier:**
+**Manual classification results** (`data/landing_foul_classifications.csv`):
+
+| Label | Count |
+|---|---|
+| YES | 48 |
+| NO | 45 |
+| UNCLEAR | 6 |
+| **Total** | **99 / 100** |
+
+- **42 clips** have free-text notes (borderline cases, contest vs landing, etc.) — useful for few-shot examples and mismatch review.
+- **1 unlabeled clip:** `0022000114` / event `603` (Ball S.FOUL on S. Gilgeous-Alexander, J. Capers). Optional: re-open classifier and label before Step 10.
+- **48% YES rate** in the enrichment sample is higher than the ~15–20% design target — good for LLM validation (more positive examples) but **not** a league-wide landing-foul prevalence estimate.
+
+**Merged ground truth** (`make landing-merge` → `data/landing_foul_ground_truth.csv`):
+
+| Source | Rows | Notes |
+|---|---|---|
+| `landing_classifier` | 99 | Step 9 export |
+| `v3_foul_type` | 35 | 36 v3 clips minus 1 overlap with Step 9 |
+| **Merged total** | **134** | YES=49, NO=79, UNCLEAR=6 |
+
+Regenerate merged file any time:
 ```bash
 cd /Users/harrisgordon/Documents/Development/ref-ball
-make landing-classifier                    # regenerate HTML if manifest changes
-python -m http.server 8080 --directory output
-# Open http://localhost:8080/landing_foul_classifier.html
-# Classify all 100 clips → Export CSV → save as data/landing_foul_classifications.csv
-make landing-merge                         # → data/landing_foul_ground_truth.csv
+make landing-merge
 ```
-
-**Rebuild manifest (optional):**
-```bash
-make landing-manifest CLIPS=100            # full rebuild with video fetches
-make landing-manifest-dry CLIPS=100        # sample only, no API calls
-```
-
-**Human task remaining:** Classify the 100 clips. Target enough YES labels for LLM validation (~15–20 landing fouls expected from enrichment). Export CSV and run `make landing-merge`.
 
 **Rubric:** Landing foul = defender's feet/body under or moving into shooter's landing zone while shooter is airborne on a jump shot, and the foul is called because of that positioning. Standard arm/hand contest on the shot = NO.
 
-### Step 10: Landing foul LLM grader — PENDING (blocked on Step 9 export)
+**Re-run classifier (if manifest changes or to label the missing clip):**
+```bash
+make landing-classifier
+python -m http.server 8080 --directory output
+# → http://localhost:8080/landing_foul_classifier.html
+# Export CSV → data/landing_foul_classifications.csv → make landing-merge
+```
 
-1. Design spatial-observation prompt (shot type, defender position at descent, contact moment)
-2. Test on ground truth clips using Gemini native video upload
-3. Target: 85%+ precision, 70%+ recall on binary landing/not-landing
-4. Iterate prompt if needed; event-ordering fallback (DEFENDER_CLOSEOUT -> SHOOTER_DESCENDING -> CONTACT)
+### Step 10: Landing foul LLM grader — NEXT (unblocked)
+
+**Goal:** Binary YES/NO landing foul classification from video. Adapt the pattern in `foul_type_llm_grader.py` (timing axis) with a **spatial** prompt.
+
+**Build checklist:**
+1. Create `src/landing_foul_llm_grader.py` (or extend grader with `--task landing`) — load clips from `data/processed/landing_foul_manifest.json`, ground truth from `data/landing_foul_ground_truth.csv`
+2. Design spatial-observation prompt: shot type (jump shot vs drive), defender feet/body at shooter descent, contact moment relative to landing zone
+3. `--validate-only` mode: grade only clips with ground truth, print confusion matrix + mismatches (mirror timing grader validation output)
+4. Use Gemini native video upload first (`gemini-2.5-flash` or similar)
+5. Iterate prompt; event-ordering fallback if needed (DEFENDER_CLOSEOUT → SHOOTER_DESCENDING → CONTACT)
+
+**Evaluation protocol (binary metrics):**
+- **Primary set:** YES + NO rows only — **93 clips** from Step 9 export (exclude 6 UNCLEAR unless re-labeled)
+- **Extended set:** full merged ground truth (134 rows) including v3 legacy clips
+- **Targets:** precision ≥ 85% on YES, recall ≥ 70% on YES
+- **Inspect mismatches** on borderline YES clips with notes (e.g. Thybulle/Shamet, Williamson/Hield, Roddy/Durant)
+
+**Example invocation (once built):**
+```bash
+PYTHONPATH=. .venv/bin/python src/landing_foul_llm_grader.py \
+  --provider gemini --model gemini-2.5-flash --validate-only
+```
 
 ### Step 11: Scale to per-official measurement — PENDING
 
@@ -384,6 +417,8 @@ make l2m-validate-summary
 # Step 9 landing foul pipeline
 test -f data/processed/landing_foul_manifest.json && python3 -c "import json; m=json.load(open('data/processed/landing_foul_manifest.json')); print(f'landing manifest: {m.get(\"num_clips\")} clips, {m.get(\"num_candidates\")} candidates')"
 test -f output/landing_foul_classifier.html && echo "landing classifier HTML: OK"
+test -f data/landing_foul_classifications.csv && python3 -c "import pandas as pd; df=pd.read_csv('data/landing_foul_classifications.csv'); print(f'classifications: {len(df)} rows'); print(df['landing_foul'].value_counts().to_string())"
+make landing-merge && python3 -c "import pandas as pd; df=pd.read_csv('data/landing_foul_ground_truth.csv'); print(f'ground truth: {len(df)} rows'); print(df['landing_foul'].value_counts().to_string())"
 ```
 
 ---

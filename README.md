@@ -18,10 +18,10 @@ The dataset has three layers, each with a different novelty moat:
 |---|---|---|---|
 | **Layer 1: Per-official attribution** | Official name parsed from PBP `description` field | Weak (anyone can parse it) | **Complete** — 13,278 games ingested, 13,464 with crew |
 | **Player x official profiles** | FTA/36 deltas per player under each official, defense-adjusted | Medium (requires crew + game logs) | **Built (40 players)** — full crew, 3,846 pairs, ANOVA p=0.000003 |
-| **Layer 2: Contact-type classification** | LLM-graded foul categories from video (starting with landing fouls) | Strong (multimodal LLM + video at scale) | **Active** — tooling migrated from does-harden-choke; landing foul grader is next build |
+| **Layer 2: Contact-type classification** | LLM-graded foul categories from video (starting with landing fouls) | Strong (multimodal LLM + video at scale) | **Active** — Step 9 ground truth complete (99 clips); landing foul LLM grader is next build |
 | **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
 
-**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. The active frontier is **Layer 2: landing foul classification** — build an LLM grader to measure per-official landing foul calling rates and test for inter-ref variance.
+**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (99/100 clips classified, merged). The active frontier is **Step 10: landing foul LLM grader** — validate at 85%+ precision before scaling to per-official measurement.
 
 ## The Paper Sequence
 
@@ -123,7 +123,7 @@ LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 9-12 — ACTIVE)
 14. Variance analysis       →  (TBD)                             →  (TBD)
 ```
 
-Steps 1-8 are **complete**. Step 9 tooling is **built** (100-clip manifest + binary classifier); **manual classification is the immediate next task**. Steps 10-14 (LLM grader adaptation, per-official scale, variance analysis) follow after ground truth export.
+Steps 1-9 are **complete**. Step 10 (LLM grader adaptation) is the **immediate next task**. Steps 11-14 (per-official scale, variance analysis) follow after LLM validation.
 
 ### 1. Ingest (Layer 1 — built)
 
@@ -192,21 +192,19 @@ make dhc-merge                   # does-harden-choke merge (Step 7)
 Binary classification of 3-point shooting fouls as landing fouls (yes/no). Uses dedicated Step 9 scripts — not the legacy v3 five-axis classifier.
 
 ```bash
-# Step 9: build manifest (scans local PBP, samples 3-FT shooting fouls, fetches video)
-make landing-manifest CLIPS=100
-
-# Generate HTML classifier and classify manually
+# Step 9 (complete): manifest + manual classification + merge
+make landing-manifest CLIPS=100   # already built; re-run only if resampling
 make landing-classifier
 python -m http.server 8080 --directory output
 # → http://localhost:8080/landing_foul_classifier.html
-# Export CSV to data/landing_foul_classifications.csv
+# Export → data/landing_foul_classifications.csv (99 clips labeled as of 2026-06-29)
+make landing-merge                # → data/landing_foul_ground_truth.csv (134 rows)
 
-# Merge with legacy v3 labels (36 Harden/Giannis clips)
-make landing-merge
-
-# Step 10 (next): adapt foul_type_llm_grader.py with spatial landing-foul prompt
-# PYTHONPATH=. .venv/bin/python src/foul_type_llm_grader.py --validate-only ...
+# Step 10 (next): build landing_foul_llm_grader.py with spatial prompt
+# Validate on ground truth: target 85%+ precision, 70%+ recall on YES/NO
 ```
+
+**Ground truth snapshot (2026-06-29):** 48 YES, 45 NO, 6 UNCLEAR in `data/landing_foul_classifications.csv` (99/100 manifest clips). Merged file adds 35 legacy v3 clips → 134 total (49 YES, 79 NO, 6 UNCLEAR). One manifest clip unlabeled: `0022000114` event 603. The 48% YES rate reflects enrichment sampling, not league prevalence.
 
 **Sampling:** Enrichment via 3 free throws after shooting foul (= 3-point attempt). ~1,789 candidates in 2019+ games; default sample is 100 clips across 53 officials. Not population-representative — designed for LLM validation power.
 
@@ -292,8 +290,8 @@ Landing fouls are the ideal starting category because:
 
 ### Implementation plan
 
-1. **Ground truth (manual, 100 clips) — IN PROGRESS:** `make landing-manifest` + `make landing-classifier`. Enrichment sample: 3-FT shooting fouls from local PBP. Classify via HTML tool (Y/N/U), export to `data/landing_foul_classifications.csv`, merge with v3 labels via `make landing-merge`.
-2. **LLM prompt design (Step 10):** Spatial-observation prompt — shot type, defender position at descent, contact moment. Adapt `foul_type_llm_grader.py` (currently timing-axis). Gemini native video upload. Target 85%+ precision, 70%+ recall on merged ground truth.
+1. **Ground truth (manual, 100 clips) — COMPLETE:** 99 clips classified via HTML tool → `data/landing_foul_classifications.csv`. Merged with v3 labels via `make landing-merge` → `data/landing_foul_ground_truth.csv` (134 rows).
+2. **LLM prompt design (Step 10) — NEXT:** Spatial-observation prompt — shot type, defender position at descent, contact moment. New `landing_foul_llm_grader.py` (adapt pattern from timing-axis `foul_type_llm_grader.py`). Gemini native video upload. Target 85%+ precision, 70%+ recall on binary YES/NO (exclude UNCLEAR from primary metrics).
 3. **Scale (Step 11):** ~100-150 shooting foul clips per official across 10-15 officials spanning suppressor/amplifier spectrum. Sample by official, not player.
 4. **Analysis (Step 12):** ANOVA on per-official landing foul rates. Correlation with suppressor/amplifier profiles.
 
@@ -326,8 +324,8 @@ ref-ball/
 ├── Makefile
 ├── data/
 │   ├── foul_type_classifications.csv # Manual v3 ground truth (36 clips, from DHC)
-│   ├── landing_foul_classifications.csv  # Step 9 export (git-tracked when present)
-│   ├── landing_foul_ground_truth.csv       # Merged ground truth (regenerable)
+│   ├── landing_foul_classifications.csv  # Step 9 manual export (99 clips, git-tracked)
+│   ├── landing_foul_ground_truth.csv       # Merged ground truth — run `make landing-merge`
 │   ├── raw/
 │   │   └── pbp/                     # PBP JSON (symlink → does-harden-choke)
 │   └── processed/
