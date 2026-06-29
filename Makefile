@@ -1,6 +1,6 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal
+.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth
 
 venv:
 	python3 -m venv .venv
@@ -101,3 +101,19 @@ dhc-merge:
 
 dhc-merge-summary:
 	PYTHONPATH=. $(PYTHON) src/dhc_merge.py summary
+
+# --- Step 9: landing foul ground truth (3-FT shooting fouls) ---
+
+landing-manifest:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_manifest.py --clips $(or $(CLIPS),100)
+
+landing-manifest-dry:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_manifest.py --clips $(or $(CLIPS),100) --dry-run
+
+landing-classifier:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_classifier.py
+
+landing-merge:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_merge.py
+
+landing-ground-truth: landing-manifest landing-classifier

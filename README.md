@@ -114,15 +114,16 @@ PREDICTIVE MODELS + VALIDATION (Steps 10-13 — COMPLETE)
 12. L2M validation     →  src/l2m_validation.py             →  data/processed/model/l2m/
 13. DHC merge          →  src/dhc_merge.py                  →  data/processed/model/dhc_merge/
 
-LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 14-18 — NEXT)
-14. Build clip manifest →  src/foul_type_scraper.py          →  data/processed/foul_type_manifest_*.json
-15. Manual ground truth →  src/foul_type_classifier.py       →  data/foul_type_classifications.csv
-16. LLM grading        →  src/foul_type_llm_grader.py       →  data/processed/foul_type_llm_results_*.json
-17. Per-official rates  →  (TBD)                             →  (TBD)
-18. Variance analysis   →  (TBD)                             →  (TBD)
+LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 9-12 — ACTIVE)
+ 9. Build 3-FT SF manifest →  src/landing_foul_manifest.py       →  data/processed/landing_foul_manifest.json
+10. Manual ground truth     →  src/landing_foul_classifier.py      →  data/landing_foul_classifications.csv
+11. Merge ground truth      →  src/landing_foul_merge.py           →  data/landing_foul_ground_truth.csv
+12. LLM grading            →  src/foul_type_llm_grader.py         →  (needs landing prompt — Step 10)
+13. Per-official rates      →  (TBD)                             →  (TBD)
+14. Variance analysis       →  (TBD)                             →  (TBD)
 ```
 
-Steps 1-13 are **complete**. Step 14 (DHC tooling merge) is **complete**. Steps 15-16 have tooling in place (needs adaptation for landing foul binary + official-diversity sampling). Steps 17-18 are new analysis code to be built.
+Steps 1-8 are **complete**. Step 9 tooling is **built** (100-clip manifest + binary classifier); **manual classification is the immediate next task**. Steps 10-14 (LLM grader adaptation, per-official scale, variance analysis) follow after ground truth export.
 
 ### 1. Ingest (Layer 1 — built)
 
@@ -186,19 +187,30 @@ make dhc-merge                   # does-harden-choke merge (Step 7)
 
 **Outputs:** `data/processed/model/`, `data/processed/model/player/`, `data/processed/model/l2m/`, `data/processed/model/dhc_merge/`
 
-### 2b. Landing foul classification (Layer 2 — next build)
+### 2b. Landing foul classification (Layer 2 — active)
 
-Video-based binary classification of shooting fouls as landing fouls, using multimodal LLM grading. See "Foul-type classification" section for full plan.
+Binary classification of 3-point shooting fouls as landing fouls (yes/no). Uses dedicated Step 9 scripts — not the legacy v3 five-axis classifier.
 
 ```bash
-# (post-merge, tooling from does-harden-choke)
-# Step 14: build clip manifest for target officials
-PYTHONPATH=. .venv/bin/python src/foul_type_scraper.py --by-official
-# Step 15: manual ground truth via HTML classifier
-PYTHONPATH=. .venv/bin/python src/foul_type_classifier.py --mode landing
-# Step 16: LLM grading
-PYTHONPATH=. .venv/bin/python src/foul_type_llm_grader.py --prompt-mode landing
+# Step 9: build manifest (scans local PBP, samples 3-FT shooting fouls, fetches video)
+make landing-manifest CLIPS=100
+
+# Generate HTML classifier and classify manually
+make landing-classifier
+python -m http.server 8080 --directory output
+# → http://localhost:8080/landing_foul_classifier.html
+# Export CSV to data/landing_foul_classifications.csv
+
+# Merge with legacy v3 labels (36 Harden/Giannis clips)
+make landing-merge
+
+# Step 10 (next): adapt foul_type_llm_grader.py with spatial landing-foul prompt
+# PYTHONPATH=. .venv/bin/python src/foul_type_llm_grader.py --validate-only ...
 ```
+
+**Sampling:** Enrichment via 3 free throws after shooting foul (= 3-point attempt). ~1,789 candidates in 2019+ games; default sample is 100 clips across 53 officials. Not population-representative — designed for LLM validation power.
+
+**Legacy DHC tooling** (`foul_type_scraper.py` by player, v3 `foul_type_classifier.py`, timing-axis `foul_type_llm_grader.py`) remains for reference; landing foul work uses `landing_foul_*.py`.
 
 ### 3. Profile
 
@@ -280,11 +292,10 @@ Landing fouls are the ideal starting category because:
 
 ### Implementation plan
 
-1. **Ground truth (manual, ~50-60 clips):** Adapt the HTML classifier for a single binary question. Pull clips from games selected for official diversity (not player diversity). Target ~50-60 shooting fouls across 5-6 games with different crews.
-2. **LLM prompt design:** Spatial-observation prompt — three questions about shot type, defender position at descent, and contact moment. Derive landing foul from the answers. Test direct prompt as alternative. Gemini native video upload (best performer on prior timing work).
-3. **Validation:** Binary accuracy, precision (prioritized — false positives inflate per-official rates), recall. Target 85%+ precision, 70%+ recall.
-4. **Scale:** Sampled classification — ~100-150 shooting foul clips per target official (10-15 officials spanning the suppressor/amplifier spectrum). Estimate per-official landing foul rate from sample.
-5. **Analysis:** ANOVA on per-official landing foul rates. Correlation with existing suppressor/amplifier profiles.
+1. **Ground truth (manual, 100 clips) — IN PROGRESS:** `make landing-manifest` + `make landing-classifier`. Enrichment sample: 3-FT shooting fouls from local PBP. Classify via HTML tool (Y/N/U), export to `data/landing_foul_classifications.csv`, merge with v3 labels via `make landing-merge`.
+2. **LLM prompt design (Step 10):** Spatial-observation prompt — shot type, defender position at descent, contact moment. Adapt `foul_type_llm_grader.py` (currently timing-axis). Gemini native video upload. Target 85%+ precision, 70%+ recall on merged ground truth.
+3. **Scale (Step 11):** ~100-150 shooting foul clips per official across 10-15 officials spanning suppressor/amplifier spectrum. Sample by official, not player.
+4. **Analysis (Step 12):** ANOVA on per-official landing foul rates. Correlation with suppressor/amplifier profiles.
 
 ### Legacy taxonomy (reference, not active)
 
@@ -314,7 +325,9 @@ ref-ball/
 ├── requirements.txt
 ├── Makefile
 ├── data/
-│   ├── foul_type_classifications.csv # Manual ground truth (36 clips, from DHC)
+│   ├── foul_type_classifications.csv # Manual v3 ground truth (36 clips, from DHC)
+│   ├── landing_foul_classifications.csv  # Step 9 export (git-tracked when present)
+│   ├── landing_foul_ground_truth.csv       # Merged ground truth (regenerable)
 │   ├── raw/
 │   │   └── pbp/                     # PBP JSON (symlink → does-harden-choke)
 │   └── processed/
@@ -351,9 +364,12 @@ ref-ball/
 │   ├── player_crew_predictive_model.py # Player-level FTA/36 prediction (Step 5b)
 │   ├── l2m_validation.py            # L2M INC cross-check (Step 6)
 │   ├── dhc_merge.py                 # does-harden-choke merge (Step 7)
-│   ├── foul_type_scraper.py         # Video clip manifest builder (merged from DHC)
-│   ├── foul_type_classifier.py      # HTML manual classification tool (merged from DHC)
-│   └── foul_type_llm_grader.py      # Multimodal LLM grader (merged from DHC)
+│   ├── foul_type_scraper.py         # Video clip manifest builder by player (merged from DHC)
+│   ├── foul_type_classifier.py      # HTML v3 five-axis classifier (merged from DHC)
+│   ├── foul_type_llm_grader.py      # Multimodal LLM grader — timing axis (merged from DHC)
+│   ├── landing_foul_manifest.py     # Step 9: 3-FT shooting foul manifest from PBP
+│   ├── landing_foul_classifier.py   # Step 9: binary landing foul HTML classifier
+│   └── landing_foul_merge.py        # Merge landing export + v3 ground truth
 ├── output/
 │   ├── figures/
 │   └── tables/
