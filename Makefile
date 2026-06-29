@@ -1,6 +1,6 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth
+.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate
 
 venv:
 	python3 -m venv .venv
@@ -115,5 +115,23 @@ landing-classifier:
 
 landing-merge:
 	PYTHONPATH=. $(PYTHON) src/landing_foul_merge.py
+
+# --- Step 10: landing foul LLM grader (spatial binary YES/NO) ---
+# Set PROVIDER, MODEL, and flags via env. Gemini native video is recommended.
+#   make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash LIMIT=10
+#   make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash EXTENDED=1
+#   make landing-grade PROVIDER=gemini MODEL=gemini-2.5-flash
+
+landing-grade:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_llm_grader.py \
+		--provider $(PROVIDER) --model $(MODEL) $(if $(PROMPT_MODE),--prompt-mode $(PROMPT_MODE)) \
+		$(if $(FEW_SHOT),--few-shot)
+
+landing-grade-validate:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_llm_grader.py \
+		--provider $(PROVIDER) --model $(MODEL) --validate-only \
+		$(if $(EXTENDED),--extended) $(if $(INCLUDE_UNCLEAR),--include-unclear) \
+		$(if $(PROMPT_MODE),--prompt-mode $(PROMPT_MODE)) $(if $(FEW_SHOT),--few-shot) \
+		$(if $(LIMIT),--limit $(LIMIT))
 
 landing-ground-truth: landing-manifest landing-classifier

@@ -8,7 +8,7 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 
 **Primary aim (current):** Understand how individual NBA referees interpret specific types of contact differently. The aggregate question (do refs call different games?) is answered — ANOVA p=0.000003. The next question is *why*: do refs differ in how they interpret specific contact types?
 
-**Active frontier:** **Step 10 — landing foul LLM grader.** Manual ground truth is complete (99/100 clips classified, merged with 35 legacy v3 labels → 134-row ground truth). Build a spatial landing-foul prompt (adapt `foul_type_llm_grader.py`), validate at 85%+ precision / 70%+ recall on binary YES/NO, then scale to per-official measurement (Steps 11–12).
+**Active frontier:** **Step 10 — landing foul LLM grader (built, pending validation).** Manual ground truth is complete (99/100 clips classified, merged with 35 legacy v3 labels → 134-row ground truth). `src/landing_foul_llm_grader.py` implements the spatial landing-foul prompt (plus a sequence fallback) and is smoke-tested; the next action is a real API validation run at 85%+ precision / 70%+ recall on binary YES/NO, then scale to per-official measurement (Steps 11–12).
 
 **Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 5-7), L2M validation, and does-harden-choke merge. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
 
@@ -69,6 +69,7 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | `src/landing_foul_manifest.py` | **Step 9:** scan PBP for 3-FT shooting fouls, sample, fetch video | `make landing-manifest` |
 | `src/landing_foul_classifier.py` | **Step 9:** binary YES/NO/UNCLEAR HTML classifier | `make landing-classifier` |
 | `src/landing_foul_merge.py` | Merge landing export + v3 labels into ground truth CSV | `make landing-merge` |
+| `src/landing_foul_llm_grader.py` | **Step 10:** landing foul LLM grader (spatial binary YES/NO) | `make landing-grade` / `landing-grade-validate` |
 
 All commands require `PYTHONPATH=.` from the project root (or use `make` targets).
 
@@ -115,7 +116,7 @@ Near-miss players not included (insufficient FTA/36 or GP): Jalen Brunson (4.79)
 
 ## Recommended Next Steps (Priority Order)
 
-Steps 1-9 are **complete** (one manifest clip still unlabeled — see Step 9 notes). **Step 10 (LLM grader) is the immediate next task.** Steps 11-12 follow after validation.
+Steps 1-9 are **complete** (one manifest clip still unlabeled — see Step 9 notes). **Step 10 (LLM grader) is built and smoke-tested — the next action is a real API validation run.** Steps 11-12 follow after validation.
 
 ### Step 8: Merge does-harden-choke tooling — COMPLETE
 
@@ -178,28 +179,44 @@ python -m http.server 8080 --directory output
 # Export CSV → data/landing_foul_classifications.csv → make landing-merge
 ```
 
-### Step 10: Landing foul LLM grader — NEXT (unblocked)
+### Step 10: Landing foul LLM grader — BUILT, pending validation
 
 **Goal:** Binary YES/NO landing foul classification from video. Adapt the pattern in `foul_type_llm_grader.py` (timing axis) with a **spatial** prompt.
 
-**Build checklist:**
-1. Create `src/landing_foul_llm_grader.py` (or extend grader with `--task landing`) — load clips from `data/processed/landing_foul_manifest.json`, ground truth from `data/landing_foul_ground_truth.csv`
-2. Design spatial-observation prompt: shot type (jump shot vs drive), defender feet/body at shooter descent, contact moment relative to landing zone
-3. `--validate-only` mode: grade only clips with ground truth, print confusion matrix + mismatches (mirror timing grader validation output)
-4. Use Gemini native video upload first (`gemini-2.5-flash` or similar)
-5. Iterate prompt; event-ordering fallback if needed (DEFENDER_CLOSEOUT → SHOOTER_DESCENDING → CONTACT)
+**Status:** `src/landing_foul_llm_grader.py` is built and smoke-tested (data loading, validate-only filtering, normalization all verified without API calls). Two prompt modes implemented: `spatial` (default) and `sequence` (event-ordering fallback: DEFENDER_CLOSEOUT → SHOOTER_DESCENDING → CONTACT). Providers: Gemini (native video upload, recommended), Vertex (gcloud ADC + GCS), OpenAI (frames), Anthropic (frames). Makefile targets: `landing-grade`, `landing-grade-validate`. **Not yet run against a real API** — needs `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) and a first validation pass.
+
+**Implementation notes:**
+- Loads clips from `data/processed/landing_foul_manifest.json` (100 Step 9 clips) + Harden/Giannis player manifests for v3 legacy rows' video URLs — all 134 ground-truth rows resolve to a video URL.
+- `--validate-only` grades only ground-truth clips. Primary set (default) = `landing_classifier` source rows only → **93 YES/NO** clips. `--extended` adds the 35 v3 legacy rows → **128 YES/NO**. `--include-unclear` adds the 6 UNCLEAR rows (reported separately, excluded from primary metrics).
+- Validation prints accuracy, precision/recall/F1 on YES (vs the 85%/70% targets), confusion matrix, UNCLEAR-prediction count, and per-clip mismatch detail with observations + GT notes.
+- `--few-shot` selects balanced YES/NO examples (noted clips preferred), held out from the graded set when validating.
+- Results → `data/processed/landing_foul_llm_results_<provider>_<model>.json`.
 
 **Evaluation protocol (binary metrics):**
-- **Primary set:** YES + NO rows only — **93 clips** from Step 9 export (exclude 6 UNCLEAR unless re-labeled)
-- **Extended set:** full merged ground truth (134 rows) including v3 legacy clips
+- **Primary set:** YES + NO rows only — **93 clips** from Step 9 export (exclude 6 UNCLEAR unless `--include-unclear`)
+- **Extended set:** `--extended` → 128 YES/NO clips including v3 legacy
 - **Targets:** precision ≥ 85% on YES, recall ≥ 70% on YES
 - **Inspect mismatches** on borderline YES clips with notes (e.g. Thybulle/Shamet, Williamson/Hield, Roddy/Durant)
 
-**Example invocation (once built):**
+**Run validation:**
 ```bash
+# Primary set (93 clips), Gemini native video
 PYTHONPATH=. .venv/bin/python src/landing_foul_llm_grader.py \
   --provider gemini --model gemini-2.5-flash --validate-only
+# or via Makefile:
+make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash
+
+# Small smoke run first (3 clips, real API):
+make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash LIMIT=3
+
+# Sequence-prompt fallback if spatial underperforms:
+make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash PROMPT_MODE=sequence
+
+# Extended set (128 clips incl v3 legacy):
+make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash EXTENDED=1
 ```
+
+If precision/recall miss targets: iterate the spatial prompt, then try `--prompt-mode sequence`, then `--few-shot`. Re-label the 6 UNCLEAR clips (and the 1 unlabeled `0022000114`/603) if more positive signal is needed.
 
 ### Step 11: Scale to per-official measurement — PENDING
 

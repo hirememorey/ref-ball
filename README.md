@@ -21,7 +21,7 @@ The dataset has three layers, each with a different novelty moat:
 | **Layer 2: Contact-type classification** | LLM-graded foul categories from video (starting with landing fouls) | Strong (multimodal LLM + video at scale) | **Active** — Step 9 ground truth complete (99 clips); landing foul LLM grader is next build |
 | **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
 
-**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (99/100 clips classified, merged). The active frontier is **Step 10: landing foul LLM grader** — validate at 85%+ precision before scaling to per-official measurement.
+**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (99/100 clips classified, merged). Step 10 landing foul LLM grader is **built and smoke-tested** — the next action is a real API validation run at 85%+ precision before scaling to per-official measurement.
 
 ## The Paper Sequence
 
@@ -118,12 +118,12 @@ LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 9-12 — ACTIVE)
  9. Build 3-FT SF manifest →  src/landing_foul_manifest.py       →  data/processed/landing_foul_manifest.json
 10. Manual ground truth     →  src/landing_foul_classifier.py      →  data/landing_foul_classifications.csv
 11. Merge ground truth      →  src/landing_foul_merge.py           →  data/landing_foul_ground_truth.csv
-12. LLM grading            →  src/foul_type_llm_grader.py         →  (needs landing prompt — Step 10)
+12. LLM grading            →  src/landing_foul_llm_grader.py      →  data/processed/landing_foul_llm_results_*.json
 13. Per-official rates      →  (TBD)                             →  (TBD)
 14. Variance analysis       →  (TBD)                             →  (TBD)
 ```
 
-Steps 1-9 are **complete**. Step 10 (LLM grader adaptation) is the **immediate next task**. Steps 11-14 (per-official scale, variance analysis) follow after LLM validation.
+Steps 1-9 are **complete**. Step 12 (LLM grader) is **built and smoke-tested** — pending a real API run to validate at 85%+ precision / 70%+ recall. Steps 13-14 (per-official scale, variance analysis) follow after LLM validation.
 
 ### 1. Ingest (Layer 1 — built)
 
@@ -200,8 +200,10 @@ python -m http.server 8080 --directory output
 # Export → data/landing_foul_classifications.csv (99 clips labeled as of 2026-06-29)
 make landing-merge                # → data/landing_foul_ground_truth.csv (134 rows)
 
-# Step 10 (next): build landing_foul_llm_grader.py with spatial prompt
+# Step 10 (built, pending validation): spatial landing foul LLM grader
 # Validate on ground truth: target 85%+ precision, 70%+ recall on YES/NO
+make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash
+# → data/processed/landing_foul_llm_results_gemini_gemini-2_5-flash.json
 ```
 
 **Ground truth snapshot (2026-06-29):** 48 YES, 45 NO, 6 UNCLEAR in `data/landing_foul_classifications.csv` (99/100 manifest clips). Merged file adds 35 legacy v3 clips → 134 total (49 YES, 79 NO, 6 UNCLEAR). One manifest clip unlabeled: `0022000114` event 603. The 48% YES rate reflects enrichment sampling, not league prevalence.
@@ -367,7 +369,8 @@ ref-ball/
 │   ├── foul_type_llm_grader.py      # Multimodal LLM grader — timing axis (merged from DHC)
 │   ├── landing_foul_manifest.py     # Step 9: 3-FT shooting foul manifest from PBP
 │   ├── landing_foul_classifier.py   # Step 9: binary landing foul HTML classifier
-│   └── landing_foul_merge.py        # Merge landing export + v3 ground truth
+│   ├── landing_foul_merge.py        # Merge landing export + v3 ground truth
+│   └── landing_foul_llm_grader.py   # Step 10: landing foul LLM grader (spatial binary)
 ├── output/
 │   ├── figures/
 │   └── tables/
