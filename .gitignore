@@ -30,6 +30,8 @@ logs/
 
 # Derived / scraped data (reproducible via pipeline)
 output/
+!output/figures/
+!output/figures/*.png
 data/cache/
 data/raw/
 data/processed/

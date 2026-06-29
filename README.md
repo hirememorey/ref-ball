@@ -38,6 +38,18 @@ Each paper builds on the dataset from the previous one. We do not need all three
 - Does not require foul-type classification or a video model
 - **Status: Steps 1-7 complete. Findings support the claim but predictive R^2 is modest. Strongest result is descriptive heterogeneity (ANOVA p=0.000003) + crew interaction effects.**
 
+#### SSAC27 Submission (MIT Sloan Sports Analytics Conference 2027)
+
+- **Conference:** February 25-26, 2027, Boston MA
+- **Track:** Basketball
+- **Abstract deadline:** October 1, 2026 11:59 PM EST
+- **Full paper deadline (if selected):** December 4, 2026
+- **Submission link:** https://bit.ly/4xIaYy9
+- **Abstract draft:** `documents/ssac27-abstract-draft.md` (~460 words, v2)
+- **Figures:** `output/figures/table_a_suppressor_amplifier.png` (Table 1: named official suppressor/amplifier profiles), `output/figures/figure_b_crew_prediction_scatter.png` (Figure 1: crew prediction vs actual FTA deviation, r=0.406)
+- **Figure generator:** `src/generate_abstract_figures.py`
+- **Open-source:** Full dataset will be published — all parquets, interaction tables, model outputs, source code. Named officials (no anonymization).
+
 ### Paper 2 — "Refs interpret contact differently" (Layer 1 + Layer 2)
 
 **Claim:** Individual referees call specific *types* of contact at significantly different rates, and these type-specific rates explain the aggregate suppressor/amplifier effects from Paper 1.
@@ -388,11 +400,15 @@ ref-ball/
 │   ├── landing_foul_manifest.py     # Step 9: 3-FT shooting foul manifest from PBP
 │   ├── landing_foul_classifier.py   # Step 9: binary landing foul HTML classifier
 │   ├── landing_foul_merge.py        # Merge landing export + v3 ground truth
-│   └── landing_foul_llm_grader.py   # Step 10: landing foul LLM grader (spatial binary)
+│   ├── landing_foul_llm_grader.py   # Step 10: landing foul LLM grader (spatial binary)
+│   └── generate_abstract_figures.py # SSAC27 abstract figures (Table 1 + Figure 1)
 ├── output/
 │   ├── figures/
+│   │   ├── table_a_suppressor_amplifier.png    # SSAC27 Table 1: suppressor/amplifier profiles
+│   │   └── figure_b_crew_prediction_scatter.png # SSAC27 Figure 1: crew prediction scatter
 │   └── tables/
 └── documents/
+    ├── ssac27-abstract-draft.md         # SSAC27 Paper 1 abstract (v2, ~460 words)
     └── development/
         ├── HANDOFF.md               # Current state + next steps (start here)
         └── HANDOFF-findings.md      # Detailed findings tables
@@ -436,4 +452,4 @@ ref-ball/
 
 5. **Playoff assignment confound.** NBA assigns officials to playoff games strategically. RS->PO comparisons are descriptive, not causal. No individual-level "playoff whistle" found (rs_po_delta ~ 0).
 
-6. **Release strategy.** Publish dataset (citations) vs. keep proprietary (advantage). Decide before Sloan submission.
+6. ~~**Release strategy.**~~ **Resolved: full open-source.** All data (per-official profiles, player-official interaction tables, predictive model outputs) will be published with the SSAC27 submission. Sloan requires open-source; we're publishing everything — no anonymization, named officials.

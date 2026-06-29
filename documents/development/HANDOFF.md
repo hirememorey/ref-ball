@@ -8,9 +8,13 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 
 **Primary aim (current):** Understand how individual NBA referees interpret specific types of contact differently. The aggregate question (do refs call different games?) is answered — ANOVA p=0.000003. The next question is *why*: do refs differ in how they interpret specific contact types?
 
-**Active frontier:** **Step 10 — landing foul LLM grader (first validation complete, prompt iteration).** Manual ground truth is complete (99/100 clips classified, merged with 35 legacy v3 labels → 134-row ground truth). First API run (2026-06-29): Vertex `gemini-3.5-flash`, spatial prompt, 93-clip primary set — **58% accuracy, 55% precision, 98% recall**. Recall clears the 70% target; precision misses 85%. Model is YES-biased (38 contest/pump-fake false positives). **Next:** `--prompt-mode sequence`, then `--few-shot`, before per-official scale-up (Steps 11–12).
+**Active frontier — two parallel tracks:**
 
-**Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 5-7), L2M validation, and does-harden-choke merge. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
+1. **SSAC27 Submission (Paper 1).** Abstract draft complete (~460 words, v2). Two publication-quality figures generated (Table 1: suppressor/amplifier profiles with named officials; Figure 1: crew prediction vs actual FTA deviation scatter, r=0.406). **Abstract deadline: October 1, 2026.** Full paper due December 4, 2026 if selected. Open-source decision resolved: publishing all data, named officials, no anonymization. See `documents/ssac27-abstract-draft.md` and `output/figures/`.
+
+2. **Step 10 — landing foul LLM grader (Paper 2).** First validation complete, prompt iteration pending. Manual ground truth complete (99/100 clips classified, merged with 35 legacy v3 labels → 134-row ground truth). First API run (2026-06-29): Vertex `gemini-3.5-flash`, spatial prompt, 93-clip primary set — **58% accuracy, 55% precision, 98% recall**. Recall clears the 70% target; precision misses 85%. Model is YES-biased (38 contest/pump-fake false positives). **Next:** `--prompt-mode sequence`, then `--few-shot`, before per-official scale-up (Steps 11–12).
+
+**Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 1-7), L2M validation, does-harden-choke merge, SSAC27 abstract draft + figures. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
 
 **Not the primary aim:** Descriptive L2M error-rate analysis (covered by [cranky-scott-foster](../../../cranky-scott-foster)). Game-level SF prediction (R^2~0.005, too weak to be useful).
 
@@ -36,6 +40,9 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | Landing foul classifications | `data/landing_foul_classifications.csv` | 99 clips (48 YES, 45 NO, 6 UNCLEAR) | **Complete** — exported 2026-06-29; 1 manifest clip unlabeled |
 | Merged ground truth | `data/landing_foul_ground_truth.csv` | 134 rows (49 YES, 79 NO, 6 UNCLEAR) | **Complete** — `make landing-merge` (99 classifier + 35 v3, 1 overlap) |
 | Landing foul LLM results | `data/processed/landing_foul_llm_results_vertex_gemini-3_5-flash.json` | 93 clips (spatial validation) | **First run** — 2026-06-29; gitignored (regenerate via validate command) |
+| SSAC27 abstract draft | `documents/ssac27-abstract-draft.md` | ~460 words (v2) | **Draft** — deadline Oct 1, 2026 |
+| SSAC27 Table 1 | `output/figures/table_a_suppressor_amplifier.png` | Top 5 suppressors + amplifiers | **Generated** — named officials, SF/game |
+| SSAC27 Figure 1 | `output/figures/figure_b_crew_prediction_scatter.png` | r=0.406, 433 player-games | **Generated** — crew prediction vs actual FTA deviation |
 
 ### External dependencies (sibling projects)
 
@@ -71,6 +78,7 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | `src/landing_foul_classifier.py` | **Step 9:** binary YES/NO/UNCLEAR HTML classifier | `make landing-classifier` |
 | `src/landing_foul_merge.py` | Merge landing export + v3 labels into ground truth CSV | `make landing-merge` |
 | `src/landing_foul_llm_grader.py` | **Step 10:** landing foul LLM grader (spatial binary YES/NO) | `make landing-grade` / `landing-grade-validate` |
+| `src/generate_abstract_figures.py` | **SSAC27:** Table 1 (suppressor/amplifier profiles) + Figure 1 (crew prediction scatter) | `PYTHONPATH=. .venv/bin/python src/generate_abstract_figures.py` |
 
 All commands require `PYTHONPATH=.` from the project root (or use `make` targets).
 
@@ -117,7 +125,29 @@ Near-miss players not included (insufficient FTA/36 or GP): Jalen Brunson (4.79)
 
 ## Recommended Next Steps (Priority Order)
 
-Steps 1-9 are **complete** (one manifest clip still unlabeled — see Step 9 notes). **Step 10 first validation complete** — spatial prompt misses precision target; iterate prompt before Steps 11-12.
+Steps 1-9 are **complete** (one manifest clip still unlabeled — see Step 9 notes). **Step 10 first validation complete** — spatial prompt misses precision target; iterate prompt before Steps 11-12. **SSAC27 abstract drafted** — submission deadline October 1, 2026.
+
+### SSAC27 Abstract Submission — IN PROGRESS (deadline Oct 1, 2026)
+
+**What's done:**
+- Abstract drafted (v2, ~460 words): `documents/ssac27-abstract-draft.md`
+- Table 1 generated: `output/figures/table_a_suppressor_amplifier.png` — top 5 suppressors (Phenizee Ransom 84%, Brandon Adair 80%, Aaron Smith 80%, Kevin Scott 80%, Eric Dalen 75%) and top 5 amplifiers (Bill Spooner 11%, Monty McCutchen 20%, Mark Lindsay 25%, Eric Lewis 25%, Matt Boland 25%) with SF/game showing the amplifier paradox
+- Figure 1 generated: `output/figures/figure_b_crew_prediction_scatter.png` — predicted crew suppression vs actual FTA/36 deviation (Spearman r=0.406, p<0.001, n=433 player-games, 20 players)
+- Open-source decision resolved: full transparency, all data published, named officials
+- Figure generator: `src/generate_abstract_figures.py`
+
+**What's remaining before submission:**
+1. Final wording pass on abstract (iterate v2 → v3)
+2. Prepare GitHub repo for open-source link (required at submission) — clean README, reproducible pipeline, publish parquets
+3. Submit via https://bit.ly/4xIaYy9 before October 1, 2026
+4. If abstract accepted (notification late-October): full manuscript due December 4, 2026
+
+**Regenerate figures:**
+```bash
+PYTHONPATH=. .venv/bin/python src/generate_abstract_figures.py
+```
+
+---
 
 ### Step 8: Merge does-harden-choke tooling — COMPLETE
 
