@@ -6,11 +6,13 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 
 ## What This Project Is Trying To Do
 
-**Primary aim (current):** Build predictive profiles of how each NBA referee (and crew) calls shooting fouls — especially for high-FTA, manufactured-contact players — and use those profiles to predict the officiating environment of a game from crew assignment.
+**Primary aim (current):** Understand how individual NBA referees interpret specific types of contact differently. The aggregate question (do refs call different games?) is answered — ANOVA p=0.000003. The next question is *why*: do refs differ in how they interpret specific contact types?
 
-**Not the primary aim:** Descriptive L2M error-rate analysis. That question is largely covered by the sibling project [cranky-scott-foster](../../../cranky-scott-foster). ref-ball's value-add is the *official-conditional, predictive* question.
+**Active frontier:** Build an LLM-based video grader for **landing fouls** — a single, well-defined category — and measure whether individual officials call landing fouls at significantly different rates. This is the entry point for Layer 2 (contact-type classification).
 
-**Downstream consumer:** [does-harden-choke](../../../does-harden-choke) — test whether playoff FTA shifts are crew-mediated (certain officials suppress/amplify FTA for target players).
+**Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 5-7), L2M validation, and does-harden-choke merge. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
+
+**Not the primary aim:** Descriptive L2M error-rate analysis (covered by [cranky-scott-foster](../../../cranky-scott-foster)). Game-level SF prediction (R^2~0.005, too weak to be useful).
 
 ---
 
@@ -31,10 +33,12 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 
 ### External dependencies (sibling projects)
 
-| Project | What ref-ball uses | Path |
-|---|---|---|
-| does-harden-choke | Raw PBP symlink; `analysis_table.csv` for `opponent_defrtg` | `../does-harden-choke/data/processed/analysis_table.csv` |
-| cranky-scott-foster | L2M taxonomy, crew features, structural-risk findings (reference only for now) | `../cranky-scott-foster/` |
+| Project | What ref-ball uses | Path | Status |
+|---|---|---|---|
+| does-harden-choke | Raw PBP symlink; `analysis_table.csv` (to be copied local) | `../does-harden-choke/data/raw/pbp/` | **Merging** — active tooling migrating to ref-ball; DHC becomes frozen archive |
+| cranky-scott-foster | L2M taxonomy, crew features, structural-risk findings (reference only) | `../cranky-scott-foster/` | No change |
+
+**Pending merge from does-harden-choke:** See README.md "Relationship to sibling projects" for the full merge plan. Key files moving: `foul_type_scraper.py`, `foul_type_classifier.py`, `foul_type_llm_grader.py`, ground truth CSV, manifests, and LLM results.
 
 ---
 
@@ -53,9 +57,10 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | `src/crew_predictive_model.py` | Game-level SF prediction from crew (Step 5) | `build` / `summary` / `diagnose` / `interactions` |
 | `src/player_crew_predictive_model.py` | Player-level FTA/36 prediction from crew (Step 5b) | `build` / `summary` / `diagnose` |
 | `src/l2m_validation.py` | L2M INC cross-check vs suppressor metrics (Step 6) | `build` / `summary` |
-| `src/feasibility_study.py` | Video clip classifier feasibility (shelved) | Not executed |
-| `src/nocall_model.py` | Layer 3 video model (stub) | Not implemented |
-| `src/analyze.py` | Three-track analysis (stub) | Not implemented |
+| `src/dhc_merge.py` | does-harden-choke merge — crew vs FTA collapse (Step 7) | `build` / `summary` |
+| `src/foul_type_scraper.py` | Video clip manifest builder from PBP (**from DHC, pending merge**) | `--player` / `--by-official` |
+| `src/foul_type_classifier.py` | HTML manual classification tool (**from DHC, pending merge**) | `--mode landing` |
+| `src/foul_type_llm_grader.py` | Multimodal LLM grader (**from DHC, pending merge**) | `--prompt-mode landing` |
 
 All commands require `PYTHONPATH=.` from the project root (or use `make` targets).
 
@@ -102,7 +107,50 @@ Near-miss players not included (insufficient FTA/36 or GP): Jalen Brunson (4.79)
 
 ## Recommended Next Steps (Priority Order)
 
-Steps 1–6 are **complete**. Step 7 remains.
+Steps 1-7 are **complete**. The active frontier is **Layer 2: landing foul classification**.
+
+### Step 8: Merge does-harden-choke tooling — PENDING
+
+Execute the merge plan documented in README.md:
+
+1. Copy `foul_type_scraper.py`, `foul_type_classifier.py`, `foul_type_llm_grader.py` from DHC `src/`, update imports to use ref-ball's `config` and `nba_client`
+2. Copy `foul_type_classifications.csv` to `data/`, manifests and LLM results to `data/processed/`
+3. Copy `analysis_table.csv` into `data/processed/`, update paths in `defensive_adjustment.py` and `dhc_merge.py`
+4. Check `nba_client.py` for missing methods (video URL construction from DHC)
+5. Delete stubs: `feasibility_study.py`, `nocall_model.py`, `analyze.py`
+6. Verify imports: `python -c "from src.foul_type_scraper import ..."`
+7. Add freeze note to DHC README
+
+### Step 9: Landing foul ground truth — PENDING
+
+1. Adapt `foul_type_classifier.py` for landing foul binary (yes/no/unclear — one question, not five axes)
+2. Select ~5-6 games with diverse officiating crews (sample by official, not by player)
+3. Build clip manifests via `foul_type_scraper.py`
+4. Manually classify ~50-60 shooting foul clips
+
+### Step 10: Landing foul LLM grader — PENDING
+
+1. Design spatial-observation prompt (shot type, defender position at descent, contact moment)
+2. Test on ground truth clips using Gemini native video upload
+3. Target: 85%+ precision, 70%+ recall on binary landing/not-landing
+4. Iterate prompt if needed; event-ordering fallback (DEFENDER_CLOSEOUT -> SHOOTER_DESCENDING -> CONTACT)
+
+### Step 11: Scale to per-official measurement — PENDING
+
+1. Select 10-15 officials spanning suppressor/amplifier spectrum
+2. Sample ~100-150 shooting foul clips per official
+3. Run LLM grader on all clips
+4. Compute per-official landing foul calling rate
+
+### Step 12: Variance analysis — PENDING
+
+1. ANOVA on per-official landing foul rates — do rates differ significantly?
+2. Correlation with existing suppressor/amplifier profiles — does landing foul tolerance explain the effect?
+3. If significant: expand to additional contact types. If not: landing fouls are too well-defined and a more ambiguous category is needed.
+
+---
+
+### Completed steps (summary)
 
 ### Step 5: Predictive model — crew → game FTA environment — **COMPLETE**
 
@@ -162,13 +210,46 @@ make l2m-validate-summary
 
 ---
 
-### Step 7: Connect to does-harden-choke (Paper 3 mechanism)
+### Step 7: Connect to does-harden-choke (Paper 3 mechanism) — **COMPLETE**
 
-Merge crew suppressor scores with does-harden-choke collapse game data. Test whether playoff FTA shifts concentrate in games with high-suppression officials.
+**Script:** `src/dhc_merge.py`
 
-**Hypothesis:** The league-wide playoff FTA drop is partly crew-mediated — suppressor-heavy crews may be assigned to playoff games at higher rates.
+**Data:** DHC `analysis_table.csv` (2014-15+) × `crew_assignments.parquet` × `official_calling_profiles.parquet` × `defensive_adjusted_interactions.parquet`
 
-**Status:** RS/PO analysis shows no individual-official "playoff whistle" effect. The remaining hypothesis is crew-composition. Test with crew-level suppressor indices from Step 5.
+**Coverage:** 16,697 player-games with crew data (16,154 RS + 543 PO across 28 players, 9,872 games).
+
+**Three analyses:**
+
+**A. RS vs PO crew composition (is crew more suppressive in playoffs?)**
+- RS games n=9,657, crew_mean_suppressor_score mean=0.482
+- PO games n=215, crew_mean_suppressor_score mean=0.479
+- Mann-Whitney p=0.720 — **not significant**
+- Confirms individual-level RS/PO finding: no systematic "playoff whistle" at the crew level either.
+
+**B. Floor game crew composition (do floor games have more suppressive crews?)**
+- Floor PO player-games n=63, crew_mean_suppressor_score mean=0.476
+- Non-floor PO player-games n=480, mean=0.478
+- Mann-Whitney p=0.764 — **not significant**
+- BUT: actual FTA/36 delta is dramatically different (floor mean −2.889 vs non-floor +0.408, p<0.001)
+- **Key result: DHC floor games are characterized by large FTA drops, but crew composition is not the mechanism. The crashes happen regardless of who is officiating.**
+
+**C. Player-specific predicted crew suppression vs actual FTA delta**
+- For each playoff player-game, computed predicted suppression = mean player×official adj delta across the 3 crew officials
+- Spearman r=+0.406, p<0.001 (n=433 player-games, 20 players)
+- Correct expected direction: positive (amplifying crew → positive predicted → positive actual delta)
+- Consistent across 18 of 18 players with ≥5 games; 8/18 individually significant
+- **Key result: Player-specific crew prediction explains meaningful variance in individual playoff FTA. But this is a continuous prediction, not a floor-game trigger.**
+- Methodological caveat: adj deltas include PO games (median PO fraction ≈6%). A clean RS-only holdout would require recomputing adj deltas excluding PO games.
+
+**Overall conclusion for Paper 3 framing:**
+Crew assignment is **not** the mediating variable for playoff FTA collapse. The DHC floor-game FTA crashes (mean −2.889 FTA/36) are not explained by crew composition (p=0.764). However, crew-based predictions do explain variance in individual FTA outcomes (r=0.406) — it's a continuous effect, not a threshold/collapse driver. The mechanism behind floor games lies elsewhere (defensive pressure, player fatigue, psychological, etc.).
+
+```bash
+make dhc-merge          # build
+make dhc-merge-summary  # print results
+```
+
+**Outputs:** `data/processed/model/dhc_merge/`
 
 ---
 
@@ -215,11 +296,12 @@ make l2m-validate                       # L2M cross-check
 
 | Item | Why shelved |
 |---|---|
-| `src/nocall_model.py` (Layer 3 video) | User chose predictive FTA path over video classification |
-| `src/feasibility_study.py` | Written but never executed; video deps not installed |
-| `src/analyze.py` (Tracks A/B/C) | Superseded by Steps 5–6 pipeline; rewrite optional |
-| Layer 2 foul-type classification | Deferred to Paper 2; player-level FTA is the proxy for now |
-| Import cranky-scott-foster taxonomy | Useful for conditioned L2M re-test; not blocking Step 7 |
+| `src/nocall_model.py` (Layer 3 video) | Delete during merge — stub, never implemented |
+| `src/feasibility_study.py` | Delete during merge — never executed, has bugs, superseded by LLM grader |
+| `src/analyze.py` (Tracks A/B/C) | Delete during merge — stub, superseded by Steps 5-7 pipeline |
+| v3 five-axis foul taxonomy | Timing axis killed by Giannis counterexample; 12 mechanisms too granular for per-official stats. Replaced by landing foul binary as entry point |
+| Import cranky-scott-foster taxonomy | Useful for conditioned L2M re-test; not blocking current work |
+| Full-game manufactured/genuine classification | Descriptively valid but predictive chain untested. Revisit after landing foul variance results |
 
 ---
 
@@ -273,5 +355,6 @@ make l2m-validate-summary
 
 - Python 3.13, venv at `.venv/`
 - Installed: pandas, pyarrow, numpy, requests, tqdm, scipy
-- **Not installed:** torch, sklearn, opencv (only needed if video feasibility study is revived or for Step 5 gradient boosting)
+- **Needed for Layer 2 (post-merge):** google-generativeai (Gemini API), openai, anthropic — for `foul_type_llm_grader.py`
+- **Not installed:** torch, sklearn, opencv (not needed for current path)
 - NBA API: use `NBAStatsClient` in `src/nba_client.py` (same pattern as does-harden-choke — rate limits are endpoint-specific, not global)

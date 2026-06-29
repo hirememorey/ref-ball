@@ -119,3 +119,47 @@ Cross-check player-derived suppressor metrics against league-audited L2M shootin
 Officials who call more shooting fouls in full-game PBP data have lower missed-foul (INC) rates in L2M clutch situations. The player×official suppressor score does not replicate this pattern — it measures a different phenomenon (full-game player-specific FTA shifts) that does not map cleanly onto L2M clutch adjudication.
 
 **Paper implication:** Do not claim L2M validation for `suppressor_score`. Use L2M validation for Layer 1 metrics. Present player×official effects as full-game predictive/descriptive findings (Step 5b holdout), not L2M-grounded.
+
+### Step 7: does-harden-choke merge (June 2026)
+
+Tests whether playoff FTA collapse is crew-mediated. Coverage: 543 playoff player-games with crew data across 28 players, 2014-15 onward.
+
+**A. RS vs PO crew suppression (game level):**
+- RS crew_mean_suppressor_score = 0.482, PO = 0.479 — Mann-Whitney p=0.720 (not significant)
+- Crew composition does not systematically differ between RS and PO.
+
+**B. Floor game crew composition:**
+- Floor PO games (n=63) vs non-floor PO (n=480): crew_mean_suppressor_score 0.476 vs 0.478 — p=0.764 (not significant)
+- BUT actual FTA/36 delta: floor mean = −2.889, non-floor = +0.408 (p<0.001)
+- **Floor-game FTA crashes are real and large but not crew-driven.**
+
+**C. Player-specific crew suppression vs actual FTA deviation:**
+- Predicted crew suppression (mean player×official adj delta) vs actual fta36_delta
+- Spearman r=+0.406, p<0.001 (n=433 player-games, 20 players)
+- Consistent direction in 18/18 players; 8/18 individually significant
+- Methodological caveat: ~6% of adj delta is PO look-ahead. Clean RS-only holdout is a remaining task.
+
+**Paper implication:** Crew assignment explains continuous FTA variance (r=0.406) but is **not** the mechanism behind DHC floor games. Paper 3 framing needs revision: the crew effect is predictive for individual game outcomes, not a collapse trigger. The floor-game mechanism is upstream of crew (defensive pressure, player state, game context).
+
+### Foul-type classification findings (from does-harden-choke, motivating Layer 2)
+
+The foul-type classification work in does-harden-choke established several findings that motivate the landing foul approach:
+
+**The timing axis is dead as a discriminator:**
+- LLM grader achieved 71% binary accuracy (PRE_COMMIT/IN_ACT) on Harden clips using event-ordering prompt (best of four prompt modes)
+- But the Giannis counterexample killed timing as a predictor: Giannis gets BEFORE fouls on genuine hard drives (4/16 clips) and loses *more* FTAs (-4.5/36) than Harden (-3.3/36) in playoffs
+- Timing doesn't separate fouls-that-persist from fouls-that-disappear
+
+**Mechanism distributions differ descriptively:**
+- Harden: 40% ARM-HOOK/PUMP-JUMP (manufactured contact)
+- Giannis: 50% DRV-FINISH (genuine finishing contact)
+- But the predictive chain (mechanism composition -> FTA shift) is untested
+
+**LLM grading lessons (applicable to landing foul grader):**
+- 13-field observation prompt: 40% accuracy (cognitive overload, state classification too hard)
+- 3-field observation prompt: 50% accuracy (better but still state-classification framing)
+- Event-ordering sequence prompt: 71% accuracy (temporal ordering is easier than state classification)
+- Key insight: reformulate the question as something the model can observe (spatial/temporal relationships) rather than classify (instantaneous states)
+- Landing fouls should be more gradable because the signal is spatial (defender under landing zone) and the temporal window is wide (~1 second)
+
+**Sample size:** 36 manually classified clips total (20 Harden, 16 Giannis). Insufficient for scale but enough to validate the descriptive hypothesis and kill the timing axis.
