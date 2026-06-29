@@ -21,7 +21,7 @@ The dataset has three layers, each with a different novelty moat:
 | **Layer 2: Contact-type classification** | LLM-graded foul categories from video (starting with landing fouls) | Strong (multimodal LLM + video at scale) | **Active** — tooling migrated from does-harden-choke; landing foul grader is next build |
 | **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
 
-**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. The active frontier is **Layer 2: landing foul classification** — build an LLM grader to measure per-official landing foul calling rates and test for inter-ref variance.
+**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. The active frontier is **Layer 2: landing foul classification** — build an LLM grader to measure per-official landing foul calling rates and test for inter-ref variance.
 
 ## The Paper Sequence
 
@@ -122,7 +122,7 @@ LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 14-18 — NEXT)
 18. Variance analysis   →  (TBD)                             →  (TBD)
 ```
 
-Steps 1-13 are **complete**. Steps 14-16 have tooling migrated from does-harden-choke (needs adaptation for landing foul binary + official-diversity sampling). Steps 17-18 are new analysis code to be built.
+Steps 1-13 are **complete**. Step 14 (DHC tooling merge) is **complete**. Steps 15-16 have tooling in place (needs adaptation for landing foul binary + official-diversity sampling). Steps 17-18 are new analysis code to be built.
 
 ### 1. Ingest (Layer 1 — built)
 
@@ -224,16 +224,18 @@ Build per-official profiles from called fouls (Layer 1) and contact-type classif
 
 ## Relationship to sibling projects
 
-### does-harden-choke (merging into ref-ball)
+### does-harden-choke (merged — now frozen archive)
 
-does-harden-choke is a **sibling project being partially merged** into ref-ball. The original split was player-side vs. referee-side, but the active frontier (foul-type classification via LLM) serves ref-ball's question directly (how do refs interpret specific contact types?).
+does-harden-choke was a **sibling project, now partially merged** into ref-ball. The original split was player-side vs. referee-side, but the active frontier (foul-type classification via LLM) serves ref-ball's question directly (how do refs interpret specific contact types?). The merge is **complete** (Step 8).
 
-**What merges into ref-ball (active tooling):**
+**What merged into ref-ball (active tooling):**
 - `src/foul_type_scraper.py` — clip manifest builder from PBP data
 - `src/foul_type_classifier.py` — HTML tool for manual foul-type classification
 - `src/foul_type_llm_grader.py` — multimodal LLM grader (Gemini/OpenAI/Anthropic, ~1244 lines)
 - `foul_type_classifications.csv` — 36 manually classified clips (Harden + Giannis ground truth)
 - Foul-type manifests and LLM results (data artifacts)
+- `analysis_table.csv` — copied into `data/processed/` (ref-ball is self-contained)
+- `nba_client.py` — missing methods (`get_common_player_info`, `get_league_game_finder`, `get_league_team_stats`) merged from DHC
 
 **What stays in does-harden-choke (frozen research):**
 - All analysis screens (screen_a through screen_f) — finished pass 1 research
@@ -244,17 +246,12 @@ does-harden-choke is a **sibling project being partially merged** into ref-ball.
 - All documentation, blog posts, README (the publishable article)
 - Raw player/team data and all processed analysis outputs
 
-**What consolidates:**
-- `nba_client.py` — ref-ball's version is more complete; add any missing methods from DHC (video URL construction)
-- `analysis_table.csv` — copy into ref-ball's `data/processed/` (currently read via relative path `../does-harden-choke/...`); make ref-ball self-contained
-- PBP data — `data/raw/pbp/` symlink stays for now; note dependency for future cleanup
-
-**Post-merge, does-harden-choke becomes a frozen archive** — the published findings repo. A README note will point to ref-ball for active development.
-
-**Stubs to delete from ref-ball during merge:**
+**Stubs deleted during merge:**
 - `src/feasibility_study.py` — never executed, has bugs, superseded by the LLM grader
 - `src/nocall_model.py` — all methods raise `NotImplementedError`
 - `src/analyze.py` — all tracks raise `NotImplementedError`
+
+**does-harden-choke is now a frozen archive** — the published findings repo. Its README points to ref-ball for active development. The only remaining DHC dependency is the PBP data symlink (`data/raw/pbp/` → DHC).
 
 ### cranky-scott-foster
 
@@ -341,7 +338,7 @@ ref-ball/
 │           ├── defensive_adjusted_interactions.parquet
 │           └── official_calling_profiles.parquet
 ├── src/
-│   ├── nba_client.py                # NBA Stats API client
+│   ├── nba_client.py                # NBA Stats API client (merged DHC methods)
 │   ├── fetch_pbp.py                 # Download PBP JSON
 │   ├── fetch_l2m.py                 # Scrape L2M reports
 │   ├── fetch_crew_all.py            # Expand crew to all PBP games
@@ -354,9 +351,9 @@ ref-ball/
 │   ├── player_crew_predictive_model.py # Player-level FTA/36 prediction (Step 5b)
 │   ├── l2m_validation.py            # L2M INC cross-check (Step 6)
 │   ├── dhc_merge.py                 # does-harden-choke merge (Step 7)
-│   ├── foul_type_scraper.py         # Video clip manifest builder (from DHC)
-│   ├── foul_type_classifier.py      # HTML manual classification tool (from DHC)
-│   └── foul_type_llm_grader.py      # Multimodal LLM grader (from DHC)
+│   ├── foul_type_scraper.py         # Video clip manifest builder (merged from DHC)
+│   ├── foul_type_classifier.py      # HTML manual classification tool (merged from DHC)
+│   └── foul_type_llm_grader.py      # Multimodal LLM grader (merged from DHC)
 ├── output/
 │   ├── figures/
 │   └── tables/
@@ -388,7 +385,7 @@ ref-ball/
 
 10. **Landing foul binary as the entry point for Layer 2.** The v3 five-axis taxonomy from does-harden-choke was top-down and too granular. The timing axis was killed by the Giannis counterexample. Start with one well-defined category (landing fouls) and test for inter-ref variance before expanding.
 
-11. **Merge active foul-type tooling from does-harden-choke.** The scraper, HTML classifier, and LLM grader serve ref-ball's question directly. does-harden-choke becomes a frozen research archive.
+11. **DHC tooling merge complete.** Scraper, HTML classifier, and LLM grader merged from does-harden-choke. DHC is now a frozen research archive. Ref-ball is self-contained (local `analysis_table.csv`, no DHC path dependencies except PBP symlink).
 
 12. **Dataset is the asset, papers are downstream.** Build once, query for Papers 1-3.
 

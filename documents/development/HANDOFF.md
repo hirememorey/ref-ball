@@ -1,4 +1,4 @@
-# Development Handoff (June 28, 2026)
+# Development Handoff (June 29, 2026)
 
 Operational snapshot for a new developer or LLM picking up this codebase. For project goals, literature positioning, and long-term paper sequence, see the root [README.md](../../README.md).
 
@@ -35,10 +35,10 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 
 | Project | What ref-ball uses | Path | Status |
 |---|---|---|---|
-| does-harden-choke | Raw PBP symlink; `analysis_table.csv` (to be copied local) | `../does-harden-choke/data/raw/pbp/` | **Merging** — active tooling migrating to ref-ball; DHC becomes frozen archive |
+| does-harden-choke | Raw PBP symlink (data only) | `../does-harden-choke/data/raw/pbp/` | **Frozen** — active tooling merged into ref-ball; DHC is research archive only |
 | cranky-scott-foster | L2M taxonomy, crew features, structural-risk findings (reference only) | `../cranky-scott-foster/` | No change |
 
-**Pending merge from does-harden-choke:** See README.md "Relationship to sibling projects" for the full merge plan. Key files moving: `foul_type_scraper.py`, `foul_type_classifier.py`, `foul_type_llm_grader.py`, ground truth CSV, manifests, and LLM results.
+**Self-contained data:** `analysis_table.csv` is now in `data/processed/` (copied from DHC during Step 8 merge). The only remaining DHC dependency is the PBP symlink (`data/raw/pbp/` → DHC).
 
 ---
 
@@ -58,9 +58,9 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | `src/player_crew_predictive_model.py` | Player-level FTA/36 prediction from crew (Step 5b) | `build` / `summary` / `diagnose` |
 | `src/l2m_validation.py` | L2M INC cross-check vs suppressor metrics (Step 6) | `build` / `summary` |
 | `src/dhc_merge.py` | does-harden-choke merge — crew vs FTA collapse (Step 7) | `build` / `summary` |
-| `src/foul_type_scraper.py` | Video clip manifest builder from PBP (**from DHC, pending merge**) | `--player` / `--by-official` |
-| `src/foul_type_classifier.py` | HTML manual classification tool (**from DHC, pending merge**) | `--mode landing` |
-| `src/foul_type_llm_grader.py` | Multimodal LLM grader (**from DHC, pending merge**) | `--prompt-mode landing` |
+| `src/foul_type_scraper.py` | Video clip manifest builder from PBP (**merged from DHC**) | `--player` / `--by-official` |
+| `src/foul_type_classifier.py` | HTML manual classification tool (**merged from DHC**) | `--mode landing` |
+| `src/foul_type_llm_grader.py` | Multimodal LLM grader (**merged from DHC**) | `--prompt-mode landing` |
 
 All commands require `PYTHONPATH=.` from the project root (or use `make` targets).
 
@@ -107,19 +107,22 @@ Near-miss players not included (insufficient FTA/36 or GP): Jalen Brunson (4.79)
 
 ## Recommended Next Steps (Priority Order)
 
-Steps 1-7 are **complete**. The active frontier is **Layer 2: landing foul classification**.
+Steps 1-8 are **complete**. The active frontier is **Layer 2: landing foul classification** (Steps 9-12).
 
-### Step 8: Merge does-harden-choke tooling — PENDING
+### Step 8: Merge does-harden-choke tooling — COMPLETE
 
-Execute the merge plan documented in README.md:
+Migrated active foul-type tooling from does-harden-choke into ref-ball. DHC is now a frozen research archive.
 
-1. Copy `foul_type_scraper.py`, `foul_type_classifier.py`, `foul_type_llm_grader.py` from DHC `src/`, update imports to use ref-ball's `config` and `nba_client`
-2. Copy `foul_type_classifications.csv` to `data/`, manifests and LLM results to `data/processed/`
-3. Copy `analysis_table.csv` into `data/processed/`, update paths in `defensive_adjustment.py` and `dhc_merge.py`
-4. Check `nba_client.py` for missing methods (video URL construction from DHC)
-5. Delete stubs: `feasibility_study.py`, `nocall_model.py`, `analyze.py`
-6. Verify imports: `python -c "from src.foul_type_scraper import ..."`
-7. Add freeze note to DHC README
+1. Copied `foul_type_scraper.py`, `foul_type_classifier.py`, `foul_type_llm_grader.py` into `src/`
+2. Added `player_slug()` and `ALL_PLAYERS` alias (→ `ALL_TARGET_PLAYERS`) to `config.py` + `config/__init__.py`
+3. Copied `foul_type_classifications.csv` → `data/`, manifests + LLM results → `data/processed/`
+4. Copied `analysis_table.csv` into `data/processed/` — ref-ball is now self-contained (no DHC path dependency)
+5. Updated paths in `defensive_adjustment.py` and `dhc_merge.py` to reference local `analysis_table.csv`
+6. Merged missing `nba_client.py` methods from DHC: `get_common_player_info()`, `get_league_game_finder()`, `get_league_team_stats()`
+7. Fixed `foul_type_llm_grader.py` ground truth path: `config.DATA_DIR` instead of `config.PROJECT_ROOT`
+8. Deleted stubs: `feasibility_study.py`, `nocall_model.py`, `analyze.py`
+9. Added freeze note to DHC README
+10. Verified all imports and data paths
 
 ### Step 9: Landing foul ground truth — PENDING
 
@@ -296,9 +299,9 @@ make l2m-validate                       # L2M cross-check
 
 | Item | Why shelved |
 |---|---|
-| `src/nocall_model.py` (Layer 3 video) | Delete during merge — stub, never implemented |
-| `src/feasibility_study.py` | Delete during merge — never executed, has bugs, superseded by LLM grader |
-| `src/analyze.py` (Tracks A/B/C) | Delete during merge — stub, superseded by Steps 5-7 pipeline |
+| ~~`src/nocall_model.py` (Layer 3 video)~~ | **Deleted (Step 8).** Stub, never implemented |
+| ~~`src/feasibility_study.py`~~ | **Deleted (Step 8).** Never executed, has bugs, superseded by LLM grader |
+| ~~`src/analyze.py` (Tracks A/B/C)~~ | **Deleted (Step 8).** Stub, superseded by Steps 5-7 pipeline |
 | v3 five-axis foul taxonomy | Timing axis killed by Giannis counterexample; 12 mechanisms too granular for per-official stats. Replaced by landing foul binary as entry point |
 | Import cranky-scott-foster taxonomy | Useful for conditioned L2M re-test; not blocking current work |
 | Full-game manufactured/genuine classification | Descriptively valid but predictive chain untested. Revisit after landing foul variance results |
@@ -311,7 +314,7 @@ make l2m-validate                       # L2M cross-check
 2. **PBP symlink** — `data/raw/pbp` points to does-harden-choke; don't duplicate PBP data
 3. **Official name matching** — PBP uses abbreviated names (e.g. `R.Garretson`); crew uses full names (e.g. `Rodney Garretson`). `player_official_profiles.py` has a mapping step; verified working with full crew
 4. ~~**Duplicate TARGET_PLAYERS**~~ — **Fixed.** Centralized in `config/target_players.py`
-5. ~~**Hardcoded DHC path**~~ — **Fixed.** `defensive_adjustment.py` now uses `config.PROJECT_ROOT.parent / "does-harden-choke"`
+5. ~~**Hardcoded DHC path**~~ — **Fixed (Step 8).** `defensive_adjustment.py` and `dhc_merge.py` now reference local `data/processed/analysis_table.csv`
 6. ~~**Makefile gaps**~~ — **Fixed.** Added targets for `model-crew`, `model-player-crew`, `l2m-validate`, `profile-calling`
 7. **`config/` package shadows `config.py`** — `config/__init__.py` re-exports root `config.py` module attributes. If adding new root-level config, must update `config/__init__.py`
 8. **rs_po_delta coverage** — Only 40/82 officials with ≥3 players have RS/PO splits. PO sample sizes are thin (median 22.5 games per player). May need to relax thresholds or aggregate differently for Step 5.
@@ -337,8 +340,8 @@ q = ((ix.n_games_with_official>=10)&(ix.n_games_without_official>=10)).sum()
 print(f'Pairs >=10 games: {q}')
 "
 
-# Check does-harden-choke dependency
-test -f ../does-harden-choke/data/processed/analysis_table.csv && echo "DHC analysis_table: OK" || echo "DHC analysis_table: MISSING"
+# Verify local analysis_table (no DHC dependency)
+test -f data/processed/analysis_table.csv && echo "analysis_table: OK" || echo "analysis_table: MISSING"
 
 # Official calling profiles
 PYTHONPATH=. .venv/bin/python src/official_calling_profiles.py summary
@@ -355,6 +358,6 @@ make l2m-validate-summary
 
 - Python 3.13, venv at `.venv/`
 - Installed: pandas, pyarrow, numpy, requests, tqdm, scipy
-- **Needed for Layer 2 (post-merge):** google-generativeai (Gemini API), openai, anthropic — for `foul_type_llm_grader.py`
+- **Needed for Layer 2:** google-generativeai (Gemini API), openai, anthropic — for `foul_type_llm_grader.py`
 - **Not installed:** torch, sklearn, opencv (not needed for current path)
 - NBA API: use `NBAStatsClient` in `src/nba_client.py` (same pattern as does-harden-choke — rate limits are endpoint-specific, not global)

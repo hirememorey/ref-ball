@@ -34,3 +34,4 @@ data/cache/
 data/raw/
 data/processed/
 !data/.gitkeep
+!data/foul_type_classifications.csv

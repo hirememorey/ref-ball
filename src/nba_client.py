@@ -189,6 +189,13 @@ class NBAStatsClient:
 
         raise last_error or RuntimeError(f"Failed to fetch {endpoint}")
 
+    def get_common_player_info(self, player_id: int) -> Dict[str, Any]:
+        """Fetch commonplayerinfo for ID verification."""
+        return self._make_request(
+            "commonplayerinfo",
+            {"LeagueID": "00", "PlayerID": str(player_id)},
+        )
+
     def get_player_game_logs(
         self,
         player_id: int,
@@ -226,6 +233,35 @@ class NBAStatsClient:
                 "Season": season, "SeasonSegment": "", "SeasonType": season_type,
                 "ShotClockRange": "", "TeamID": str(team_id),
                 "VsConference": "", "VsDivision": "",
+            },
+        )
+
+    def get_league_game_finder(
+        self,
+        season: str,
+        season_type: str = "Playoffs",
+        player_or_team: str = "T",
+    ) -> Dict[str, Any]:
+        return self._make_request(
+            "leaguegamefinder",
+            {
+                "PlayerOrTeam": player_or_team,
+                "Season": season,
+                "SeasonType": season_type,
+                "LeagueID": "00",
+                "Outcome": "",
+                "Location": "",
+                "Month": "0",
+                "SeasonSegment": "",
+                "DateFrom": "",
+                "DateTo": "",
+                "OpponentTeamID": "0",
+                "VsConference": "",
+                "VsDivision": "",
+                "GameSegment": "",
+                "Period": "0",
+                "LastNGames": "0",
+                "PORound": "0",
             },
         )
 
@@ -269,6 +305,43 @@ class NBAStatsClient:
                 "PaceAdjust": "N",
                 "PlusMinus": "N",
                 "Rank": "N",
+            },
+        )
+
+    def get_league_team_stats(
+        self,
+        season: str,
+        season_type: str = "Regular Season",
+        measure_type: str = "Advanced",
+    ) -> Dict[str, Any]:
+        return self._make_request(
+            "leaguedashteamstats",
+            {
+                "Conference": "",
+                "DateFrom": "",
+                "DateTo": "",
+                "Division": "",
+                "GameScope": "",
+                "GameSegment": "",
+                "LastNGames": "0",
+                "LeagueID": "00",
+                "Location": "",
+                "MeasureType": measure_type,
+                "Month": "0",
+                "OpponentTeamID": "0",
+                "Outcome": "",
+                "PORound": "0",
+                "PaceAdjust": "N",
+                "PerMode": "PerGame",
+                "Period": "0",
+                "Season": season,
+                "SeasonSegment": "",
+                "SeasonType": season_type,
+                "ShotClockRange": "",
+                "StarterBench": "",
+                "TwoWay": "0",
+                "VsConference": "",
+                "VsDivision": "",
             },
         )
 
@@ -411,7 +484,7 @@ def create_client() -> NBAStatsClient:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     client = create_client()
-    harden_id = config.PLAYERS["James Harden"]["nba_id"]
+    harden_id = 201935
     resp = client.get_player_game_logs(harden_id, "2023-24", "Regular Season", "Base")
     rows = result_set_to_records(resp)
     print(f"Harden 2023-24 RS games: {len(rows)}")

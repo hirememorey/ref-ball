@@ -13,3 +13,5 @@ _spec.loader.exec_module(_mod)
 for _name in dir(_mod):
     if not _name.startswith("_"):
         globals()[_name] = getattr(_mod, _name)
+
+ALL_PLAYERS = ALL_TARGET_PLAYERS

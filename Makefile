@@ -93,3 +93,11 @@ l2m-validate:
 
 l2m-validate-summary:
 	PYTHONPATH=. $(PYTHON) src/l2m_validation.py summary
+
+# --- Step 7: does-harden-choke merge ---
+
+dhc-merge:
+	PYTHONPATH=. $(PYTHON) src/dhc_merge.py build
+
+dhc-merge-summary:
+	PYTHONPATH=. $(PYTHON) src/dhc_merge.py summary

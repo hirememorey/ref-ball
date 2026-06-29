@@ -39,9 +39,7 @@ PROFILES_DIR = config.PROCESSED_DIR / "player_official"
 INTERACTIONS_PATH = PROFILES_DIR / "player_official_interactions.parquet"
 ADJUSTED_PATH = PROFILES_DIR / "defensive_adjusted_interactions.parquet"
 
-DHC_ANALYSIS_TABLE = Path(
-    config.PROJECT_ROOT.parent / "does-harden-choke" / "data" / "processed" / "analysis_table.csv"
-)
+DHC_ANALYSIS_TABLE = config.PROCESSED_DIR / "analysis_table.csv"
 
 
 def _load_dhc_data() -> pd.DataFrame:

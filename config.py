@@ -22,6 +22,12 @@ SEASON_START_YEARS = list(range(1996, 2026))
 MANUFACTURED_MECHS = {"ARM-HOOK", "PUMP-JUMP", "RIP-THRU", "DRV-INIT"}
 GENUINE_MECHS = {"DRV-FINISH", "CONTEST", "LANDING", "PUTBACK"}
 
+ALL_PLAYERS: dict[str, int] = {}
+
+
+def player_slug(name: str) -> str:
+    return name.lower().replace(" ", "_").replace("'", "")
+
 
 def year_to_season(start_year: int) -> str:
     return f"{start_year}-{(start_year + 1) % 100:02d}"
