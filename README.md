@@ -18,10 +18,10 @@ The dataset has three layers, each with a different novelty moat:
 |---|---|---|---|
 | **Layer 1: Per-official attribution** | Official name parsed from PBP `description` field | Weak (anyone can parse it) | **Complete** — 13,278 games ingested, 13,464 with crew |
 | **Player x official profiles** | FTA/36 deltas per player under each official, defense-adjusted | Medium (requires crew + game logs) | **Built (40 players)** — full crew, 3,846 pairs, ANOVA p=0.000003 |
-| **Layer 2: Contact-type classification** | LLM-graded foul categories from video (starting with landing fouls) | Strong (multimodal LLM + video at scale) | **Active** — Step 10 spatial validation run complete (58% accuracy); prompt iteration before scale-up |
+| **Layer 2: Contact-type classification** | LLM-graded foul categories from video (starting with landing fouls) | Strong (multimodal LLM + video at scale) | **Active** — Step 10: 4 prompt variants tested (58% accuracy, 98% recall, 55% precision); sequence + few-shot next |
 | **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
 
-**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (99/100 clips classified, merged). Step 10 landing foul LLM grader has a **first Vertex validation run** (spatial prompt, 93 clips): recall 98% but precision 55% — iterate prompt (`sequence`, `few-shot`) to hit 85%+ precision before per-official scale-up (Steps 11–12).
+**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (99/100 clips classified, merged). Step 10 landing foul LLM grader has completed four validation runs (spatial V1/V2, whistle, gemini-2.5-flash): recall 98% but precision 55% — **START HERE: run sequence + few-shot** (see HANDOFF.md Step 10 for exact commands and decision tree), then decide whether to iterate prompts further or switch to a hybrid LLM-filter + manual-review pipeline before per-official scale-up (Steps 11–12).
 
 ## The Paper Sequence
 

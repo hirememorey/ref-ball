@@ -164,27 +164,37 @@ The foul-type classification work in does-harden-choke established several findi
 
 **Sample size:** 36 manually classified clips total (20 Harden, 16 Giannis). Insufficient for scale but enough to validate the descriptive hypothesis and kill the timing axis.
 
-### Landing foul LLM grader — first validation (ref-ball Step 10, 2026-06-29)
+### Landing foul LLM grader — validation runs (ref-ball Step 10, 2026-06-29)
 
-**Run:** Vertex `gemini-3.5-flash`, spatial prompt, primary set (93 YES/NO clips from Step 9 manual export).
+Four prompt approaches tested on the primary set (93 YES/NO clips, Vertex `gemini-3.5-flash`):
 
-| Metric | Result | Target |
-|---|---|---|
-| Accuracy | 58.1% | — |
-| Precision (YES) | 55.3% | ≥ 85% |
-| Recall (YES) | 97.9% | ≥ 70% |
-| F1 (YES) | 70.7% | — |
+| Prompt mode | Accuracy | Precision (YES) | Recall (YES) | F1 (YES) | Key failure |
+|---|---|---|---|---|---|
+| Spatial V1 (no `who_initiated`) | 58.1% | 55.3% | 97.9% | 70.7% | 38/45 GT-NO predicted YES (massive YES bias) |
+| Spatial V2 (+`who_initiated`) | ~58% | improved on pump-fakes | new FNs | — | Traded FPs for FNs; no net improvement |
+| Whistle attribution | ~58% | similar | similar | — | Model cannot reliably parse whistle from audio |
+| gemini-2.5-flash on Vertex | N/A | N/A | N/A | N/A | API Error 400 — `mediaResolution` rejected |
 
-**Confusion:** 7 TN, 38 FP, 1 FN, 47 TP. Zero UNCLEAR predictions.
+**Precision target: ≥ 85%. Recall target: ≥ 70%.** Recall clears the target on every run (≥ 98%). Precision fails on every run (~55%). The binding constraint is false positives.
 
-**Key findings:**
-- Recall clears target — model catches nearly all true landing fouls (1 miss: Giannis `0022001038_483`, classified as arm contest at release).
-- Precision fails badly — model is YES-biased. 38/45 GT-NO clips predicted YES. Failure mode matches DHC timing grader's opposite problem: instead of missing BEFORE fouls, it over-calls landing fouls on standard closeout contests.
-- False positives share a pattern: human notes say "contest", "pump-fake", or "shooter-initiated"; model consistently outputs `shot_type=JUMP_SHOT`, `defender_position_at_landing=UNDER_SHOOTER`, `contact_moment=DURING_DESCENT_OR_LANDING` at HIGH confidence.
-- Spatial framing alone is insufficient — the model cannot distinguish landing-zone contact from contest contact on the descent, despite explicit negative examples in the prompt.
+**Confusion matrix (Spatial V1):** 7 TN, 38 FP, 1 FN, 47 TP.
 
-**Next iteration (per HANDOFF Step 10):**
-1. `--prompt-mode sequence` — event-ordering worked for timing axis (71% vs 40-50% for observation prompts)
-2. `--few-shot` — balanced YES/NO video examples from ground truth
-3. Spatial prompt edits emphasizing contest vs landing-zone distinction
-4. Do not scale to per-official measurement until precision ≥ 85%
+**False positive pattern:** Human notes say "contest," "pump-fake," or "shooter-initiated." Model consistently outputs `shot_type=JUMP_SHOT`, `defender_position_at_landing=UNDER_SHOOTER`, `contact_moment=DURING_DESCENT_OR_LANDING` at HIGH confidence on clips where the defender's feet were legal. The model sees any closeout contact on a perimeter jump shot and labels the defender as under the shooter.
+
+**NOT YET RUN: sequence prompt + few-shot.** This is the immediate next experiment. The event-ordering approach was the biggest accuracy jump on the DHC timing axis (40% → 71%). See HANDOFF.md Step 10 for the decision tree after the run.
+
+**Cross-project LLM grading lessons (7 approaches across DHC + ref-ball):**
+
+| Project | Approach | Accuracy | Lesson |
+|---|---|---|---|
+| DHC | 13-field observation | 40% | Cognitive overload → degenerate output (identical vectors for all clips) |
+| DHC | 3-field observation | 50% | State classification still too hard for LLMs |
+| DHC | Event-ordering sequence | **71%** | Temporal ordering is cognitively easier than state classification |
+| DHC | Timing axis overall | — | Killed by Giannis counterexample (not a grading problem — a hypothesis problem) |
+| ref-ball | Spatial V1 | 58% | YES bias — model cannot distinguish contest from undercut |
+| ref-ball | Spatial V2 | ~58% | Adding `who_initiated` trades FPs for FNs |
+| ref-ball | Whistle attribution | ~58% | Audio signal unreliable — model hallucinates whistle timing |
+
+**Structural diagnosis:** Current multimodal LLMs process video as loosely-connected frames, not continuous physical simulations. They can identify objects and describe spatial relationships but cannot: (a) track sub-second temporal ordering between simultaneous body movements (~200–400ms windows), (b) distinguish cause from consequence in fast interactions (did the shooter jump into the defender, or vice versa?), (c) detect absence (defender's feet were NOT under the landing zone), or (d) use audio as a reliable signal.
+
+**If sequence + few-shot fails to reach 75% precision:** Switch to a hybrid pipeline — use the LLM's 98% recall as a pre-filter, then manually review predicted-YES clips. This cuts manual workload by ~50% while maintaining perfect precision. See HANDOFF.md Step 10 for full details.

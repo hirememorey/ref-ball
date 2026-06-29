@@ -73,28 +73,33 @@ DEFINITION (landing foul): A foul where the defender's feet or body are under or
 
 NOT a landing foul (answer NO):
   - Standard arm/hand contest on the shot (defender swipes or reaches the arm while the shooter is going up or at the release, feet in legal position).
+  - Arm/hand contact on the shooter's FOLLOW-THROUGH AFTER the release (the defender's arm comes down on the shooter after the ball is gone). Post-release contact is NOT automatically a landing foul — it must be the defender's feet/body under the shooter, not an arm.
+  - The SHOOTER INITIATES the contact (see Step 2 — the pump-fake jump-into is the most common trap here).
   - Contact on a drive to the rim or layup (shooter not in an airborne jump shot, or contact is body-to-body on the drive).
-  - The shooter initiates contact (jumping into / leaning into a stationary defender, rip-through, pump-fake jump-into).
   - Off-ball or screen contact unrelated to the shooter's landing zone.
   - Reach-in or body foul before the shooter leaves the ground.
 
 KEY SPATIAL CHECK (watch the clip twice):
   1. Is the shooter airborne on a JUMP SHOT (both feet off the floor, rising/falling on a perimeter shot)? If it is a drive/layup, the answer is almost certainly NO.
-  2. Where are the defender's FEET/BODY as the shooter DESCENDS to land? Are they under the shooter's landing spot (undercut / stepped into the landing zone), or is the defender to the side / in legal position?
-  3. WHEN does the illegal contact happen — during the shooter's downward descent / landing (after the release), or during the upward shot motion / at the release (a normal contest)?
-  4. Is the WHISTLE for the landing-zone contact, or for a routine arm contest on the shot?
+  2. WHO INITIATED THE CONTACT? Watch the closeout and the takeoff carefully.
+       - PUMP-FAKE JUMP-INTO: the shooter pump-fakes the defender into the air (or otherwise gets the defender to leave his feet / commit), THEN the shooter jumps and launches the shot INTO the airborne/committed defender. The defender's body ends up under the shooter at landing ONLY because the shooter jumped into him — the shooter created the contact. This is NOT a landing foul; answer NO even though the defender appears to be under the shooter at landing.
+       - SHOOTER LEANS/JUMPS INTO A STATIONARY DEFENDER, or a rip-through: also shooter-initiated → NO.
+       - DEFENDER STEPS/UNDERCUTS: the defender closes out and moves his feet/body into the shooter's landing zone independent of the shooter's motion → the defender initiated → continue to Step 3.
+  3. Where are the defender's FEET/BODY as the shooter DESCENDS to land? Are they under the shooter's landing spot (undercut / stepped into the landing zone), or is the defender to the side / in legal position? "Near the shooter at landing" is NOT enough — the defender must actually be under / in the landing zone for it to be a landing foul; a normal closeout that ends up near the shooter is a contest, not an undercut.
+  4. WHAT is the called contact, and roughly when? Is it the defender's feet/body under the shooter during the descent/landing (landing foul), or an arm/hand contest on the shot release or follow-through (not a landing foul)?
 
-A landing foul requires: airborne jump shot + defender in/under the landing zone + contact tied to the descent/landing. If the contact is a standard arm contest on the shot release with the defender's feet in legal position, answer NO even if the call was made.
+IMPORTANT — do not let timing alone decide: contact that occurs at or around the release can still be a landing foul if the defender is undercutting the shooter; contact after the release can still be NO if it is an arm on the follow-through. Judge by WHAT the contact is and WHO initiated it, not only by WHEN it occurs. A landing foul requires ALL THREE: airborne jump shot + DEFENDER-initiated contact + the defender's feet/body under the shooter's landing zone. If the shooter jumped into the defender, answer NO. If the contact is a standard arm contest / follow-through with the defender's feet legal, answer NO.
 
 Answer these observation questions, then the classification:
 
 {
   "shot_type": "JUMP_SHOT" | "DRIVE" | "OTHER" | "UNCLEAR",
+  "who_initiated_contact": "SHOOTER_JUMPED_INTO_DEFENDER" | "DEFENDER_STEPPED_UNDER_SHOOTER" | "MUTUAL_OR_INCIDENTAL" | "UNCLEAR",
   "defender_position_at_landing": "UNDER_SHOOTER" | "NEAR_BUT_LEGAL" | "NOT_AT_LANDING" | "UNCLEAR",
   "contact_moment": "DURING_DESCENT_OR_LANDING" | "DURING_SHOT_MOTION" | "BEFORE_SHOT" | "UNCLEAR",
   "landing_foul": "YES" | "NO" | "UNCLEAR",
   "confidence": "HIGH" | "MEDIUM" | "LOW",
-  "reasoning": "One sentence citing shot type, defender feet position at landing, and when contact occurred."
+  "reasoning": "One sentence citing who initiated contact, defender feet position at landing, and what the called contact was."
 }"""
 
 
@@ -126,6 +131,54 @@ Return a JSON object:
   "landing_foul": "YES" | "NO" | "UNCLEAR",
   "confidence": "HIGH" | "MEDIUM" | "LOW",
   "reasoning": "One sentence citing the event ordering that determined the call."
+}"""
+
+
+# WHISTLE_LANDING_PROMPT — attribution-based. The clip's audio contains the
+# referee's whistle. The whistle is a near-instantaneous proxy for the contact
+# the referee judged to be the foul, so it both *selects* which contact to
+# evaluate and *times* it. A play often has several contacts (an incidental
+# bump on the closeout, a hand on the hip, the shooter landing on the
+# defender's foot); only the contact coincident with the whistle is the called
+# foul — all other contact must be ignored, no matter how visually prominent.
+# This is the prompt that targets the observed failure mode: the spatial prompt
+# mis-attributes the foul to whatever contact it notices and over-calls YES.
+# Best with native-video providers (Gemini / Vertex) that pass audio through.
+WHISTLE_LANDING_PROMPT = """You are an expert NBA officiating analyst. Watch a short video clip of a shooting foul — INCLUDING THE AUDIO — and determine whether it is a LANDING FOUL.
+
+DEFINITION (landing foul): A foul where the defender's feet or body are under or moving into the shooter's landing zone WHILE THE SHOOTER IS AIRBORNE on a jump shot, and the foul is called because of that contact as the shooter comes down. The shooter must be in the air on a jump shot (typically a perimeter/wing 3-point attempt) and the illegal contact is the defender undercutting or stepping under the airborne shooter.
+
+NOT a landing foul (answer NO):
+  - Standard arm/hand contest on the shot (defender swipes or reaches the arm while the shooter is going up or at the release, feet in legal position).
+  - Arm/hand contact on the shooter's FOLLOW-THROUGH AFTER the release (the defender's arm comes down on the shooter after the ball is gone). Contact after the release is NOT automatically a landing foul — it must be the defender's feet/body under the shooter, not an arm.
+  - Contact on a drive to the rim or layup (shooter not in an airborne jump shot).
+  - The shooter initiates contact (jumping into / leaning into a stationary defender, rip-through, pump-fake jump-into).
+  - Off-ball or screen contact unrelated to the shooter's landing zone.
+  - Reach-in or body foul before the shooter leaves the ground.
+
+METHOD — three steps. Use the audio.
+
+STEP 1 — JUMP SHOT GATE: Is the shooter airborne on a JUMP SHOT (both feet off the floor on a perimeter shot)? If it is a drive/layup, answer NO.
+
+STEP 2 — FIND THE CALLED CONTACT VIA THE WHISTLE: Listen for the referee's whistle. The contact that coincides with the whistle is the contact the referee judged to be the foul — that is the ONLY contact you should evaluate. If the whistle is late, the called contact is the one immediately before the whistle. IGNORE every other contact in the clip (an early bump, a hand on the hip, a brush on the closeout), no matter how visible — if the referee did not whistle it, it is not the foul. Note when the whistle blows relative to the shot: at/before the release (shooter still rising / at the release point) or during the descent / at landing.
+
+STEP 3 — CLASSIFY THE CALLED CONTACT:
+  - If the called contact occurs AT OR BEFORE THE RELEASE (contact on the upward shot motion) -> NO (standard arm contest on the shot).
+  - If the called contact occurs DURING DESCENT / AT LANDING:
+      * If the contact is the defender's FEET/BODY UNDER THE SHOOTER (undercut / stepped into the landing zone) -> YES.
+      * If the contact is the defender's ARM/HAND on the shooter (e.g. coming down on the follow-through) with the defender's feet in legal position -> NO.
+
+YES requires ALL THREE: airborne jump shot + called contact during descent/landing + the called contact is the defender's feet/body under the shooter. Post-release arm contact is NO. Pre-release arm contact is NO. Any contact the referee did NOT whistle is irrelevant to the decision.
+
+Answer these observation questions, then the classification:
+
+{
+  "shot_type": "JUMP_SHOT" | "DRIVE" | "OTHER" | "UNCLEAR",
+  "whistle_timing": "AT_OR_BEFORE_RELEASE" | "DURING_DESCENT_OR_LANDING" | "NO_WHISTLE_HEARD" | "UNCLEAR",
+  "called_contact": "DEFENDER_FEET_BODY_UNDER_SHOOTER" | "ARM_HAND_ON_SHOOTER" | "OTHER_CONTACT" | "NO_CLEAR_CONTACT_AT_WHISTLE" | "UNCLEAR",
+  "landing_foul": "YES" | "NO" | "UNCLEAR",
+  "confidence": "HIGH" | "MEDIUM" | "LOW",
+  "reasoning": "One sentence citing the whistle timing and what the called contact was."
 }"""
 
 
@@ -242,11 +295,13 @@ def load_clips_by_key(extended: bool = False) -> Dict[Tuple[str, int], Dict[str,
 class _LandingMixin:
     """Shared landing-specific behavior mixed into each provider subclass."""
 
-    prompt_mode: str  # "spatial" | "sequence"
+    prompt_mode: str  # "spatial" | "sequence" | "whistle"
 
     def _landing_system_prompt(self) -> str:
         if self.prompt_mode == "sequence":
             return SEQUENCE_LANDING_PROMPT
+        if self.prompt_mode == "whistle":
+            return WHISTLE_LANDING_PROMPT
         return SPATIAL_LANDING_PROMPT
 
     def _normalize_landing(self, grade: Dict[str, Any]) -> Dict[str, Any]:
@@ -257,20 +312,41 @@ class _LandingMixin:
         """
         label = str(grade.get("landing_foul", "")).strip().upper()
         if label not in ("YES", "NO", "UNCLEAR"):
-            # Derive from observations when the model omits the direct label.
             shot = str(grade.get("shot_type", "")).upper()
             pos = str(grade.get("defender_position_at_landing", "")).upper()
             moment = str(grade.get("contact_moment", "")).upper()
             desc = str(grade.get("contact_vs_descent", "")).upper()
             in_zone = str(grade.get("defender_in_landing_zone", "")).upper()
-            descent_contact = moment in ("DURING_DESCENT_OR_LANDING",) or desc in (
-                "DURING_DESCENT_OR_LANDING",
-            )
-            if shot == "DRIVE" or shot == "OTHER":
+            whistle_timing = str(grade.get("whistle_timing", "")).upper()
+            called_contact = str(grade.get("called_contact", "")).upper()
+            who_initiated = str(grade.get("who_initiated_contact", "")).upper()
+
+            # Shooter-initiated contact (pump-fake jump-into, lean-in,
+            # rip-through) is a hard NO regardless of where the defender ends
+            # up at landing — the defender being under the shooter at landing
+            # does not make it a landing foul if the shooter jumped into him.
+            if who_initiated == "SHOOTER_JUMPED_INTO_DEFENDER":
                 label = "NO"
-            elif pos == "UNDER_SHOOTER" and descent_contact:
+            # Whistle-mode derivation: the called contact + its timing decide.
+            elif whistle_timing == "AT_OR_BEFORE_RELEASE":
+                label = "NO"
+            elif called_contact == "ARM_HAND_ON_SHOOTER":
+                label = "NO"
+            elif (called_contact == "DEFENDER_FEET_BODY_UNDER_SHOOTER"
+                  and whistle_timing == "DURING_DESCENT_OR_LANDING"):
                 label = "YES"
-            elif in_zone == "YES" and descent_contact:
+            elif shot == "DRIVE" or shot == "OTHER":
+                label = "NO"
+            # Fall back to the spatial/sequence observation fields.
+            elif pos == "UNDER_SHOOTER" and (
+                moment in ("DURING_DESCENT_OR_LANDING",)
+                or desc in ("DURING_DESCENT_OR_LANDING",)
+            ):
+                label = "YES"
+            elif in_zone == "YES" and (
+                moment in ("DURING_DESCENT_OR_LANDING",)
+                or desc in ("DURING_DESCENT_OR_LANDING",)
+            ):
                 label = "YES"
             elif pos in ("NEAR_BUT_LEGAL", "NOT_AT_LANDING") or in_zone == "NO":
                 label = "NO"
@@ -285,6 +361,14 @@ class _LandingMixin:
         return f"Example {idx + 1}: {ex.description}\nCorrect label: {ex.label}{note}\n"
 
     def _instruction_text(self, description: str) -> str:
+        if self.prompt_mode == "whistle":
+            return (
+                f"\n\nPlay-by-play description: {description}\n\n"
+                "Watch the clip above (audio is included — use the whistle). "
+                "First locate the referee's whistle and identify the contact "
+                "that coincides with it; ignore every other contact in the "
+                "clip. Then classify THAT contact. Return a raw JSON object."
+            )
         if self.prompt_mode == "sequence":
             return (
                 f"\n\nPlay-by-play description: {description}\n\n"
@@ -293,8 +377,34 @@ class _LandingMixin:
             )
         return (
             f"\n\nPlay-by-play description: {description}\n\n"
-            "Watch the clip above. Apply the spatial check (shot type, defender "
-            "feet at landing, when contact occurs). Return a raw JSON object."
+            "Watch the clip above. Apply the spatial check: shot type, WHO "
+            "initiated the contact (watch for a pump-fake jump-into by the "
+            "shooter), defender feet at landing, and what the called contact "
+            "was. Return a raw JSON object."
+        )
+
+    def _frame_instruction_text(self, description: str) -> str:
+        """Instruction for frame-based providers (OpenAI / Anthropic).
+
+        These providers receive still frames only — no audio — so the whistle
+        is not directly audible. The model should instead identify the called
+        contact from the referee's visible signal and the most clearly
+        penalized contact, then apply the same attribution logic.
+        """
+        if self.prompt_mode == "whistle":
+            return (
+                f"Play-by-play description: {description}\n\n"
+                "Analyze the chronological frames below. Audio is not available, "
+                "so identify the CALLED contact from the referee's visible signal "
+                "and the contact that appears to be penalized; ignore other "
+                "contact. Note when that called contact occurs relative to the "
+                "release vs. the descent, and what body part made it. Return a "
+                "raw JSON object."
+            )
+        return (
+            f"Play-by-play description: {description}\n\n"
+            "Analyze the chronological sequence of frames below and determine "
+            "whether this is a landing foul using the spatial check."
         )
 
 
@@ -460,11 +570,7 @@ class OpenAILandingGrader(_LandingMixin, OpenAIGrader):
                         "reasoning": "Could not extract frames from video."}
             frames = frames[:15]
 
-            instruction = (
-                f"Play-by-play description: {description}\n\n"
-                "Analyze the chronological sequence of frames below and determine "
-                "whether this is a landing foul using the spatial check."
-            )
+            instruction = self._frame_instruction_text(description)
             content: List[Dict[str, Any]] = [{"type": "text", "text": instruction}]
             for f in frames:
                 b64 = encode_image_base64(f)
@@ -515,11 +621,7 @@ class AnthropicLandingGrader(_LandingMixin, AnthropicGrader):
                     "type": "image",
                     "source": {"type": "base64", "media_type": "image/jpeg", "data": b64},
                 })
-            prompt = (
-                f"Play-by-play description: {description}\n\n"
-                "Analyze the chronological sequence of frames above and determine "
-                "whether this is a landing foul using the spatial check."
-            )
+            prompt = self._frame_instruction_text(description)
             content.append({"type": "text", "text": prompt})
 
             payload = {
@@ -613,8 +715,9 @@ def print_validation(val_comparisons: List[Dict[str, Any]], prompt_mode: str,
         print(f"    GT:     {row['gt']}  (note: {row.get('gt_note', '')})")
         print(f"    Pred:   {row['pred']}  (conf={row.get('confidence', '')})")
         obs_fields = []
-        for k in ("shot_type", "defender_position_at_landing", "contact_moment",
-                  "defender_in_landing_zone", "contact_vs_descent", "narrative"):
+        for k in ("shot_type", "who_initiated_contact", "defender_position_at_landing",
+                  "contact_moment", "defender_in_landing_zone", "contact_vs_descent",
+                  "narrative", "whistle_timing", "called_contact"):
             if k in row and pd.notna(row.get(k)):
                 val = str(row[k])
                 obs_fields.append(f"{k}={val[:80]}")
@@ -635,8 +738,10 @@ def main() -> None:
                         help="LLM provider")
     parser.add_argument("--model", required=True,
                         help="Model name (e.g. gemini-2.5-flash, claude-sonnet-4-6, gpt-5.4-mini)")
-    parser.add_argument("--prompt-mode", default="spatial", choices=["spatial", "sequence"],
-                        help="Prompt strategy: spatial (default) or event-ordering sequence fallback")
+    parser.add_argument("--prompt-mode", default="spatial", choices=["spatial", "sequence", "whistle"],
+                        help="Prompt strategy: spatial (default), event-ordering sequence, "
+                             "or whistle (attribution via the referee's whistle — audio, "
+                             "best with gemini/vertex native video)")
     parser.add_argument("--validate-only", action="store_true",
                         help="Only grade clips that have manual ground truth")
     parser.add_argument("--extended", action="store_true",
@@ -775,7 +880,8 @@ def main() -> None:
                 "caller_official_name": clip.get("caller_official_name", ""),
             }
             for k in ("shot_type", "defender_position_at_landing", "contact_moment",
-                      "defender_in_landing_zone", "contact_vs_descent", "narrative"):
+                      "defender_in_landing_zone", "contact_vs_descent", "narrative",
+                      "whistle_timing", "called_contact", "who_initiated_contact"):
                 if k in grade:
                     res_entry[k] = grade[k]
             results.append(res_entry)
@@ -793,7 +899,8 @@ def main() -> None:
                     "reasoning": grade.get("reasoning", ""),
                     **{k: grade.get(k) for k in ("shot_type", "defender_position_at_landing",
                        "contact_moment", "defender_in_landing_zone", "contact_vs_descent",
-                       "narrative") if k in grade},
+                       "narrative", "whistle_timing", "called_contact",
+                       "who_initiated_contact") if k in grade},
                 })
     finally:
         shutil.rmtree(temp_video_dir, ignore_errors=True)

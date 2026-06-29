@@ -180,21 +180,95 @@ python -m http.server 8080 --directory output
 # Export CSV → data/landing_foul_classifications.csv → make landing-merge
 ```
 
-### Step 10: Landing foul LLM grader — FIRST VALIDATION COMPLETE, prompt iteration next
+### Step 10: Landing foul LLM grader — START HERE
 
-**Goal:** Binary YES/NO landing foul classification from video. Adapt the pattern in `foul_type_llm_grader.py` (timing axis) with a **spatial** prompt.
+**Goal:** Binary YES/NO landing foul classification from video. Precision target: ≥ 85% on YES. Recall target: ≥ 70% on YES. Do **not** proceed to Steps 11–12 until precision clears 85%.
 
-**Status:** `src/landing_foul_llm_grader.py` is built and validated against the API. Two prompt modes implemented: `spatial` (default) and `sequence` (event-ordering fallback: DEFENDER_CLOSEOUT → SHOOTER_DESCENDING → CONTACT). Four providers: **Vertex** (gcloud ADC + GCS, **recommended**), Gemini API (Files API), OpenAI (frames), Anthropic (frames). Makefile targets: `landing-grade`, `landing-grade-validate`.
+**Status:** `src/landing_foul_llm_grader.py` is built and validated. Three prompt modes implemented: `spatial` (default, with `who_initiated_contact` field), `sequence` (event-ordering), and `whistle` (audio-based attribution). Four providers: **Vertex** (gcloud ADC + GCS, **recommended**), Gemini API (Files API), OpenAI (frames), Anthropic (frames). Makefile targets: `landing-grade`, `landing-grade-validate`.
 
-**First validation run (2026-06-29):**
+---
+
+#### YOUR FIRST TASK: Run sequence + few-shot, then decide the path
+
+The sequence prompt + few-shot combination has not been run yet. This is the highest-priority experiment because: (a) the event-ordering approach was the single biggest accuracy jump on the does-harden-choke timing axis (40% → 71%), and (b) few-shot examples are implemented but untested. Run it, record results, then choose a path based on what happens.
+
+**Run these two commands (Vertex, ~30 min each):**
+
+```bash
+cd /Users/harrisgordon/Documents/Development/ref-ball
+
+# 1. Sequence prompt WITHOUT few-shot (baseline for the sequence approach):
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash PROMPT_MODE=sequence
+
+# 2. Sequence prompt WITH few-shot:
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash PROMPT_MODE=sequence FEW_SHOT=1
+```
+
+**What to look for:** Precision on YES (the binding constraint). Recall is already 98% on spatial — the question is whether sequence + few-shot can push precision above 70–75%.
+
+**Decision tree after the run:**
+
+| Precision (YES) result | Next action |
+|---|---|
+| **≥ 85%** | Precision target met. Proceed to Step 11 (per-official scale-up). |
+| **75–84%** | Close. Try spatial_v2 + few-shot (`PROMPT_MODE=spatial FEW_SHOT=1`), or further prompt edits. One more iteration cycle is warranted. |
+| **60–74%** | Marginal improvement. The pure-LLM path is unlikely to reach 85%. Switch to **hybrid pipeline** (see below). |
+| **< 60%** | No improvement over spatial. Abandon pure-LLM grading for this task. Use hybrid pipeline or manual classification. |
+
+---
+
+#### THE HYBRID PIPELINE (if precision stays below 75%)
+
+The model's 98% recall means it catches nearly every true landing foul. Use it as a **pre-filter**, not a classifier:
+
+1. Run all clips through the LLM grader (any prompt mode — recall is robust across prompts).
+2. Manually review only the predicted-YES clips using the HTML classifier (`make landing-classifier`).
+3. The LLM eliminates ~50% of clips (the confident NOs); humans handle the rest.
+
+For Steps 11–12 (per-official measurement at 100–150 clips per official), this means: ~800–1,000 predicted-YES clips to manually review instead of 1,500 total. At ~30 seconds per clip, that's ~7–8 hours of manual work spread across sessions — doable, and the accuracy is perfect.
+
+---
+
+#### WHY THE LLM STRUGGLES: structural failure analysis
+
+Seven approaches have been tested across `does-harden-choke` and `ref-ball`. The pattern:
+
+**does-harden-choke (timing axis, `foul_type_llm_grader.py`):**
+- 13-field observation: 40% (degenerate output collapse — identical vectors for all clips)
+- 3-field observation: 50% (state classification still too hard)
+- Event-ordering sequence: **71%** (temporal ordering is cognitively easier than state classification)
+- Timing axis killed by Giannis counterexample regardless of grading accuracy
+
+**ref-ball (landing foul binary, `landing_foul_llm_grader.py`):**
+- Spatial V1: 58% accuracy, 55% precision, 98% recall (massive YES bias — 38/45 GT-NO predicted YES)
+- Spatial V2 (+who_initiated): ~58% accuracy (traded false positives for new false negatives)
+- Whistle attribution: similar YES-biased pattern (model cannot reliably parse whistle timing from audio)
+
+**Two structural walls:**
+
+1. **State classification is too hard.** The model cannot distinguish "ball rising without committed release" from "ball on release path" or "normal contest" from "undercut" at the resolution these clips require. The event-ordering approach partially solves this by converting "what state is this?" into "which thing happened first?"
+
+2. **The model says YES to everything that looks like a foul.** On landing fouls, it sees any closeout contact on a perimeter jump shot and labels the defender as "under the shooter." It cannot detect shooter-initiated contact (pump-fake jump-intos) reliably, even when explicitly prompted. It cannot distinguish absence (defender's feet were NOT under the landing zone) from presence.
+
+**Root cause:** Current multimodal LLMs process video as loosely-connected frames, not continuous physical simulations. They can identify objects and describe spatial relationships but cannot track sub-second temporal ordering between simultaneous body movements (~200–400ms windows), distinguish cause from consequence in fast interactions, or use audio as a reliable signal.
+
+**Alternative technologies (if you want to explore beyond LLM prompting):**
+- Fine-tuned video classifier (SlowFast, VideoMAE) — 134 labeled clips is at the lower bound for fine-tuning; augment with another 100–200 labels.
+- Pose estimation + rules (MediaPipe/OpenPose) — track skeleton keypoints, detect defender feet under shooter's center of mass during descent. More engineering work but eliminates the LLM's interpretive failures.
+- Scale manual classification — the HTML tool with keyboard shortcuts processes ~100 clips in ~50 minutes. For 1,500 clips total, that's ~12–18 hours. Not trivial but the accuracy is perfect.
+
+---
+
+#### Completed validation runs (reference)
+
+**Run 1 — Spatial V1 (2026-06-29):**
 
 | Setting | Value |
 |---|---|
 | Provider / model | Vertex `gemini-3.5-flash` |
-| Prompt mode | `spatial` (default) |
-| Set | Primary — 93 YES/NO clips (`landing_classifier` source) |
+| Prompt mode | `spatial` (V1 — no `who_initiated_contact` field) |
+| Set | Primary — 93 YES/NO clips |
 | Runtime | ~26 min (~17s/clip) |
-| Output | `data/processed/landing_foul_llm_results_vertex_gemini-3_5-flash.json` |
 
 | Metric | Result | Target | Status |
 |---|---|---|---|
@@ -202,21 +276,28 @@ python -m http.server 8080 --directory output
 | Precision (YES) | 55.3% (47/85) | ≥ 85% | **Miss** |
 | Recall (YES) | 97.9% (47/48) | ≥ 70% | **Pass** |
 | F1 (YES) | 70.7% | — | — |
-| Model UNCLEAR | 0/93 | — | — |
 
-**Confusion matrix (rows=GT, cols=Pred):**
+Confusion: 7 TN, 38 FP, 1 FN, 47 TP. Failure mode: heavy YES bias on contest / pump-fake / shooter-initiated fouls.
 
-|  | Pred NO | Pred YES |
-|---|---|---|
-| GT NO (45) | 7 | 38 |
-| GT YES (48) | 1 | 47 |
+**Run 2 — Spatial V2 with `who_initiated_contact` (2026-06-29):**
 
-**Failure mode:** Heavy YES bias. The model predicts `UNDER_SHOOTER` + `DURING_DESCENT_OR_LANDING` at HIGH confidence on most jump-shot contests. The 38 false positives are predominantly human-labeled contest / pump-fake / shooter-initiated fouls. Only 1 false negative: Giannis `0022001038_483` (labeled contest on arm at release).
+~58% accuracy. Correctly classified some pump-fake-jump-into fouls as NO but introduced new false negatives — traded FPs for FNs without net improvement.
 
-**Implementation notes:**
+**Run 3 — Whistle attribution (2026-06-29):**
+
+Similar YES-biased pattern. The model claims to hear and time the whistle but produces the same spatial-assessment-driven results. Audio signal is unreliable.
+
+**Run 4 — gemini-2.5-flash on Vertex (2026-06-29, smoke test):**
+
+3 clips, all failed with API Error 400: `mediaResolution` rejected for this model. **Do not use gemini-2.5-flash on Vertex.** Use `gemini-3.5-flash`.
+
+---
+
+#### Implementation notes
+
 - Loads clips from `data/processed/landing_foul_manifest.json` (100 Step 9 clips) + Harden/Giannis player manifests for v3 legacy rows' video URLs — all 134 ground-truth rows resolve to a video URL.
 - `--validate-only` grades only ground-truth clips. Primary set (default) = `landing_classifier` source rows only → **93 YES/NO** clips. `--extended` adds the 35 v3 legacy rows → **128 YES/NO**. `--include-unclear` adds the 6 UNCLEAR rows (reported separately, excluded from primary metrics).
-- Validation prints accuracy, precision/recall/F1 on YES (vs the 85%/70% targets), confusion matrix, UNCLEAR-prediction count, and per-clip mismatch detail with observations + GT notes.
+- Validation prints accuracy, precision/recall/F1 on YES, confusion matrix, UNCLEAR-prediction count, and per-clip mismatch detail with observations + GT notes.
 - `--few-shot` selects balanced YES/NO examples (noted clips preferred), held out from the graded set when validating.
 - Results → `data/processed/landing_foul_llm_results_<provider>_<model>.json` (gitignored).
 
@@ -229,42 +310,36 @@ python -m http.server 8080 --directory output
 | OpenAI | `OPENAI_API_KEY` | frame-based | ffmpeg 3fps, 15 frames |
 | Anthropic | `ANTHROPIC_API_KEY` | frame-based | ffmpeg 2fps, 10 frames |
 
-**Vertex setup (same as does-harden-choke `foul_type_llm_grader.py`):**
+**Vertex setup:**
 1. Install [gcloud CLI](https://cloud.google.com/sdk/docs/install)
 2. `gcloud auth application-default login`
 3. `gcloud config set project project-3984c931-3755-423f-966`
 4. Videos upload to GCS bucket `project-3984c931-3755-423f-966-foul-type-grader-tmp` (1-day lifecycle auto-delete)
 5. **Do not use `gemini-2.5-flash` on Vertex** — per-part `mediaResolution` is rejected (400). Use `gemini-3.5-flash`.
 
-**Evaluation protocol (binary metrics):**
-- **Primary set:** YES + NO rows only — **93 clips** from Step 9 export (exclude 6 UNCLEAR unless `--include-unclear`)
-- **Extended set:** `--extended` → 128 YES/NO clips including v3 legacy
-- **Targets:** precision ≥ 85% on YES, recall ≥ 70% on YES
-- **Inspect mismatches** on borderline YES clips with notes (e.g. Thybulle/Shamet, Williamson/Hield, Roddy/Durant)
-
-**Run validation:**
+**All validation commands:**
 ```bash
-# Primary set (93 clips) — Vertex, recommended
-PYTHONPATH=. .venv/bin/python src/landing_foul_llm_grader.py \
-  --provider vertex --model gemini-3.5-flash --validate-only
-# or via Makefile:
+# Sequence prompt (YOUR FIRST RUN):
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash PROMPT_MODE=sequence
+
+# Sequence + few-shot (YOUR SECOND RUN):
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash PROMPT_MODE=sequence FEW_SHOT=1
+
+# Spatial (already run — reference):
 make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash
+
+# Spatial + few-shot (try if sequence+few-shot is 75-84%):
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash FEW_SHOT=1
+
+# Whistle (already run — reference):
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash PROMPT_MODE=whistle
 
 # Small smoke run (3 clips):
 make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash LIMIT=3
 
-# Prompt iteration (next — precision missed on spatial):
-make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash PROMPT_MODE=sequence
-make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash FEW_SHOT=1
-
 # Extended set (128 clips incl v3 legacy):
 make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash EXTENDED=1
-
-# Gemini API alternative (requires GEMINI_API_KEY):
-make landing-grade-validate PROVIDER=gemini MODEL=gemini-2.5-flash
 ```
-
-**Iteration order (precision missed):** sequence prompt → few-shot → spatial prompt edits → re-label 6 UNCLEAR + 1 unlabeled `0022000114`/603 if more signal needed. Do **not** proceed to Step 11 until precision ≥ 85%.
 
 ### Step 11: Scale to per-official measurement — PENDING
 
