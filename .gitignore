@@ -38,3 +38,6 @@ data/processed/
 !data/.gitkeep
 !data/foul_type_classifications.csv
 !data/landing_foul_classifications.csv
+
+# Video clips (large, reproducible via download)
+data/clips/

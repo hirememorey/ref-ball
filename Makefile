@@ -1,6 +1,6 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate landing-grade-observe
+.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate landing-grade-observe video-download video-extract video-split video-train video-train-mlp video-cv video-pipeline
 
 venv:
 	python3 -m venv .venv
@@ -145,3 +145,27 @@ landing-grade-observe:
 	PYTHONPATH=. $(PYTHON) src/landing_foul_llm_grader.py \
 		--provider $(PROVIDER) --model $(MODEL) --prompt-mode observe --validate-only \
 		$(if $(EXTENDED),--extended) $(if $(LIMIT),--limit $(LIMIT))
+
+# --- Step 10b: Video classifier (frozen VideoMAE → logistic regression) ---
+#   Full pipeline: make video-pipeline
+#   Individual steps: make video-download && make video-extract && make video-split && make video-train
+
+video-download:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_video_dataset.py download $(if $(LIMIT),--limit $(LIMIT))
+
+video-extract:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_video_dataset.py extract $(if $(MODEL),--model $(MODEL))
+
+video-split:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_video_split.py $(if $(TEST_SIZE),--test-size $(TEST_SIZE)) $(if $(SEED),--seed $(SEED))
+
+video-train:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_video_train.py --model logreg
+
+video-train-mlp:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_video_train.py --model mlp
+
+video-cv:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_video_train.py --model logreg --cv $(or $(FOLDS),5)
+
+video-pipeline: video-download video-extract video-split video-train

@@ -12,7 +12,7 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 
 1. **SSAC27 Submission (Paper 1).** Abstract draft complete (~460 words, v2). Two publication-quality figures generated (Table 1: suppressor/amplifier profiles with named officials; Figure 1: crew prediction vs actual FTA deviation scatter, r=0.406). **Abstract deadline: October 1, 2026.** Full paper due December 4, 2026 if selected. Open-source decision resolved: publishing all data, named officials, no anonymization. See `documents/ssac27-abstract-draft.md` and `output/figures/`.
 
-2. **Step 10b — fine-tuned video classifier (Paper 2).** Manual ground truth **complete** (300/300 clips classified 2026-06-30; merged with 35 legacy v3 labels → **335-row ground truth**). LLM grader **exhausted** (spatial, spatial_v2, whistle, sequence — all miss 85% precision target; best recall 98%, best precision ~55%). **Pivot confirmed:** build a fine-tuned video classifier (VideoMAE or SlowFast). **START HERE:** see [Step 10b: Fine-tuned video classifier](#step-10b-fine-tuned-video-classifier--start-here) below.
+2. **Step 10b — fine-tuned video classifier (Paper 2).** Manual ground truth **complete** (300/300 clips classified 2026-06-30; merged with 35 legacy v3 labels → **335-row ground truth**). LLM grader **exhausted** (spatial, spatial_v2, whistle, sequence — all miss 85% precision target; best recall 98%, best precision ~55%). **Frozen VideoMAE baseline tested (2026-06-30):** frozen Kinetics-pretrained features contain **zero discriminative signal** for landing fouls — logistic regression and MLP both degenerate (predict all-NO or all-YES). **START HERE:** fine-tune the VideoMAE backbone end-to-end. See [Step 10b: Fine-tuned video classifier](#step-10b-fine-tuned-video-classifier--start-here) below.
 
 **Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 1-7), L2M validation, does-harden-choke merge, SSAC27 abstract draft + figures. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
 
@@ -40,6 +40,9 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | Landing foul classifications | `data/landing_foul_classifications.csv` | 300 clips (143 YES, 141 NO, 16 UNCLEAR) | **Complete** — exported 2026-06-30 |
 | Merged ground truth | `data/landing_foul_ground_truth.csv` | 335 rows (144 YES, 175 NO, 16 UNCLEAR) | **Complete** — `make landing-merge` (300 classifier + 35 v3) |
 | Landing foul LLM results | `data/processed/landing_foul_llm_results_vertex_gemini-3_5-flash.json` | 93 clips (spatial validation) | **First run** — 2026-06-29; gitignored (regenerate via validate command) |
+| Downloaded video clips | `data/clips/landing_foul/{game_id}_{event_id}.mp4` | 284 clips (YES/NO only) | **Complete** — 960x540, ~8-12s each, gitignored |
+| Frozen VideoMAE embeddings | `data/processed/landing_foul_embeddings.npz` | 284 clips × 768-dim | **Complete** — CLS token from `videomae-base-finetuned-kinetics`; zero signal for landing fouls |
+| Train/val split | `data/processed/landing_foul_split.json` | 227 train / 57 val | **Complete** — stratified 80/20, seed=42, YES/NO only |
 | SSAC27 abstract draft | `documents/ssac27-abstract-draft.md` | ~460 words (v2) | **Draft** — deadline Oct 1, 2026 |
 | SSAC27 Table 1 | `output/figures/table_a_suppressor_amplifier.png` | Top 5 suppressors + amplifiers | **Generated** — named officials, SF/game |
 | SSAC27 Figure 1 | `output/figures/figure_b_crew_prediction_scatter.png` | r=0.406, 433 player-games | **Generated** — crew prediction vs actual FTA deviation |
@@ -78,6 +81,9 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | `src/landing_foul_classifier.py` | **Step 9:** binary YES/NO/UNCLEAR HTML classifier | `make landing-classifier` |
 | `src/landing_foul_merge.py` | Merge landing export + v3 labels into ground truth CSV | `make landing-merge` |
 | `src/landing_foul_llm_grader.py` | **Step 10:** landing foul LLM grader (spatial binary YES/NO) | `make landing-grade` / `landing-grade-validate` |
+| `src/landing_foul_video_dataset.py` | **Step 10b:** download clips + extract frozen VideoMAE embeddings | `make video-download` / `make video-extract` |
+| `src/landing_foul_video_split.py` | **Step 10b:** stratified train/val split (80/20, seed=42) | `make video-split` |
+| `src/landing_foul_video_train.py` | **Step 10b:** train classifier head on embeddings + evaluate | `make video-train` / `make video-cv` |
 | `src/generate_abstract_figures.py` | **SSAC27:** Table 1 (suppressor/amplifier profiles) + Figure 1 (crew prediction scatter) | `PYTHONPATH=. .venv/bin/python src/generate_abstract_figures.py` |
 
 All commands require `PYTHONPATH=.` from the project root (or use `make` targets).
@@ -85,6 +91,8 @@ All commands require `PYTHONPATH=.` from the project root (or use `make` targets
 ```bash
 cd /Users/harrisgordon/Documents/Development/ref-ball
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+# For Step 10b video classifier (torch, transformers, opencv, scikit-learn):
+.venv/bin/pip install -r requirements-ml.txt
 ```
 
 ### Target player configuration
@@ -243,179 +251,161 @@ Full run details, provider setup, and confusion matrices remain in the sections 
 
 ### Step 10b: Fine-tuned video classifier — START HERE
 
-**Goal:** Train a supervised video classifier on the 300 labeled manifest clips. Same quality gate as the LLM: **precision ≥ 85% on YES**, **recall ≥ 70% on YES** on a held-out validation set. Do **not** proceed to Steps 11–12 until the gate clears.
+**Goal:** Train a supervised video classifier on the 284 labeled manifest clips (YES/NO only, UNCLEAR excluded). Same quality gate as the LLM: **precision ≥ 85% on YES**, **recall ≥ 70% on YES** on a held-out validation set. Do **not** proceed to Steps 11–12 until the gate clears.
 
-**Why this is the right next step:** You have 300 human-labeled clips with NBA CDN video URLs. That is enough to fine-tune a pretrained action-recognition backbone (VideoMAE, SlowFast, X3D). Unlike LLMs, these models are trained for spatiotemporal features — exactly what landing vs contest discrimination requires.
+#### What's been built and tested
 
-#### Dataset summary (what you have)
+**Infrastructure (complete):**
 
-| Asset | Path | Use |
+| Script | Purpose | CLI |
 |---|---|---|
-| Labels (primary) | `data/landing_foul_classifications.csv` | 300 rows — train/val split source |
-| Video URLs + metadata | `data/processed/landing_foul_manifest.json` | Join on `game_id` + `event_id` |
-| Augmented labels | `data/landing_foul_ground_truth.csv` | 335 rows — adds 35 legacy v3 clips; optional extra train data |
-| Classifier HTML | `output/landing_foul_classifier.html` | Regenerated via `make landing-classifier` (gitignored) |
+| `src/landing_foul_video_dataset.py` | Download clips + extract frozen VideoMAE embeddings | `make video-download` / `make video-extract` |
+| `src/landing_foul_video_split.py` | Stratified 80/20 train/val split | `make video-split` |
+| `src/landing_foul_video_train.py` | Train classifier head on embeddings + evaluate | `make video-train` / `make video-train-mlp` / `make video-cv` |
+| `requirements-ml.txt` | ML dependencies (torch, transformers, opencv, scikit-learn) | `.venv/bin/pip install -r requirements-ml.txt` |
+
+**Frozen baseline results (2026-06-30) — zero signal:**
+
+| Model | YES Precision | YES Recall | Behavior |
+|---|---|---|---|
+| Logistic Regression (single split) | 0.000 | 0.000 | All-NO (degenerate) |
+| MLP (single split) | 0.509 | 1.000 | All-YES (degenerate) |
+| Logistic Regression (5-fold CV) | 0.000 | 0.000 | All-NO (degenerate) |
+
+**Why frozen features fail:** VideoMAE-Kinetics was pre-trained on action recognition (e.g. "playing basketball" vs. "riding a horse"). Both landing fouls and standard contests look identical at that level — they're all "playing basketball." The frozen CLS token (768-dim) encodes no discriminative signal for the fine-grained spatial distinction (defender foot position under shooter's landing zone).
+
+**What this tells us:** The model must *learn* what makes a landing foul different from a contest. Frozen feature extraction is insufficient. End-to-end fine-tuning is required.
+
+#### Dataset summary
+
+| Asset | Path | Count | Status |
+|---|---|---|---|
+| Labels (primary) | `data/landing_foul_classifications.csv` | 300 rows (143 YES, 141 NO, 16 UNCLEAR) | **Complete** |
+| Merged ground truth | `data/landing_foul_ground_truth.csv` | 335 rows (144 YES, 175 NO, 16 UNCLEAR) | **Complete** |
+| Downloaded clips | `data/clips/landing_foul/{game_id}_{event_id}.mp4` | 284 (YES/NO only) | **Complete** — 960x540, gitignored |
+| Frozen embeddings | `data/processed/landing_foul_embeddings.npz` | 284 × 768-dim | **Complete** — zero signal, reference only |
+| Train/val split | `data/processed/landing_foul_split.json` | 227 train (114 YES, 113 NO) / 57 val (29 YES, 28 NO) | **Complete** — seed=42 |
+| Video URLs + metadata | `data/processed/landing_foul_manifest.json` | 300 clips | **Complete** — NBA CDN URLs verified live 2026-06-30 |
 
 **Label handling:**
-- **Primary training set:** 300 manifest clips (YES=143, NO=141, UNCLEAR=16).
-- **Binary task:** Train on YES vs NO only (284 clips). Hold UNCLEAR out of training; report separately or map to abstain at inference.
-- **Optional augmentation:** Add 35 v3 legacy rows from ground truth (`source=v3_foul_type`) — different enrichment (player-specific Harden/Giannis samples). Use only after primary 300-clip model is working; don't mix into val split.
+- **Primary training set:** 284 clips (YES=143, NO=141). UNCLEAR excluded.
+- **Optional augmentation:** 35 v3 legacy clips (Harden/Giannis) are in `landing_foul_ground_truth.csv` but were **not downloaded** (no manifest video URLs). They would require separate video fetching via `foul_type_scraper.py` if needed.
+- **Split is fixed:** `data/processed/landing_foul_split.json` — do not regenerate unless you have a specific reason.
 
-**Join labels to video URLs:**
-```python
-import json, pandas as pd
-manifest = json.load(open("data/processed/landing_foul_manifest.json"))
-labels = pd.read_csv("data/landing_foul_classifications.csv")
-clips = pd.DataFrame(manifest["clips"])
-df = labels.merge(clips, on=["game_id", "event_id"], how="inner")
-# df has: landing_foul, video_url_960, duration_ms, fouled_player_name, ...
-assert len(df) == 300
-```
+#### START HERE: End-to-end fine-tuning plan
 
-#### Phase 2 implementation plan (for a new developer or LLM)
+The frozen baseline proved that pre-trained features alone contain zero signal. The next step is **end-to-end fine-tuning** — training the VideoMAE backbone to learn the spatial features that distinguish landing fouls from standard contests.
 
-**Phase 2a — Scaffold + dependencies (Day 1)**
+**Build `src/landing_foul_video_finetune.py` — the core training script:**
 
-1. Add ML dependencies to `requirements.txt` (or a new `requirements-ml.txt`):
-   ```
-   torch>=2.0
-   torchvision>=0.15
-   pytorchvideo>=0.1.5   # SlowFast, X3D pretrained weights
-   transformers>=4.36    # VideoMAE via HuggingFace
-   opencv-python-headless
-   scikit-learn
-   ```
-   System: `ffmpeg` (already required for frame providers).
+1. **Load pre-trained VideoMAE** (`MCG-NJU/videomae-base-finetuned-kinetics`) via HuggingFace `transformers`.
+2. **Replace classification head** with a 2-class linear layer (NO=0, YES=1).
+3. **Build a PyTorch Dataset** that reads clips from `data/clips/landing_foul/`, samples 16 frames uniformly, and applies the VideoMAE processor (resize to 224x224, normalize). The download and frame-sampling code already exists in `landing_foul_video_dataset.py` — reuse `sample_frames_from_video()`.
+4. **Training phases:**
+   - **Phase 1 (5 epochs):** Freeze backbone, train only the new classification head. This lets the head learn the output scale before the backbone moves.
+   - **Phase 2 (10-20 epochs):** Unfreeze the top 4 transformer layers. Use a lower learning rate (1e-5 to 5e-5) with weight decay (0.01-0.05). This is where the model learns landing-foul-specific spatiotemporal features.
+5. **Regularization (critical at 227 samples):**
+   - Dropout 0.3-0.5 on the classification head
+   - Weight decay 0.01-0.05
+   - Early stopping on val precision (patience 5-7 epochs)
+   - **Augmentation:** Color jitter, random temporal crop (shift the 16-frame window within the clip). **No horizontal flip** — court orientation matters (broadcast camera angle is consistent).
+6. **Loss:** Weighted cross-entropy. Classes are nearly balanced (114/113) so uniform weights are fine to start. If recall drops below 70%, add slight YES weight (1.2-1.5).
+7. **Checkpoint:** Save best model by **val precision on YES** (the binding constraint from the evaluation gate).
+8. **Output:** `data/processed/landing_foul_video_best.pt` (gitignored), `data/processed/landing_foul_video_metrics.json`.
 
-2. Create `src/landing_foul_video_dataset.py`:
-   - Download clips from `video_url_960` (or `video_url_720`) to `data/clips/landing_foul/{game_id}_{event_id}.mp4`
-   - Cache on disk; skip re-download if file exists
-   - Decode with `torchvision.io.read_video` or `cv2` + `ffmpeg`
-   - Sample 16–32 frames uniformly across clip duration (`duration_ms` in manifest, typically ~8–12s)
-   - Return tensor `(C, T, H, W)` normalized to model input size (224×224)
+**Compute:** VideoMAE-base has ~87M params. Fine-tuning on 227 clips with batch size 4 is lightweight — runs on a single GPU (Colab T4/A100, or MPS on Apple Silicon). Expect ~5-10 minutes per epoch.
 
-3. Create `src/landing_foul_video_split.py`:
-   - Stratified train/val split on YES/NO (80/20 → ~114 train YES, ~113 train NO, ~29 val YES, ~28 val NO)
-   - **Fixed seed** (e.g. `seed=42`) — write split to `data/processed/landing_foul_split.json` for reproducibility
-   - Exclude UNCLEAR from split entirely
+**Preprocessing levers to try if fine-tuning alone is insufficient:**
 
-4. Add Makefile targets:
-   ```makefile
-   landing-download-clips:
-       PYTHONPATH=. .venv/bin/python src/landing_foul_video_dataset.py download
+| Lever | What it does | When to try |
+|---|---|---|
+| **Temporal cropping** | Trim clips to the 2-3s around the foul (contact moment) before frame sampling. Currently sampling 16 frames across ~10s = one frame every 625ms. The critical defender-foot-position window is ~400ms. Cropping concentrates signal. | First lever if precision < 75% |
+| **Spatial cropping** | Crop to the relevant court region. Feet are tiny in 960x540 wide-angle broadcast. If the foul location is roughly known (perimeter vs paint), crop before resizing to 224x224. | Second lever if temporal crop doesn't help |
+| **Frame count** | Increase from 16 to 32 frames for higher temporal resolution. Trade-off: more memory, more overfitting risk. | Try alongside temporal cropping |
+| **Different backbone** | SlowFast (dual-pathway: slow for spatial, fast for motion) or X3D (lightweight). | If VideoMAE fine-tuning hits <70% after all preprocessing levers |
+| **Pose estimation** | MediaPipe/OpenPose to extract skeleton keypoints, then classify on foot/body positions directly. Bypasses the "feet are tiny in the frame" problem entirely. | Nuclear option if all video models fail |
 
-   landing-video-split:
-       PYTHONPATH=. .venv/bin/python src/landing_foul_video_split.py
-
-   landing-video-train:
-       PYTHONPATH=. .venv/bin/python src/landing_foul_video_train.py
-   ```
-
-**Phase 2b — Model choice (pick one to start)**
-
-| Model | Pros | Cons | HuggingFace / PyTorch |
-|---|---|---|---|
-| **VideoMAE** (recommended first) | Strong on small fine-tune sets; pretrained on Kinetics | Heavier deps | `MCG-NJU/videomae-base-finetuned-kinetics` |
-| **SlowFast** | Good motion features; pytorchvideo native | More VRAM | `pytorchvideo.models.slowfast` |
-| **X3D** | Lightweight, fast iteration | Slightly less accurate | `pytorchvideo.models.x3d` |
-
-**Recommended first attempt:** VideoMAE-base, fine-tune classification head for 2 classes (NO=0, YES=1). Freeze backbone for 5 epochs, then unfreeze top layers for 10–20 epochs. Batch size 4–8 depending on GPU; gradient accumulation if needed.
-
-**Phase 2c — Training script (`src/landing_foul_video_train.py`)**
-
-Minimum viable training loop:
-1. Load split from `data/processed/landing_foul_split.json`
-2. Build `DataLoader` with train augmentations (horizontal flip — **careful**: basketball court orientation matters; probably skip flip; use color jitter + random temporal crop instead)
-3. Load pretrained VideoMAE; replace classifier head
-4. Train with weighted cross-entropy (classes are nearly balanced; optional slight weight on YES to protect recall)
-5. Validate each epoch: accuracy, precision, recall, F1 on YES
-6. Save best checkpoint by **val precision on YES** (not accuracy — same gate as LLM)
-7. Write metrics to `data/processed/landing_foul_video_metrics.json`
-8. Save confusion matrix plot to `output/figures/landing_foul_video_confusion.png`
-
-**Phase 2d — Evaluation gate**
-
+**Makefile targets (already built):**
 ```bash
-PYTHONPATH=. .venv/bin/python src/landing_foul_video_train.py --evaluate-only \
-  --checkpoint data/processed/landing_foul_video_best.pt
+make video-download              # download 284 clips (~10 min)
+make video-extract               # extract frozen embeddings (~12 min, MPS)
+make video-split                 # stratified 80/20 split
+make video-train                 # logistic regression on frozen embeddings (baseline — already run, degenerate)
+make video-train-mlp             # MLP on frozen embeddings (baseline — already run, degenerate)
+make video-cv FOLDS=5            # k-fold CV on frozen embeddings (baseline — already run, degenerate)
+make video-pipeline              # full frozen baseline pipeline (download → extract → split → train)
 ```
+
+**New targets to add when building the fine-tuning script:**
+```makefile
+video-finetune:
+    PYTHONPATH=. $(PYTHON) src/landing_foul_video_finetune.py
+
+video-finetune-evaluate:
+    PYTHONPATH=. $(PYTHON) src/landing_foul_video_finetune.py --evaluate-only \
+      --checkpoint data/processed/landing_foul_video_best.pt
+```
+
+#### Evaluation gate
 
 | Metric | Target | Action if miss |
 |---|---|---|
-| Precision (YES) | ≥ 85% | More data, stronger augment, try SlowFast, or hybrid LLM pre-filter |
-| Recall (YES) | ≥ 70% | Lower classification threshold, class weights, check false negatives |
+| Precision (YES) | ≥ 85% | Try temporal cropping, spatial cropping, SlowFast, or hybrid LLM pre-filter |
+| Recall (YES) | ≥ 70% | Lower classification threshold, add YES class weight, check false negatives |
 | Accuracy | — | Informational only; precision is the binding constraint |
 
-**Phase 2e — Error analysis**
+**Important:** With 57 val clips (~29 YES, ~28 NO), 85% precision means tolerating ~4 false positives. Small val set = high variance. Consider **5-fold cross-validation** for a more stable estimate once the single-split result looks promising.
+
+#### Error analysis checklist
 
 On val false positives and false negatives:
-1. Print `game_id`, `event_id`, human `note` from classifications CSV
-2. Compare failure modes to LLM failures (contest, pump-fake, shooter-initiated) — if overlap is high, the model has the same blind spot
-3. Consider hard-negative mining: add more contest fouls to training if FPs dominate
+1. Print `game_id`, `event_id`, human `note` from classifications CSV (already built into `landing_foul_video_train.py`)
+2. Compare failure modes to LLM failures — the LLM's 38 contest FPs are the benchmark. If fine-tuned model FPs are the same clips, the visual signal may be genuinely ambiguous for those plays.
+3. **Hard-negative mining:** If contest FPs dominate, consider expanding the training set with additional labeled contest fouls.
+4. **Confusion with pump-fake jump-intos:** If these are the primary FP, temporal ordering features may be needed (who initiated contact) — exactly what the LLM also struggled with.
 
-#### Decision tree after Phase 2
+#### Decision tree after fine-tuning
 
 ```
 Fine-tuned model val precision ≥ 85%?
 ├── YES → Step 11: sample 100–150 SF clips per official (10–15 refs)
+│         Build landing_foul_video_predict.py for batch inference
 │         Run classifier at scale → per-official landing foul rates
 │         → Step 12: ANOVA + correlation with suppressor/amplifier profiles
-├── 75–84% → Try SlowFast OR hybrid (LLM pre-filter → human review on YES)
-└── < 75%  → Hybrid pipeline mandatory; consider pose-based rules (MediaPipe)
+├── 75–84% → Try preprocessing levers (temporal crop, spatial crop, frame count)
+│            → If still <85%: try SlowFast or hybrid (LLM pre-filter → human review)
+├── 55–74% → Hybrid pipeline: LLM pre-filter (98% recall) → fine-tuned model on YES-predicted
+│            → Manual review remaining borderline cases
+└── < 55%  → Pose estimation (MediaPipe) or scale manual classification
+             → HTML tool with keyboard shortcuts (~50 min per 100 clips)
 ```
 
-#### Suggested file layout (new code)
+#### File layout
 
 ```
 src/
-  landing_foul_video_dataset.py   # download + decode + frame sampling
-  landing_foul_video_split.py     # stratified train/val split
-  landing_foul_video_train.py     # fine-tune + evaluate
-  landing_foul_video_predict.py   # batch inference for Step 11 scale-up
+  landing_foul_video_dataset.py   # download + decode + frozen embeddings      ← BUILT
+  landing_foul_video_split.py     # stratified train/val split                 ← BUILT
+  landing_foul_video_train.py     # classifier head on frozen embeddings       ← BUILT (baseline)
+  landing_foul_video_finetune.py  # end-to-end VideoMAE fine-tuning            ← BUILD THIS NEXT
+  landing_foul_video_predict.py   # batch inference for Step 11 scale-up       ← build after gate clears
 data/
-  clips/landing_foul/             # cached MP4s (gitignore)
+  clips/landing_foul/             # cached MP4s (284 files, gitignored)         ← DOWNLOADED
   processed/
-    landing_foul_split.json       # reproducible train/val indices
-    landing_foul_video_best.pt    # best checkpoint (gitignore)
-    landing_foul_video_metrics.json
+    landing_foul_embeddings.npz   # frozen VideoMAE embeddings (zero signal)    ← EXTRACTED
+    landing_foul_split.json       # reproducible train/val indices              ← CREATED
+    landing_foul_video_best.pt    # best fine-tuned checkpoint (gitignored)     ← TBD
+    landing_foul_video_metrics.json # training metrics                          ← TBD
 ```
 
-Add to `.gitignore`: `data/clips/`, `*.pt`, `landing_foul_video_best.pt`
+#### What NOT to do
 
-#### Quick verification before training
-
-```bash
-cd /Users/harrisgordon/Documents/Development/ref-ball
-
-# Confirm labels + manifest alignment
-python3 -c "
-import json, pandas as pd
-m = json.load(open('data/processed/landing_foul_manifest.json'))
-l = pd.read_csv('data/landing_foul_classifications.csv')
-print(f'manifest: {m[\"num_clips\"]}, labels: {len(l)}')
-print(l['landing_foul'].value_counts())
-"
-
-# Confirm ground truth merge
-make landing-merge
-python3 -c "import pandas as pd; df=pd.read_csv('data/landing_foul_ground_truth.csv'); print(len(df), df['landing_foul'].value_counts().to_dict())"
-
-# Test one video URL is reachable
-python3 -c "
-import json, urllib.request
-c = json.load(open('data/processed/landing_foul_manifest.json'))['clips'][0]
-req = urllib.request.Request(c['video_url_960'], method='HEAD')
-with urllib.request.urlopen(req, timeout=10) as r:
-    print('video OK:', r.status, c['game_id'], c['event_id'])
-"
-```
-
-#### What NOT to do yet
-
+- **Don't re-run the frozen baseline** — it has zero signal. The results are documented above.
 - **Don't scale to per-official measurement (Steps 11–12)** until val precision ≥ 85%
 - **Don't invest more in LLM prompt iteration** — exhausted
 - **Don't train on UNCLEAR labels** — abstain at inference or handle separately
-- **Don't leak val clips into train** — use the fixed split file
+- **Don't leak val clips into train** — use the fixed split file (`data/processed/landing_foul_split.json`)
+- **Don't use horizontal flip augmentation** — court orientation matters (broadcast camera is always from one side)
 
 ---
 
@@ -779,8 +769,8 @@ make landing-merge && python3 -c "import pandas as pd; df=pd.read_csv('data/land
 ## Environment
 
 - Python 3.13, venv at `.venv/`
-- **Not installed (Step 10b — add when building video classifier):** torch, torchvision, pytorchvideo, transformers, scikit-learn, opencv-python-headless. See Step 10b Phase 2a for `requirements-ml.txt` suggestion.
-- **Installed:** pandas, pyarrow, numpy, requests, tqdm, scipy
+- **Base deps (`requirements.txt`):** pandas, pyarrow, numpy, requests, tqdm, scipy
+- **ML deps (`requirements-ml.txt`):** torch 2.12+, torchvision 0.27+, transformers 5.12+, opencv-python-headless, scikit-learn — **installed** as of 2026-06-30
 - **System:** `ffmpeg` required for OpenAI/Anthropic frame extraction (not needed for Vertex/Gemini native video)
 - **gcloud:** Required for Vertex provider. Project `project-3984c931-3755-423f-966`, ADC via `gcloud auth application-default login`.
 - NBA API: use `NBAStatsClient` in `src/nba_client.py` (same pattern as does-harden-choke — rate limits are endpoint-specific, not global)

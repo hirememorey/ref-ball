@@ -1,0 +1,8 @@
+# ML dependencies for Step 10b video classifier
+# Install on top of base: pip install -r requirements-ml.txt
+-r requirements.txt
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.30.0
+opencv-python-headless>=4.8.0
+scikit-learn>=1.3.0

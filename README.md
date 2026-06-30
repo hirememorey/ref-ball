@@ -18,10 +18,10 @@ The dataset has three layers, each with a different novelty moat:
 |---|---|---|---|
 | **Layer 1: Per-official attribution** | Official name parsed from PBP `description` field | Weak (anyone can parse it) | **Complete** — 13,278 games ingested, 13,464 with crew |
 | **Player x official profiles** | FTA/36 deltas per player under each official, defense-adjusted | Medium (requires crew + game logs) | **Built (40 players)** — full crew, 3,846 pairs, ANOVA p=0.000003 |
-| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Active** — Step 10b: 300 clips labeled, 335-row ground truth; build VideoMAE/SlowFast classifier next |
+| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Active** — Step 10b: 284 clips downloaded, frozen VideoMAE baseline tested (zero signal); **next: end-to-end fine-tuning** |
 | **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
 
-**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (300/300 clips, merged to 335 rows). Step 10 LLM grader is **exhausted** (best: 55% precision, 98% recall). **START HERE: Step 10b — fine-tuned video classifier** (see [HANDOFF.md](documents/development/HANDOFF.md) Step 10b for full implementation guide), then per-official scale-up (Steps 11–12).
+**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (300/300 clips, merged to 335 rows). Step 10 LLM grader is **exhausted** (best: 55% precision, 98% recall). Step 10b frozen VideoMAE baseline tested — **zero signal** from pre-trained Kinetics features. **START HERE: end-to-end VideoMAE fine-tuning** (`landing_foul_video_finetune.py` — not yet built). See [HANDOFF.md](documents/development/HANDOFF.md) Step 10b for full plan.
 
 ## The Paper Sequence
 
@@ -131,12 +131,15 @@ LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 9-12 — ACTIVE)
 10. Manual ground truth     →  src/landing_foul_classifier.py      →  data/landing_foul_classifications.csv (300 clips) ✓
 11. Merge ground truth      →  src/landing_foul_merge.py           →  data/landing_foul_ground_truth.csv (335 rows) ✓
 12. LLM grading            →  src/landing_foul_llm_grader.py      →  exhausted (~55% precision) — reference only
-12b. Video classifier      →  src/landing_foul_video_*.py (TBD)   →  fine-tune VideoMAE/SlowFast ← START HERE
-13. Per-official rates      →  (TBD)                             →  (TBD)
-14. Variance analysis       →  (TBD)                             →  (TBD)
+12b. Frozen baseline       →  src/landing_foul_video_dataset.py   →  zero signal (all degenerate) ✗
+                           →  src/landing_foul_video_split.py    →  data/processed/landing_foul_split.json ✓
+                           →  src/landing_foul_video_train.py    →  logreg/MLP on frozen embeddings ✗
+12c. Fine-tune VideoMAE    →  src/landing_foul_video_finetune.py →  end-to-end fine-tuning ← START HERE
+13. Per-official rates      →  src/landing_foul_video_predict.py →  batch inference (blocked on 12c gate)
+14. Variance analysis       →  (TBD)                             →  ANOVA on per-official rates
 ```
 
-Steps 1-11 (data + labels) are **complete**. Step 12b (fine-tuned video classifier) is the **active frontier** — target ≥85% precision on YES before Steps 13-14.
+Steps 1-11 (data + labels) are **complete**. Step 12b frozen baseline is **complete** (zero signal). Step 12c (end-to-end fine-tuning) is the **active frontier** — target ≥85% precision on YES before Steps 13-14.
 
 ### 1. Ingest (Layer 1 — built)
 
@@ -212,12 +215,17 @@ python -m http.server 8080 --directory output
 # → http://localhost:8080/landing_foul_classifier.html
 make landing-merge                # → data/landing_foul_ground_truth.csv (335 rows)
 
-# Step 10b (START HERE): fine-tuned video classifier — see HANDOFF.md Step 10b
-# Scaffold (not yet built):
-#   src/landing_foul_video_dataset.py   — download clips, frame sampling
-#   src/landing_foul_video_split.py     — stratified train/val split
-#   src/landing_foul_video_train.py     — fine-tune VideoMAE/SlowFast
-#   src/landing_foul_video_predict.py   — batch inference for Step 11
+# Step 10b (frozen baseline — zero signal):
+make video-download              # download 284 clips from NBA CDN (~10 min)
+make video-extract               # extract frozen VideoMAE embeddings (~12 min)
+make video-split                 # stratified 80/20 split (seed=42)
+make video-train                 # logistic regression on frozen features (degenerate — all-NO)
+make video-train-mlp             # MLP on frozen features (degenerate — all-YES)
+make video-cv FOLDS=5            # 5-fold CV (degenerate — all-NO)
+
+# Step 10c (START HERE): end-to-end fine-tuning — see HANDOFF.md Step 10b
+#   src/landing_foul_video_finetune.py  — fine-tune VideoMAE end-to-end (NOT YET BUILT)
+#   src/landing_foul_video_predict.py   — batch inference for Step 11 (NOT YET BUILT)
 
 # Step 10 LLM grader (exhausted — reference only):
 make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash
@@ -311,7 +319,7 @@ Landing fouls are the ideal starting category because:
 
 1. **Ground truth (manual, 300 clips) — COMPLETE:** 300 clips classified via HTML tool → `data/landing_foul_classifications.csv`. Merged with v3 labels via `make landing-merge` → `data/landing_foul_ground_truth.csv` (335 rows).
 2. **LLM grader (Step 10) — EXHAUSTED:** Best result 55% precision / 98% recall. Do not iterate further.
-3. **Fine-tuned video classifier (Step 10b) — START HERE:** VideoMAE or SlowFast on 300 labeled clips. See [HANDOFF.md Step 10b](documents/development/HANDOFF.md#step-10b-fine-tuned-video-classifier--start-here) for full scaffold guide.
+3. **Fine-tuned video classifier (Step 10b/c) — START HERE:** Frozen VideoMAE baseline tested (zero signal). End-to-end fine-tuning needed. 284 clips downloaded, split ready. See [HANDOFF.md Step 10b](documents/development/HANDOFF.md#step-10b-fine-tuned-video-classifier--start-here) for full plan.
 4. **Scale (Step 11):** ~100-150 shooting foul clips per official across 10-15 officials spanning suppressor/amplifier spectrum.
 5. **Analysis (Step 12):** ANOVA on per-official landing foul rates. Correlation with suppressor/amplifier profiles.
 
@@ -340,7 +348,8 @@ ref-ball/
 ├── config/
 │   ├── __init__.py                   # Re-exports config.py (package shadows module)
 │   └── target_players.py             # CORE_PLAYERS + EXPANDED_PLAYERS (40 total)
-├── requirements.txt
+├── requirements.txt                  # Base deps (pandas, numpy, requests, etc.)
+├── requirements-ml.txt               # ML deps (torch, transformers, opencv, scikit-learn)
 ├── Makefile
 ├── data/
 │   ├── foul_type_classifications.csv # Manual v3 ground truth (36 clips, from DHC)
@@ -389,6 +398,9 @@ ref-ball/
 │   ├── landing_foul_classifier.py   # Step 9: binary landing foul HTML classifier
 │   ├── landing_foul_merge.py        # Merge landing export + v3 ground truth
 │   ├── landing_foul_llm_grader.py   # Step 10: landing foul LLM grader (spatial binary)
+│   ├── landing_foul_video_dataset.py # Step 10b: download clips + extract frozen embeddings
+│   ├── landing_foul_video_split.py  # Step 10b: stratified train/val split
+│   ├── landing_foul_video_train.py  # Step 10b: classifier head on frozen embeddings (baseline)
 │   └── generate_abstract_figures.py # SSAC27 abstract figures (Table 1 + Figure 1)
 ├── output/
 │   ├── figures/
@@ -432,7 +444,7 @@ ref-ball/
 
 1. **Does official heterogeneity survive taxonomy conditioning?** cranky-scott-foster found context dominates error rates. CSF taxonomy import for L2M conditioning not yet done.
 
-2. **Can a fine-tuned video classifier reliably grade landing fouls?** LLM path exhausted (55% precision). 300 labeled clips are ready for VideoMAE/SlowFast fine-tuning. Target: ≥85% precision on YES.
+2. **Can a fine-tuned video classifier reliably grade landing fouls?** LLM path exhausted (55% precision). Frozen VideoMAE baseline tested — zero discriminative signal from Kinetics-pretrained features. End-to-end fine-tuning is the next test. 284 clips downloaded, split ready. Target: ≥85% precision on YES.
 
 3. **Do landing foul calling rates vary significantly across officials?** This is the core Paper 2 hypothesis. Blocked on Step 10b classifier gate.
 
