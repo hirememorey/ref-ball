@@ -181,7 +181,9 @@ Four prompt approaches tested on the primary set (93 YES/NO clips, Vertex `gemin
 
 **False positive pattern:** Human notes say "contest," "pump-fake," or "shooter-initiated." Model consistently outputs `shot_type=JUMP_SHOT`, `defender_position_at_landing=UNDER_SHOOTER`, `contact_moment=DURING_DESCENT_OR_LANDING` at HIGH confidence on clips where the defender's feet were legal. The model sees any closeout contact on a perimeter jump shot and labels the defender as under the shooter.
 
-**NOT YET RUN: sequence prompt + few-shot.** This is the immediate next experiment. The event-ordering approach was the biggest accuracy jump on the DHC timing axis (40% → 71%). See HANDOFF.md Step 10 for the decision tree after the run.
+**Sequence prompt (2026-06-29):** ~54% accuracy, ~53% precision, 100% recall — worse than spatial. LLM path exhausted.
+
+**Pivot (2026-06-30):** Manual grading complete (300/300 clips). Fine-tuned video classifier (VideoMAE/SlowFast) is the active path. See HANDOFF.md Step 10b.
 
 **Cross-project LLM grading lessons (7 approaches across DHC + ref-ball):**
 

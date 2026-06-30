@@ -1,4 +1,4 @@
-# Development Handoff (June 29, 2026)
+# Development Handoff (June 30, 2026)
 
 Operational snapshot for a new developer or LLM picking up this codebase. For project goals, literature positioning, and long-term paper sequence, see the root [README.md](../../README.md).
 
@@ -12,7 +12,7 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 
 1. **SSAC27 Submission (Paper 1).** Abstract draft complete (~460 words, v2). Two publication-quality figures generated (Table 1: suppressor/amplifier profiles with named officials; Figure 1: crew prediction vs actual FTA deviation scatter, r=0.406). **Abstract deadline: October 1, 2026.** Full paper due December 4, 2026 if selected. Open-source decision resolved: publishing all data, named officials, no anonymization. See `documents/ssac27-abstract-draft.md` and `output/figures/`.
 
-2. **Step 10 — landing foul LLM grader (Paper 2).** First validation complete, prompt iteration pending. Manual ground truth complete (99/100 clips classified, merged with 35 legacy v3 labels → 134-row ground truth). First API run (2026-06-29): Vertex `gemini-3.5-flash`, spatial prompt, 93-clip primary set — **58% accuracy, 55% precision, 98% recall**. Recall clears the 70% target; precision misses 85%. Model is YES-biased (38 contest/pump-fake false positives). **Next:** `--prompt-mode sequence`, then `--few-shot`, before per-official scale-up (Steps 11–12).
+2. **Step 10b — fine-tuned video classifier (Paper 2).** Manual ground truth **complete** (300/300 clips classified 2026-06-30; merged with 35 legacy v3 labels → **335-row ground truth**). LLM grader **exhausted** (spatial, spatial_v2, whistle, sequence — all miss 85% precision target; best recall 98%, best precision ~55%). **Pivot confirmed:** build a fine-tuned video classifier (VideoMAE or SlowFast). **START HERE:** see [Step 10b: Fine-tuned video classifier](#step-10b-fine-tuned-video-classifier--start-here) below.
 
 **Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 1-7), L2M validation, does-harden-choke merge, SSAC27 abstract draft + figures. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
 
@@ -35,10 +35,10 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | Defense-adjusted interactions | `data/processed/player_official/defensive_adjusted_interactions.parquet` | 1,678 pairs; 1,431 qualified | **Current** |
 | Official calling profiles | `data/processed/player_official/official_calling_profiles.parquet` | 88 officials | **Current** |
 | v3 foul-type ground truth | `data/foul_type_classifications.csv` | 36 clips (Harden + Giannis) | **Complete** — 1 LANDING, 35 non-LANDING |
-| Landing foul manifest | `data/processed/landing_foul_manifest.json` | 100 clips (reproducible) | **Built** — 3-FT shooting fouls, 53 officials, 2019–25 |
-| Landing foul classifier | `output/landing_foul_classifier.html` | 100 clips embedded | **Built** — regenerate via `make landing-classifier` |
-| Landing foul classifications | `data/landing_foul_classifications.csv` | 99 clips (48 YES, 45 NO, 6 UNCLEAR) | **Complete** — exported 2026-06-29; 1 manifest clip unlabeled |
-| Merged ground truth | `data/landing_foul_ground_truth.csv` | 134 rows (49 YES, 79 NO, 6 UNCLEAR) | **Complete** — `make landing-merge` (99 classifier + 35 v3, 1 overlap) |
+| Landing foul manifest | `data/processed/landing_foul_manifest.json` | 300 clips (seed=42) | **Built** — 3-FT shooting fouls, ~1,789 candidates, 2019–25 |
+| Landing foul classifier | `output/landing_foul_classifier.html` | 300 clips embedded | **Built** — `make landing-classifier`; Import CSV + Next Ungraded buttons |
+| Landing foul classifications | `data/landing_foul_classifications.csv` | 300 clips (143 YES, 141 NO, 16 UNCLEAR) | **Complete** — exported 2026-06-30 |
+| Merged ground truth | `data/landing_foul_ground_truth.csv` | 335 rows (144 YES, 175 NO, 16 UNCLEAR) | **Complete** — `make landing-merge` (300 classifier + 35 v3) |
 | Landing foul LLM results | `data/processed/landing_foul_llm_results_vertex_gemini-3_5-flash.json` | 93 clips (spatial validation) | **First run** — 2026-06-29; gitignored (regenerate via validate command) |
 | SSAC27 abstract draft | `documents/ssac27-abstract-draft.md` | ~460 words (v2) | **Draft** — deadline Oct 1, 2026 |
 | SSAC27 Table 1 | `output/figures/table_a_suppressor_amplifier.png` | Top 5 suppressors + amplifiers | **Generated** — named officials, SF/game |
@@ -125,7 +125,7 @@ Near-miss players not included (insufficient FTA/36 or GP): Jalen Brunson (4.79)
 
 ## Recommended Next Steps (Priority Order)
 
-Steps 1-9 are **complete** (one manifest clip still unlabeled — see Step 9 notes). **Step 10 first validation complete** — spatial prompt misses precision target; iterate prompt before Steps 11-12. **SSAC27 abstract drafted** — submission deadline October 1, 2026.
+Steps 1-9 are **complete**. Step 9 manual grading **complete** (300/300). Step 10 LLM grader **exhausted** — pivot to fine-tuned video classifier (Step 10b). **SSAC27 abstract drafted** — submission deadline October 1, 2026.
 
 ### SSAC27 Abstract Submission — IN PROGRESS (deadline Oct 1, 2026)
 
@@ -164,35 +164,34 @@ Migrated active foul-type tooling from does-harden-choke into ref-ball. DHC is n
 9. Added freeze note to DHC README
 10. Verified all imports and data paths
 
-### Step 9: Landing foul ground truth — COMPLETE (2026-06-29)
+### Step 9: Landing foul ground truth — COMPLETE (2026-06-30)
 
-**Sampling strategy (enrichment, not population representativeness):** Scan local PBP JSON for shooting fouls followed by exactly 3 free throw attempts (= 3-point shooting foul). This enriches for perimeter closeout fouls where landing space violations are most common. Sample 100 clips across seasons 2019–25 with per-game caps and season diversity. Document enrichment when interpreting base rates — this is a validation set for the LLM grader, not a prevalence estimate.
+**Sampling strategy (enrichment, not population representativeness):** Scan local PBP JSON for shooting fouls followed by exactly 3 free throw attempts (= 3-point shooting foul). This enriches for perimeter closeout fouls where landing space violations are most common. Sample 300 clips across seasons 2019–25 with per-game caps and season diversity (`seed=42`). Document enrichment when interpreting base rates — this is a validation/training set, not a prevalence estimate.
 
 **Built:**
-1. `src/landing_foul_manifest.py` — scans 13,278 games, finds ~1,789 candidates (2019+), samples 100, fetches video URLs (~3 min)
-2. `src/landing_foul_classifier.py` — binary YES / NO / UNCLEAR + note; keyboard shortcuts Y/N/U
+1. `src/landing_foul_manifest.py` — scans 13,278 games, finds ~1,789 candidates (2019+), samples 300, fetches video URLs
+2. `src/landing_foul_classifier.py` — binary YES / NO / UNCLEAR + note; keyboard shortcuts Y/N/U; **Import CSV** + **Next Ungraded** navigation (2026-06-30)
 3. `src/landing_foul_merge.py` — merges browser export with 36 v3 labels (LANDING → YES, else NO)
 
 **Manual classification results** (`data/landing_foul_classifications.csv`):
 
 | Label | Count |
 |---|---|
-| YES | 48 |
-| NO | 45 |
-| UNCLEAR | 6 |
-| **Total** | **99 / 100** |
+| YES | 143 |
+| NO | 141 |
+| UNCLEAR | 16 |
+| **Total** | **300 / 300** |
 
-- **42 clips** have free-text notes (borderline cases, contest vs landing, etc.) — useful for few-shot examples and mismatch review.
-- **1 unlabeled clip:** `0022000114` / event `603` (Ball S.FOUL on S. Gilgeous-Alexander, J. Capers). Optional: re-open classifier and label before Step 10.
-- **48% YES rate** in the enrichment sample is higher than the ~15–20% design target — good for LLM validation (more positive examples) but **not** a league-wide landing-foul prevalence estimate.
+- **~48% YES rate** in the enrichment sample — good for classifier training (balanced-ish) but **not** a league-wide landing-foul prevalence estimate.
+- Many clips have free-text notes (borderline cases, contest vs landing) — useful for error analysis and few-shot examples.
 
 **Merged ground truth** (`make landing-merge` → `data/landing_foul_ground_truth.csv`):
 
 | Source | Rows | Notes |
 |---|---|---|
-| `landing_classifier` | 99 | Step 9 export |
+| `landing_classifier` | 300 | Step 9 export (2026-06-30) |
 | `v3_foul_type` | 35 | 36 v3 clips minus 1 overlap with Step 9 |
-| **Merged total** | **134** | YES=49, NO=79, UNCLEAR=6 |
+| **Merged total** | **335** | YES=144, NO=175, UNCLEAR=16 |
 
 Regenerate merged file any time:
 ```bash
@@ -202,48 +201,236 @@ make landing-merge
 
 **Rubric:** Landing foul = defender's feet/body under or moving into shooter's landing zone while shooter is airborne on a jump shot, and the foul is called because of that positioning. Standard arm/hand contest on the shot = NO.
 
-**Re-run classifier (if manifest changes or to label the missing clip):**
+**Re-run classifier (if manifest changes):**
 ```bash
 make landing-classifier
 python -m http.server 8080 --directory output
 # → http://localhost:8080/landing_foul_classifier.html
+# Import CSV to restore labels; Next Ungraded → to find gaps
 # Export CSV → data/landing_foul_classifications.csv → make landing-merge
 ```
 
-### Step 10: Landing foul LLM grader — START HERE
+---
 
-**Goal:** Binary YES/NO landing foul classification from video. Precision target: ≥ 85% on YES. Recall target: ≥ 70% on YES. Do **not** proceed to Steps 11–12 until precision clears 85%.
+### Step 10: Landing foul LLM grader — EXHAUSTED (reference only)
 
-**Status:** `src/landing_foul_llm_grader.py` is built and validated. Three prompt modes implemented: `spatial` (default, with `who_initiated_contact` field), `sequence` (event-ordering), and `whistle` (audio-based attribution). Four providers: **Vertex** (gcloud ADC + GCS, **recommended**), Gemini API (Files API), OpenAI (frames), Anthropic (frames). Makefile targets: `landing-grade`, `landing-grade-validate`.
+**Goal:** Binary YES/NO landing foul classification from video. Precision target: ≥ 85% on YES. Recall target: ≥ 70% on YES.
+
+**Verdict:** LLM prompting cannot clear the precision bar. Recall passes on every run (≥ 98%); precision stalls at ~55%. **Do not invest further in prompt iteration.** Use LLM only as an optional pre-filter in the hybrid pipeline (see below) if the fine-tuned model also struggles.
+
+**Status:** `src/landing_foul_llm_grader.py` is built. Four prompt modes tested: `spatial`, `spatial_v2`, `sequence`, `whistle`. Provider: Vertex `gemini-3.5-flash` (recommended). Makefile targets: `landing-grade`, `landing-grade-validate`.
+
+| Prompt mode | Accuracy | Precision (YES) | Recall (YES) | Verdict |
+|---|---|---|---|---|
+| Spatial V1 | 58% | 55% | 98% | YES-biased — 38 contest FPs |
+| Spatial V2 (+who_initiated) | ~58% | ~55% | lower | Traded FPs for FNs |
+| Whistle | ~58% | ~55% | similar | Audio unreliable |
+| Sequence | ~54% | ~53% | 100% | Worse than spatial |
+
+**Why it fails:** Multimodal LLMs process loosely-connected frames, not continuous physics. They see closeout contact on a jump shot and say YES. They cannot reliably track defender feet relative to landing zone over ~200–400ms windows.
+
+**Hybrid fallback (if fine-tuned model precision < 75%):** Run LLM grader as pre-filter (98% recall), manually review predicted-YES clips only (~50% workload reduction). See hybrid section in Step 10b decision tree.
+
+**Regenerate LLM validation (reference):**
+```bash
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash
+make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash PROMPT_MODE=sequence
+```
+
+Full run details, provider setup, and confusion matrices remain in the sections below for reference.
 
 ---
 
-#### YOUR FIRST TASK: Manual Grading of 300 New Clips (Phase 1 of Fine-Tuning Pipeline)
+### Step 10b: Fine-tuned video classifier — START HERE
 
-The LLM approach (even sequence + few-shot) has hit a modality wall — the YES bias persists because multimodal LLMs cannot distinguish sub-second cause and consequence or perfectly track a defender's feet relative to the shooter's descending center of mass.
+**Goal:** Train a supervised video classifier on the 300 labeled manifest clips. Same quality gate as the LLM: **precision ≥ 85% on YES**, **recall ≥ 70% on YES** on a held-out validation set. Do **not** proceed to Steps 11–12 until the gate clears.
 
-**The pivot:** We are moving away from LLM grading and building a **fine-tuned video classifier** (e.g., SlowFast or VideoMAE) for Layer 2.
+**Why this is the right next step:** You have 300 human-labeled clips with NBA CDN video URLs. That is enough to fine-tune a pretrained action-recognition backbone (VideoMAE, SlowFast, X3D). Unlike LLMs, these models are trained for spatiotemporal features — exactly what landing vs contest discrimination requires.
 
-To do this, we need ~400–500 perfectly labeled clips. We already have 134. A new batch of 300 candidates has been fetched. **Your next step is to manually grade them.**
+#### Dataset summary (what you have)
 
-**How to grade the next 300 clips:**
+| Asset | Path | Use |
+|---|---|---|
+| Labels (primary) | `data/landing_foul_classifications.csv` | 300 rows — train/val split source |
+| Video URLs + metadata | `data/processed/landing_foul_manifest.json` | Join on `game_id` + `event_id` |
+| Augmented labels | `data/landing_foul_ground_truth.csv` | 335 rows — adds 35 legacy v3 clips; optional extra train data |
+| Classifier HTML | `output/landing_foul_classifier.html` | Regenerated via `make landing-classifier` (gitignored) |
 
-1. Start the local web server:
-   ```bash
-   python -m http.server 8080 --directory /Users/harrisgordon/Documents/Development/ref-ball/output
+**Label handling:**
+- **Primary training set:** 300 manifest clips (YES=143, NO=141, UNCLEAR=16).
+- **Binary task:** Train on YES vs NO only (284 clips). Hold UNCLEAR out of training; report separately or map to abstain at inference.
+- **Optional augmentation:** Add 35 v3 legacy rows from ground truth (`source=v3_foul_type`) — different enrichment (player-specific Harden/Giannis samples). Use only after primary 300-clip model is working; don't mix into val split.
+
+**Join labels to video URLs:**
+```python
+import json, pandas as pd
+manifest = json.load(open("data/processed/landing_foul_manifest.json"))
+labels = pd.read_csv("data/landing_foul_classifications.csv")
+clips = pd.DataFrame(manifest["clips"])
+df = labels.merge(clips, on=["game_id", "event_id"], how="inner")
+# df has: landing_foul, video_url_960, duration_ms, fouled_player_name, ...
+assert len(df) == 300
+```
+
+#### Phase 2 implementation plan (for a new developer or LLM)
+
+**Phase 2a — Scaffold + dependencies (Day 1)**
+
+1. Add ML dependencies to `requirements.txt` (or a new `requirements-ml.txt`):
    ```
-2. Open your browser to: `http://localhost:8080/landing_foul_classifier.html`
-3. Use the keyboard shortcuts (`Y` for YES, `N` for NO, `U` for UNCLEAR) to burn through the 300 clips.
-4. When finished, click the **Export CSV** button at the bottom of the page.
-5. Save the downloaded file over your existing `data/landing_foul_classifications.csv` file.
-6. Run `make landing-merge` to combine the new labels with the legacy v3 labels into a final ~430-row ground truth dataset:
-   ```bash
-   make landing-merge
+   torch>=2.0
+   torchvision>=0.15
+   pytorchvideo>=0.1.5   # SlowFast, X3D pretrained weights
+   transformers>=4.36    # VideoMAE via HuggingFace
+   opencv-python-headless
+   scikit-learn
+   ```
+   System: `ffmpeg` (already required for frame providers).
+
+2. Create `src/landing_foul_video_dataset.py`:
+   - Download clips from `video_url_960` (or `video_url_720`) to `data/clips/landing_foul/{game_id}_{event_id}.mp4`
+   - Cache on disk; skip re-download if file exists
+   - Decode with `torchvision.io.read_video` or `cv2` + `ffmpeg`
+   - Sample 16–32 frames uniformly across clip duration (`duration_ms` in manifest, typically ~8–12s)
+   - Return tensor `(C, T, H, W)` normalized to model input size (224×224)
+
+3. Create `src/landing_foul_video_split.py`:
+   - Stratified train/val split on YES/NO (80/20 → ~114 train YES, ~113 train NO, ~29 val YES, ~28 val NO)
+   - **Fixed seed** (e.g. `seed=42`) — write split to `data/processed/landing_foul_split.json` for reproducibility
+   - Exclude UNCLEAR from split entirely
+
+4. Add Makefile targets:
+   ```makefile
+   landing-download-clips:
+       PYTHONPATH=. .venv/bin/python src/landing_foul_video_dataset.py download
+
+   landing-video-split:
+       PYTHONPATH=. .venv/bin/python src/landing_foul_video_split.py
+
+   landing-video-train:
+       PYTHONPATH=. .venv/bin/python src/landing_foul_video_train.py
    ```
 
-Once this is complete, you will have the raw dataset required to start Phase 2: Video Preprocessing & Formatting for the fine-tuned model.
+**Phase 2b — Model choice (pick one to start)**
 
-#### THE HYBRID PIPELINE (if precision stays below 75%)
+| Model | Pros | Cons | HuggingFace / PyTorch |
+|---|---|---|---|
+| **VideoMAE** (recommended first) | Strong on small fine-tune sets; pretrained on Kinetics | Heavier deps | `MCG-NJU/videomae-base-finetuned-kinetics` |
+| **SlowFast** | Good motion features; pytorchvideo native | More VRAM | `pytorchvideo.models.slowfast` |
+| **X3D** | Lightweight, fast iteration | Slightly less accurate | `pytorchvideo.models.x3d` |
+
+**Recommended first attempt:** VideoMAE-base, fine-tune classification head for 2 classes (NO=0, YES=1). Freeze backbone for 5 epochs, then unfreeze top layers for 10–20 epochs. Batch size 4–8 depending on GPU; gradient accumulation if needed.
+
+**Phase 2c — Training script (`src/landing_foul_video_train.py`)**
+
+Minimum viable training loop:
+1. Load split from `data/processed/landing_foul_split.json`
+2. Build `DataLoader` with train augmentations (horizontal flip — **careful**: basketball court orientation matters; probably skip flip; use color jitter + random temporal crop instead)
+3. Load pretrained VideoMAE; replace classifier head
+4. Train with weighted cross-entropy (classes are nearly balanced; optional slight weight on YES to protect recall)
+5. Validate each epoch: accuracy, precision, recall, F1 on YES
+6. Save best checkpoint by **val precision on YES** (not accuracy — same gate as LLM)
+7. Write metrics to `data/processed/landing_foul_video_metrics.json`
+8. Save confusion matrix plot to `output/figures/landing_foul_video_confusion.png`
+
+**Phase 2d — Evaluation gate**
+
+```bash
+PYTHONPATH=. .venv/bin/python src/landing_foul_video_train.py --evaluate-only \
+  --checkpoint data/processed/landing_foul_video_best.pt
+```
+
+| Metric | Target | Action if miss |
+|---|---|---|
+| Precision (YES) | ≥ 85% | More data, stronger augment, try SlowFast, or hybrid LLM pre-filter |
+| Recall (YES) | ≥ 70% | Lower classification threshold, class weights, check false negatives |
+| Accuracy | — | Informational only; precision is the binding constraint |
+
+**Phase 2e — Error analysis**
+
+On val false positives and false negatives:
+1. Print `game_id`, `event_id`, human `note` from classifications CSV
+2. Compare failure modes to LLM failures (contest, pump-fake, shooter-initiated) — if overlap is high, the model has the same blind spot
+3. Consider hard-negative mining: add more contest fouls to training if FPs dominate
+
+#### Decision tree after Phase 2
+
+```
+Fine-tuned model val precision ≥ 85%?
+├── YES → Step 11: sample 100–150 SF clips per official (10–15 refs)
+│         Run classifier at scale → per-official landing foul rates
+│         → Step 12: ANOVA + correlation with suppressor/amplifier profiles
+├── 75–84% → Try SlowFast OR hybrid (LLM pre-filter → human review on YES)
+└── < 75%  → Hybrid pipeline mandatory; consider pose-based rules (MediaPipe)
+```
+
+#### Suggested file layout (new code)
+
+```
+src/
+  landing_foul_video_dataset.py   # download + decode + frame sampling
+  landing_foul_video_split.py     # stratified train/val split
+  landing_foul_video_train.py     # fine-tune + evaluate
+  landing_foul_video_predict.py   # batch inference for Step 11 scale-up
+data/
+  clips/landing_foul/             # cached MP4s (gitignore)
+  processed/
+    landing_foul_split.json       # reproducible train/val indices
+    landing_foul_video_best.pt    # best checkpoint (gitignore)
+    landing_foul_video_metrics.json
+```
+
+Add to `.gitignore`: `data/clips/`, `*.pt`, `landing_foul_video_best.pt`
+
+#### Quick verification before training
+
+```bash
+cd /Users/harrisgordon/Documents/Development/ref-ball
+
+# Confirm labels + manifest alignment
+python3 -c "
+import json, pandas as pd
+m = json.load(open('data/processed/landing_foul_manifest.json'))
+l = pd.read_csv('data/landing_foul_classifications.csv')
+print(f'manifest: {m[\"num_clips\"]}, labels: {len(l)}')
+print(l['landing_foul'].value_counts())
+"
+
+# Confirm ground truth merge
+make landing-merge
+python3 -c "import pandas as pd; df=pd.read_csv('data/landing_foul_ground_truth.csv'); print(len(df), df['landing_foul'].value_counts().to_dict())"
+
+# Test one video URL is reachable
+python3 -c "
+import json, urllib.request
+c = json.load(open('data/processed/landing_foul_manifest.json'))['clips'][0]
+req = urllib.request.Request(c['video_url_960'], method='HEAD')
+with urllib.request.urlopen(req, timeout=10) as r:
+    print('video OK:', r.status, c['game_id'], c['event_id'])
+"
+```
+
+#### What NOT to do yet
+
+- **Don't scale to per-official measurement (Steps 11–12)** until val precision ≥ 85%
+- **Don't invest more in LLM prompt iteration** — exhausted
+- **Don't train on UNCLEAR labels** — abstain at inference or handle separately
+- **Don't leak val clips into train** — use the fixed split file
+
+---
+
+#### Manual grading phase — COMPLETE (2026-06-30)
+
+The 300-clip manual grading phase is done. If you need to re-open the classifier:
+
+1. `make landing-classifier && python -m http.server 8080 --directory output`
+2. Open `http://localhost:8080/landing_foul_classifier.html`
+3. **Import CSV** to restore labels; **Next Ungraded →** to find gaps
+4. Export → `data/landing_foul_classifications.csv` → `make landing-merge`
+
+---
+
+#### THE HYBRID PIPELINE (fallback if fine-tuned precision < 75%)
 
 The model's 98% recall means it catches nearly every true landing foul. Use it as a **pre-filter**, not a classifier:
 
@@ -278,10 +465,10 @@ Seven approaches have been tested across `does-harden-choke` and `ref-ball`. The
 
 **Root cause:** Current multimodal LLMs process video as loosely-connected frames, not continuous physical simulations. They can identify objects and describe spatial relationships but cannot track sub-second temporal ordering between simultaneous body movements (~200–400ms windows), distinguish cause from consequence in fast interactions, or use audio as a reliable signal.
 
-**Alternative technologies (if you want to explore beyond LLM prompting):**
-- Fine-tuned video classifier (SlowFast, VideoMAE) — 134 labeled clips is at the lower bound for fine-tuning; augment with another 100–200 labels.
-- Pose estimation + rules (MediaPipe/OpenPose) — track skeleton keypoints, detect defender feet under shooter's center of mass during descent. More engineering work but eliminates the LLM's interpretive failures.
-- Scale manual classification — the HTML tool with keyboard shortcuts processes ~100 clips in ~50 minutes. For 1,500 clips total, that's ~12–18 hours. Not trivial but the accuracy is perfect.
+**Alternative technologies (if fine-tuned classifier underperforms):**
+- Hybrid LLM pre-filter + manual review (98% recall eliminates confident NOs)
+- Pose estimation + rules (MediaPipe/OpenPose) — track defender feet under shooter's landing zone
+- Scale manual classification — HTML tool with keyboard shortcuts (~50 min per 100 clips)
 
 ---
 
@@ -367,11 +554,11 @@ make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash LIMIT=3
 make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash EXTENDED=1
 ```
 
-### Step 11: Scale to per-official measurement — PENDING
+### Step 11: Scale to per-official measurement — PENDING (blocked on Step 10b)
 
-1. Select 10-15 officials spanning suppressor/amplifier spectrum
-2. Sample ~100-150 shooting foul clips per official
-3. Run LLM grader on all clips
+1. Select 10–15 officials spanning suppressor/amplifier spectrum
+2. Sample ~100–150 shooting foul clips per official (official-diverse, not player-diverse)
+3. Run **fine-tuned video classifier** (`landing_foul_video_predict.py`) on all clips
 4. Compute per-official landing foul calling rate
 
 ### Step 12: Variance analysis — PENDING
@@ -592,9 +779,8 @@ make landing-merge && python3 -c "import pandas as pd; df=pd.read_csv('data/land
 ## Environment
 
 - Python 3.13, venv at `.venv/`
-- Installed: pandas, pyarrow, numpy, requests, tqdm, scipy
-- **LLM grading (Layer 2):** No extra pip packages required for Vertex or Gemini API — both use raw `requests`. Optional: `openai`, `anthropic` for frame-based providers. Vertex uses gcloud ADC (see Step 10 provider table).
-- **Not installed:** torch, sklearn, opencv, google-generativeai (not needed — API calls are direct HTTP)
+- **Not installed (Step 10b — add when building video classifier):** torch, torchvision, pytorchvideo, transformers, scikit-learn, opencv-python-headless. See Step 10b Phase 2a for `requirements-ml.txt` suggestion.
+- **Installed:** pandas, pyarrow, numpy, requests, tqdm, scipy
 - **System:** `ffmpeg` required for OpenAI/Anthropic frame extraction (not needed for Vertex/Gemini native video)
 - **gcloud:** Required for Vertex provider. Project `project-3984c931-3755-423f-966`, ADC via `gcloud auth application-default login`.
 - NBA API: use `NBAStatsClient` in `src/nba_client.py` (same pattern as does-harden-choke — rate limits are endpoint-specific, not global)

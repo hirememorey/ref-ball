@@ -228,8 +228,11 @@ video { width: 100%; height: 100%; object-fit: contain; cursor: pointer; display
     <div class="nav-row">
       <button class="nav-btn" id="btnPrev">\u2190 Prev</button>
       <button class="nav-btn primary" id="btnNext">Next \u2192</button>
+      <button class="nav-btn primary" id="btnNextUngraded">Next Ungraded \u2192</button>
       <button class="nav-btn" id="btnExport">Export CSV</button>
+      <button class="nav-btn" id="btnImport">Import CSV</button>
       <button class="nav-btn" id="btnClear">Clear</button>
+      <input type="file" id="importFile" accept=".csv,text/csv" style="display:none" />
     </div>
 
 </div>
@@ -444,6 +447,15 @@ function loadClip(idx) {
   updateProgress();
 }
 
+function findNextUngradedIdx(fromIdx) {
+  var n = CLIPS.clips.length;
+  for (var offset = 1; offset <= n; offset++) {
+    var idx = (fromIdx + offset) % n;
+    if (!isComplete(classifications[clipId(idx)])) return idx;
+  }
+  return -1;
+}
+
 function updateProgress() {
   var total = CLIPS.clips.length;
   var done  = Object.values(classifications).filter(isComplete).length;
@@ -455,9 +467,11 @@ function updateProgress() {
     else unclear++;
   });
   document.getElementById('progFill').style.width = total ? (done / total * 100) + '%' : '0%';
-  document.getElementById('progText').textContent = done + ' / ' + total;
+  document.getElementById('progText').textContent =
+    'Clip ' + (currentIdx + 1) + '/' + total + ' \u00b7 ' + done + ' graded';
   document.getElementById('countSummary').textContent =
-    'Y:' + yes + ' N:' + no + ' U:' + unclear;
+    'Y:' + yes + ' N:' + no + ' U:' + unclear +
+    (done < total ? ' \u00b7 ' + (total - done) + ' left' : '');
 }
 
 function clearCurrent() {
@@ -504,10 +518,82 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
-document.getElementById('btnPrev').addEventListener('click',   function() { if (currentIdx > 0) loadClip(currentIdx - 1); });
-document.getElementById('btnNext').addEventListener('click',   function() { if (currentIdx < CLIPS.clips.length - 1) loadClip(currentIdx + 1); });
+function importCSV(text) {
+  var lines = text.trim().split(/\\r?\\n/);
+  if (lines.length < 2) return 0;
+  var header = lines[0].split(',');
+  var gi = header.indexOf('game_id');
+  var ei = header.indexOf('event_id');
+  var li = header.indexOf('landing_foul');
+  var ni = header.indexOf('note');
+  var ti = header.indexOf('timestamp');
+  if (gi < 0 || ei < 0 || li < 0) {
+    alert('CSV must include game_id, event_id, landing_foul columns');
+    return 0;
+  }
+  var imported = 0;
+  for (var r = 1; r < lines.length; r++) {
+    var row = lines[r];
+    if (!row.trim()) continue;
+    var cols = [];
+    var cur = '', inQ = false;
+    for (var c = 0; c < row.length; c++) {
+      var ch = row[c];
+      if (inQ) {
+        if (ch === '"' && row[c + 1] === '"') { cur += '"'; c++; }
+        else if (ch === '"') inQ = false;
+        else cur += ch;
+      } else if (ch === '"') inQ = true;
+      else if (ch === ',') { cols.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    cols.push(cur);
+    var gid = cols[gi];
+    var eid = cols[ei];
+    var val = cols[li];
+    if (!gid || !eid || !val) continue;
+    var cid = gid + '_' + eid;
+    if (!classifications[cid]) classifications[cid] = {};
+    classifications[cid].landing_foul = val;
+    classifications[cid].note = ni >= 0 ? (cols[ni] || '') : '';
+    classifications[cid].ts = ti >= 0 ? (cols[ti] || new Date().toISOString()) : new Date().toISOString();
+    imported++;
+  }
+  saveState();
+  syncUI();
+  updateProgress();
+  return imported;
+}
+
+document.getElementById('btnPrev').addEventListener('click', function() {
+  if (currentIdx > 0) loadClip(currentIdx - 1);
+});
+document.getElementById('btnNext').addEventListener('click', function() {
+  if (currentIdx < CLIPS.clips.length - 1) loadClip(currentIdx + 1);
+});
+document.getElementById('btnNextUngraded').addEventListener('click', function() {
+  var idx = findNextUngradedIdx(currentIdx);
+  if (idx >= 0) loadClip(idx);
+  else alert('All clips graded!');
+});
 document.getElementById('btnExport').addEventListener('click', exportCSV);
-document.getElementById('btnClear').addEventListener('click',  clearCurrent);
+document.getElementById('btnImport').addEventListener('click', function() {
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', function(e) {
+  var file = e.target.files && e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var n = importCSV(ev.target.result);
+    alert('Imported ' + n + ' classifications');
+    var next = findNextUngradedIdx(currentIdx);
+    if (next >= 0) loadClip(next);
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+document.getElementById('btnClear').addEventListener('click', clearCurrent);
 
 loadClip(currentIdx);
 </script>

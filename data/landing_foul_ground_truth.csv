@@ -1,104 +1,263 @@
 game_id,event_id,period,clock,description,landing_foul,note,source,fouled_player_name,fouled_team_tricode,committing_player_name,committing_team_tricode,caller_official_name,timestamp
-0021900094,599,4,PT10M57.00S,Teague S.FOUL (P4.T2) (S.Wall),NO,Contact happens slightly after the shot but still at the contest level,landing_classifier,E. Bledsoe,MIL,J. Teague,MIN,S.Wall,2026-06-29T14:51:57.905Z
-0021900153,368,3,PT08M04.00S,McCollum S.FOUL (P1.T2) (K.Lane),YES,,landing_classifier,B. Hield,SAC,C. McCollum,POR,K.Lane,2026-06-29T14:43:23.280Z
-0021900262,327,2,PT01M29.00S,Teague S.FOUL (P2.PN) (N.Green),NO,,landing_classifier,P. Mills,SAS,J. Teague,MIN,N.Green,2026-06-29T15:01:51.365Z
-0021900502,383,3,PT06M09.00S,Chriss S.FOUL (P3.T1) (A.Nagy),YES,,landing_classifier,T. Lyles,SAS,M. Chriss,GSW,A.Nagy,2026-06-29T15:00:43.224Z
-0021900504,437,3,PT06M09.00S,Frazier Jr. S.FOUL (P4.T2) (J.Goble),YES,,landing_classifier,G. Mathews,WAS,M. Frazier Jr.,ORL,J.Goble,2026-06-29T14:40:42.229Z
-0021900622,653,4,PT00M52.30S,Clarke S.FOUL (P5.PN) (J.Orr),NO,Love pumps his defender into the air and jumps into him before shooting,landing_classifier,K. Love,CLE,B. Clarke,MEM,J.Orr,2026-06-29T14:30:39.197Z
-0021900673,197,2,PT10M36.00S,Green S.FOUL (P2.T2) (M.Smith),NO,,landing_classifier,K. Olynyk,MIA,J. Green,LAC,M.Smith,2026-06-29T14:58:09.155Z
-0021900736,610,4,PT06M37.00S,Bjelica S.FOUL (P5.PN) (M.Davis),YES,,landing_classifier,K. Caldwell-Pope,LAL,N. Bjelica,SAC,M.Davis,2026-06-29T14:55:17.602Z
-0021900774,304,2,PT00M02.70S,Covington S.FOUL (P2.PN) (Z.Zarba),NO,Looks closer to a contest call,landing_classifier,D. Booker,PHX,R. Covington,HOU,Z.Zarba,2026-06-29T14:40:34.258Z
-0021900806,642,4,PT03M09.00S,Walker S.FOUL (P3.PN) (J.Tiven),YES,,landing_classifier,J. Harden,HOU,K. Walker,BOS,J.Tiven,2026-06-29T14:49:25.104Z
-0021900841,85,1,PT05M19.00S,Gordon S.FOUL (P2.PN) (B.Kennedy),NO,Contact occurs before the ball has left shooter's hand,landing_classifier,D. Mitchell,UTA,E. Gordon,HOU,B.Kennedy,2026-06-29T14:51:14.575Z
-0021900927,132,1,PT00M33.40S,Green S.FOUL (P1.PN) (M.Davis),NO,Lou pumps defender into the air and launches shot while colliding,landing_classifier,L. Williams,LAC,J. Green,HOU,M.Davis,2026-06-29T15:05:15.268Z
-0021900946,612,4,PT04M51.00S,White S.FOUL (P3.PN) (J.Butler),YES,,landing_classifier,S. Dinwiddie,BKN,C. White,CHI,J.Butler,2026-06-29T14:57:12.286Z
-0021900962,7,1,PT11M48.00S,Harrison S.FOUL (P1.T1) (T.Washington),NO,,landing_classifier,K. Love,CLE,S. Harrison,CHI,T.Washington,2026-06-29T14:52:45.829Z
+0021900028,532,4,PT11M24.00S,Hunter S.FOUL (P4.T1) (L.Richardson),NO,,landing_classifier,T. Ross,ORL,D. Hunter,ATL,L.Richardson,2026-06-30T14:57:39.907Z
+0021900061,718,4,PT00M07.70S,Tucker S.FOUL (P5.PN) (J.Capers),NO,,landing_classifier,B. Beal,WAS,P. Tucker,HOU,J.Capers,2026-06-30T15:28:55.819Z
+0021900094,599,4,PT10M57.00S,Teague S.FOUL (P4.T2) (S.Wall),NO,Contact happens slightly after the shot but still at the contest level,landing_classifier,E. Bledsoe,MIL,J. Teague,MIN,S.Wall,2026-06-30T14:51:30.294Z
+0021900153,368,3,PT08M04.00S,McCollum S.FOUL (P1.T2) (K.Lane),YES,,landing_classifier,B. Hield,SAC,C. McCollum,POR,K.Lane,2026-06-30T14:59:42.757Z
+0021900161,191,2,PT10M23.00S,Olynyk S.FOUL (P2.T2) (P.Ransom),NO,,landing_classifier,K. Love,CLE,K. Olynyk,MIA,P.Ransom,2026-06-30T15:22:48.633Z
+0021900182,23,1,PT10M20.00S,Hunter S.FOUL (P1.T2) (J.Van Duyne),NO,,landing_classifier,P. George,LAC,D. Hunter,ATL,,2026-06-30T14:50:12.443Z
+0021900200,163,2,PT11M32.00S,Bjelica S.FOUL (P2.T1) (D.Richardson),YES,,landing_classifier,M. Bridges,PHX,N. Bjelica,SAC,D.Richardson,2026-06-30T14:53:12.663Z
+0021900203,68,1,PT07M11.00S,Brown Jr. S.FOUL (P1.PN) (M.Boland),YES,,landing_classifier,B. Forbes,SAS,T. Brown Jr.,WAS,M.Boland,2026-06-30T15:06:03.238Z
+0021900209,653,4,PT05M07.00S,Harrison S.FOUL (P3.T4) (A.Moyer-Gleich),YES,,landing_classifier,L. Galloway,DET,S. Harrison,CHI,,2026-06-30T15:28:04.606Z
+0021900231,165,2,PT10M35.00S,Bazemore S.FOUL (P1.T1) (P.Fraher),NO,,landing_classifier,J. Clarkson,CLE,K. Bazemore,POR,P.Fraher,2026-06-30T15:30:59.052Z
+0021900250,138,1,PT02M08.00S,Burton S.FOUL (P1.PN) (T.Brothers),YES,,landing_classifier,G. Robinson III,GSW,D. Burton,OKC,T.Brothers,2026-06-30T15:30:18.793Z
+0021900258,163,2,PT11M33.00S,Powell S.FOUL (P2.T1) (T.Maddox),UNCLEAR,"borderline, contact happens in the contest area slightly prior to contact in the landing area",landing_classifier,W. Ellington,NYK,N. Powell,TOR,T.Maddox,2026-06-30T15:20:23.261Z
+0021900262,327,2,PT01M29.00S,Teague S.FOUL (P2.PN) (N.Green),NO,,landing_classifier,P. Mills,SAS,J. Teague,MIN,N.Green,2026-06-30T14:44:39.779Z
+0021900278,429,3,PT06M09.00S,LaVine S.FOUL (P2.T2) (D.Richardson),NO,,landing_classifier,D. Lillard,POR,Z. LaVine,CHI,D.Richardson,2026-06-30T14:51:04.731Z
+0021900282,542,3,PT00M11.50S,Turner S.FOUL (P1.PN) (K.Lane),YES,,landing_classifier,J. Harden,HOU,E. Turner,ATL,K.Lane,2026-06-30T15:14:26.482Z
+0021900300,97,1,PT04M17.00S,Ross S.FOUL (P1.T3) (B.Barnaky),YES,,landing_classifier,D. Bertāns,WAS,T. Ross,ORL,B.Barnaky,2026-06-30T14:45:35.801Z
+0021900333,734,4,PT00M13.70S,Tucker S.FOUL (P5.PN) (M.Kogut),YES,,landing_classifier,D. Booker,PHX,P. Tucker,HOU,M.Kogut,2026-06-30T14:43:00.831Z
+0021900420,352,3,PT09M29.00S,Jackson Jr. S.FOUL (P2.T2) (T.Brothers),NO,,landing_classifier,K. Love,CLE,J. Jackson Jr.,MEM,T.Brothers,2026-06-30T15:25:04.072Z
+0021900430,367,3,PT08M07.00S,Bogdanovic S.FOUL (P1.T3) (J.Goble),YES,,landing_classifier,T. Rozier,CHA,B. Bogdanović,UTA,J.Goble,2026-06-30T14:57:02.778Z
+0021900459,290,2,PT01M40.00S,Millsap S.FOUL (P1.T3) (M.Kogut),YES,,landing_classifier,J. Redick,NOP,P. Millsap,DEN,M.Kogut,2026-06-30T14:51:25.591Z
+0021900474,365,3,PT08M34.00S,Redick S.FOUL (P1.T1) (D.Guthrie),NO,,landing_classifier,J. Lamb,IND,J. Redick,NOP,D.Guthrie,2026-06-30T15:17:03.946Z
+0021900486,8,1,PT11M29.00S,Ferguson S.FOUL (P1.T1) (B.Nansel),YES,,landing_classifier,K. Lowry,TOR,T. Ferguson,OKC,B.Nansel,2026-06-30T15:07:44.251Z
+0021900502,383,3,PT06M09.00S,Chriss S.FOUL (P3.T1) (A.Nagy),YES,,landing_classifier,T. Lyles,SAS,M. Chriss,GSW,A.Nagy,2026-06-30T15:26:32.902Z
+0021900504,437,3,PT06M09.00S,Frazier Jr. S.FOUL (P4.T2) (J.Goble),YES,,landing_classifier,G. Mathews,WAS,M. Frazier Jr.,ORL,J.Goble,2026-06-30T15:22:49.997Z
+0021900550,457,3,PT01M59.00S,Nader S.FOUL (P4.T4) (M.Kogut),YES,,landing_classifier,C. LeVert,BKN,A. Nader,OKC,M.Kogut,2026-06-30T15:24:03.616Z
+0021900613,24,1,PT09M51.00S,Green S.FOUL (P1.T1) (S.Twardoski),NO,,landing_classifier,W. Iwundu,ORL,D. Green,LAL,S.Twardoski,2026-06-30T15:23:46.678Z
+0021900622,653,4,PT00M52.30S,Clarke S.FOUL (P5.PN) (J.Orr),NO,Love pumps his defender into the air and jumps into him before shooting,landing_classifier,K. Love,CLE,B. Clarke,MEM,J.Orr,2026-06-30T14:53:22.729Z
+0021900645,618,4,PT04M27.00S,Harden S.FOUL (P2.T4) (K.Cutler),YES,,landing_classifier,D. Gallinari,OKC,J. Harden,HOU,K.Cutler,2026-06-30T14:55:51.947Z
+0021900673,197,2,PT10M36.00S,Green S.FOUL (P2.T2) (M.Smith),NO,,landing_classifier,K. Olynyk,MIA,J. Green,LAC,M.Smith,2026-06-30T14:50:32.777Z
+0021900719,448,3,PT03M58.00S,Bazemore S.FOUL (P1.PN) (M.Boland),NO,,landing_classifier,L. Williams,LAC,K. Bazemore,SAC,M.Boland,2026-06-30T14:42:52.498Z
+0021900736,610,4,PT06M37.00S,Bjelica S.FOUL (P5.PN) (M.Davis),YES,,landing_classifier,K. Caldwell-Pope,LAL,N. Bjelica,SAC,M.Davis,2026-06-30T14:51:32.869Z
+0021900737,311,2,PT01M19.00S,Harris S.FOUL (P1.T4) (T.Maddox),NO,,landing_classifier,S. Mykhailiuk,DET,G. Harris,DEN,T.Maddox,2026-06-30T15:04:13.572Z
+0021900770,115,1,PT03M11.00S,Wagner S.FOUL (P1.T2) (K.Scott),YES,,landing_classifier,S. Curry,DAL,M. Wagner,WAS,K.Scott,2026-06-30T15:13:58.745Z
+0021900774,304,2,PT00M02.70S,Covington S.FOUL (P2.PN) (Z.Zarba),NO,Looks closer to a contest call,landing_classifier,D. Booker,PHX,R. Covington,HOU,Z.Zarba,2026-06-30T15:22:15.455Z
+0021900798,283,2,PT00M39.00S,Kleber S.FOUL (P1.PN) (T.Brown),NO,,landing_classifier,D. Mitchell,UTA,M. Kleber,DAL,T.Brown,2026-06-30T14:56:51.000Z
+0021900799,15,1,PT10M55.00S,Murray S.FOUL (P1.T1) (L.Wood),NO,,landing_classifier,L. Aldridge,SAS,J. Murray,DEN,L.Wood,2026-06-30T14:46:36.110Z
+0021900806,642,4,PT03M09.00S,Walker S.FOUL (P3.PN) (J.Tiven),YES,,landing_classifier,J. Harden,HOU,K. Walker,BOS,J.Tiven,2026-06-30T14:44:51.974Z
+0021900841,85,1,PT05M19.00S,Gordon S.FOUL (P2.PN) (B.Kennedy),NO,Contact occurs before the ball has left shooter's hand,landing_classifier,D. Mitchell,UTA,E. Gordon,HOU,B.Kennedy,2026-06-30T15:17:39.835Z
+0021900865,370,3,PT08M05.00S,Thybulle S.FOUL (P3.T4) (A.Smith),NO,,landing_classifier,C. Sexton,CLE,M. Thybulle,PHI,A.Smith,2026-06-30T14:47:44.533Z
+0021900867,240,2,PT06M37.00S,Collins S.FOUL (P1.PN) (B.Forte),YES,,landing_classifier,T. Ross,ORL,J. Collins,ATL,B.Forte,2026-06-30T14:53:33.568Z
+0021900927,132,1,PT00M33.40S,Green S.FOUL (P1.PN) (M.Davis),NO,Lou pumps defender into the air and launches shot while colliding,landing_classifier,L. Williams,LAC,J. Green,HOU,M.Davis,2026-06-30T14:47:20.321Z
+0021900946,612,4,PT04M51.00S,White S.FOUL (P3.PN) (J.Butler),YES,,landing_classifier,S. Dinwiddie,BKN,C. White,CHI,J.Butler,2026-06-30T14:52:28.981Z
+0021900962,7,1,PT11M48.00S,Harrison S.FOUL (P1.T1) (T.Washington),NO,,landing_classifier,K. Love,CLE,S. Harrison,CHI,T.Washington,2026-06-30T14:40:24.615Z
+0021901247,540,3,PT00M16.60S,Bazemore S.FOUL (P5.PN) (E.Malloy),NO,,landing_classifier,T. Ross,ORL,K. Bazemore,SAC,E.Malloy,2026-06-30T15:29:54.356Z
+0021901249,670,4,PT03M12.00S,Finney-Smith S.FOUL (P2.T4) (P.Fraher),NO,,landing_classifier,D. Booker,PHX,D. Finney-Smith,DAL,P.Fraher,2026-06-30T14:55:38.626Z
 0021901261,263,2,PT03M57.00S,Collins S.FOUL (P3.T4) (K.Fitzgerald),NO,v3 mechanism=DRV-FINISH,v3_foul_type,,,,,,
 0021901261,383,3,PT08M40.00S,Nurkic S.FOUL (P2.T2) (K.Fitzgerald),NO,v3 mechanism=PUMP-JUMP,v3_foul_type,,,,,,
 0021901261,548,4,PT07M38.00S,Trent Jr. S.FOUL (P3.PN) (K.Cutler),NO,v3 mechanism=ARM-HOOK,v3_foul_type,,,,,,
-0021901266,292,2,PT02M07.00S,VanVleet S.FOUL (P2.PN) (J.Williams),YES,,landing_classifier,E. Fournier,ORL,F. VanVleet,TOR,J.Williams,2026-06-29T14:54:31.611Z
+0021901266,292,2,PT02M07.00S,VanVleet S.FOUL (P2.PN) (J.Williams),YES,,landing_classifier,E. Fournier,ORL,F. VanVleet,TOR,J.Williams,2026-06-30T15:28:42.951Z
+0021901271,54,1,PT07M27.00S,Porzingis S.FOUL (P1.T2) (G.Petraitis),YES,,landing_classifier,M. Morris Sr.,LAC,K. Porziņģis,DAL,G.Petraitis,2026-06-30T15:00:46.246Z
 0021901273,59,1,PT06M23.00S,Cook S.FOUL (P1.T1) (D.Taylor),NO,v3 mechanism=DRV-FINISH,v3_foul_type,,,,,,
 0021901273,230,2,PT07M09.00S,Morris S.FOUL (P1.T1) (S.Foster),NO,v3 mechanism=CONTEST,v3_foul_type,,,,,,
 0021901273,308,2,PT02M58.00S,Kuzma S.FOUL (P1.T3) (S.Foster),NO,v3 mechanism=DRV-INIT,v3_foul_type,,,,,,
 0021901273,367,3,PT11M47.00S,Green S.FOUL (P1.T1) (D.Taylor),NO,v3 mechanism=ARM-HOOK,v3_foul_type,,,,,,
 0021901273,402,3,PT08M36.00S,Caldwell-Pope S.FOUL (P1.T2) (S.Foster),NO,v3 mechanism=ARM-HOOK,v3_foul_type,,,,,,
 0021901273,626,4,PT03M26.00S,Horton-Tucker S.FOUL (P4.T4) (S.Foster),NO,v3 mechanism=DRV-FINISH,v3_foul_type,,,,,,
-0021901285,336,3,PT10M31.00S,Bryant S.FOUL (P1.T3) (R.Acosta),NO,Gallinari pumps defender out of position and then goes up for the three,landing_classifier,D. Gallinari,OKC,T. Bryant,WAS,R.Acosta,2026-06-29T14:58:01.086Z
 0021901290,84,1,PT05M55.00S,Giles III S.FOUL (P1.T4) (B.Kennedy),NO,v3 mechanism=DRV-FINISH,v3_foul_type,,,,,,
 0021901290,103,1,PT04M12.00S,Hield S.FOUL (P1.PN) (J.Goble),NO,v3 mechanism=CONTEST,v3_foul_type,,,,,,
 0021901290,281,2,PT01M53.00S,Joseph S.FOUL (P2.PN) (E.Lewis),NO,v3 mechanism=AMB,v3_foul_type,,,,,,
 0021901304,9,1,PT11M38.00S,Sampson S.FOUL (P1.T1) (E.Malloy),NO,v3 mechanism=ARM-HOOK,v3_foul_type,,,,,,
 0021901304,77,1,PT06M05.00S,J. Holiday S.FOUL (P1.T4) (K.Lane),YES,v3 mechanism=LANDING,v3_foul_type,,,,,,
 0021901304,436,3,PT07M05.00S,Oladipo S.FOUL (P3.T2) (S.Corbin),NO,v3 mechanism=ARM-HOOK,v3_foul_type,,,,,,
-0021901304,636,4,PT06M32.00S,J. Holiday S.FOUL (P2.T3) (S.Corbin),NO,Contest/Reach-in level,landing_classifier,J. Harden,HOU,J. Holiday,IND,S.Corbin,2026-06-29T14:59:59.564Z
+0021901304,636,4,PT06M32.00S,J. Holiday S.FOUL (P2.T3) (S.Corbin),NO,Contest/Reach-in level,landing_classifier,J. Harden,HOU,J. Holiday,IND,S.Corbin,2026-06-30T14:54:17.152Z
 0021901304,658,4,PT04M51.00S,McDermott S.FOUL (P1.T4) (S.Corbin),NO,v3 mechanism=CONTEST,v3_foul_type,,,,,,
+0021901311,374,3,PT11M16.00S,Valanciunas S.FOUL (P3.T2) (B.Taylor),YES,,landing_classifier,B. Lopez,MIL,J. Valančiūnas,MEM,B.Taylor,2026-06-30T14:42:27.807Z
 0021901315,13,1,PT11M22.00S,Milton S.FOUL (P1.T1) (K.Fitzgerald),NO,v3 mechanism=ARM-HOOK,v3_foul_type,,,,,,
 0021901315,82,1,PT05M39.00S,Horford S.FOUL (P2.PN) (K.Cutler),NO,v3 mechanism=ARM-HOOK,v3_foul_type,,,,,,
 0021901315,117,1,PT02M54.00S,Richardson S.FOUL (P1.PN) (K.Fitzgerald),NO,v3 mechanism=DRV-INIT,v3_foul_type,,,,,,
-0022000008,409,3,PT06M20.00S,Burke S.FOUL (P3.T4) (K.Cutler),UNCLEAR,"Borderline, lean contest foul more",landing_classifier,D. Schröder,LAL,T. Burke,DAL,K.Cutler,2026-06-29T14:50:27.997Z
-0022000033,144,1,PT01M06.00S,Smith S.FOUL (P1.PN) (H.Workman),NO,Contest,landing_classifier,T. Ross,ORL,I. Smith,WAS,H.Workman,2026-06-29T14:57:36.655Z
-0022000061,386,3,PT05M42.00S,Beverley S.FOUL (P3.T4) (S.Foster),NO,Contest level,landing_classifier,D. Lillard,POR,P. Beverley,LAC,S.Foster,2026-06-29T15:04:27.321Z
-0022000142,479,4,PT11M13.00S,Williams S.FOUL (P1.T2) (Z.Zarba),NO,,landing_classifier,L. Williams,LAC,P. Williams,CHI,Z.Zarba,2026-06-29T14:29:52.697Z
-0022000201,437,3,PT01M55.00S,Williamson S.FOUL (P3.T3) (B.Forte),YES,Zion pokes Hield's face after the ball has been well released.,landing_classifier,B. Hield,SAC,Z. Williamson,NOP,B.Forte,2026-06-29T14:39:07.311Z
-0022000268,597,4,PT03M47.00S,Mann S.FOUL (P4.T3) (S.Wall),NO,Classic Trae Young jumps into defender,landing_classifier,T. Young,ATL,T. Mann,LAC,S.Wall,2026-06-29T14:52:19.809Z
-0022000344,318,3,PT11M26.00S,Williams S.FOUL (P2.T1) (E.Lewis),YES,,landing_classifier,J. Ennis III,ORL,P. Williams,CHI,E.Lewis,2026-06-29T14:58:33.628Z
-0022000354,486,4,PT11M32.00S,Thybulle S.FOUL (P2.T1) (K.Lane),YES,Somewhat borderline as to whether Thybulle contacts Shamet in the arm prior to Shamet landing on Thybulle,landing_classifier,L. Shamet,BKN,M. Thybulle,PHI,K.Lane,2026-06-29T14:38:02.425Z
-0022000436,508,4,PT09M02.00S,Gibson S.FOUL (P2.T1) (J.Conley),YES,,landing_classifier,T. Ross,ORL,T. Gibson,NYK,J.Conley,2026-06-29T14:47:17.551Z
-0022000679,26,1,PT09M52.00S,Barrett S.FOUL (P1.T2) (R.Acosta),YES,,landing_classifier,G. Mathews,WAS,R. Barrett,NYK,R.Acosta,2026-06-29T14:56:37.595Z
-0022000915,260,2,PT03M26.00S,Hield S.FOUL (P2.PN) (Z.Zarba),NO,,landing_classifier,S. Curry,GSW,B. Hield,SAC,Z.Zarba,2026-06-29T14:42:11.005Z
-0022001004,301,2,PT02M29.00S,Brazdeikis S.FOUL (P1.PN) (Z.Zarba),NO,,landing_classifier,C. Martin,CHA,I. Brazdeikis,ORL,Z.Zarba,2026-06-29T14:23:56.316Z
-0022001006,464,3,PT05M12.00S,Forbes S.FOUL (P1.T3) (D.Taylor),NO,Olynyk pumps defender into the air and jumps into them,landing_classifier,K. Olynyk,HOU,B. Forbes,MIL,D.Taylor,2026-06-29T15:04:00.892Z
-0022001016,252,2,PT03M46.00S,Brooks S.FOUL (P2.PN) (M.Davis),YES,,landing_classifier,J. Clarkson,UTA,A. Brooks,HOU,M.Davis,2026-06-29T14:47:50.305Z
-0022001038,483,4,PT10M59.00S,G. Antetokounmpo S.FOUL (P4.T1) (N.Buchert),YES,,landing_classifier,C. Randle,ORL,G. Antetokounmpo,MIL,N.Buchert,2026-06-29T15:00:17.405Z
-0022001049,305,2,PT00M29.00S,Harris S.FOUL (P2.T1) (A.Smith),NO,Contest,landing_classifier,B. Bogdanović,ATL,G. Harris,ORL,A.Smith,2026-06-29T14:43:53.514Z
-0022100070,23,1,PT10M34.00S,Melton S.FOUL (P1.T1) (E.Dalen),YES,,landing_classifier,S. Curry,GSW,D. Melton,MEM,E.Dalen,2026-06-29T14:31:49.286Z
-0022100115,32,1,PT09M22.00S,Okogie S.FOUL (P1.T1) (M.Davis),NO,Contest,landing_classifier,P. George,LAC,J. Okogie,MIN,M.Davis,2026-06-29T14:45:12.624Z
-0022100250,201,2,PT10M51.00S,White S.FOUL (P1.T1) (M.Kogut),NO,Arm contact slightly after the shot but not near a landing area,landing_classifier,A. Burks,NYK,C. White,CHI,M.Kogut,2026-06-29T15:01:15.322Z
-0022100288,499,4,PT10M29.00S,Campazzo S.FOUL (P4.T1) (G.Petraitis),NO,Contact after shot but arm contact not related to landing zone,landing_classifier,K. Middleton,MIL,F. Campazzo,DEN,G.Petraitis,2026-06-29T15:03:16.908Z
-0022100369,373,3,PT07M34.00S,Turner S.FOUL (P1.T1) (B.Adair),YES,,landing_classifier,R. Barrett,NYK,M. Turner,IND,B.Adair,2026-06-29T14:39:17.896Z
-0022100375,585,4,PT00M56.80S,Ingram S.FOUL (P5.PN) (Z.Zarba),YES,,landing_classifier,M. Morris,DEN,B. Ingram,NOP,Z.Zarba,2026-06-29T15:01:22.291Z
-0022100498,582,3,PT00M45.70S,Stanley S.FOUL (P2.PN) (S.Wright),UNCLEAR,Clip doesn't show a foul,landing_classifier,B. Forbes,SAS,C. Stanley,DET,S.Wright,2026-06-29T15:00:34.955Z
-0022100617,532,4,PT11M37.00S,Joseph S.FOUL (P2.T1) (G.Petraitis),YES,,landing_classifier,L. Shamet,PHX,C. Joseph,DET,G.Petraitis,2026-06-29T14:54:38.666Z
-0022100645,371,3,PT08M16.00S,Curry S.FOUL (P2.T1) (B.Schwab),YES,,landing_classifier,M. Strus,MIA,S. Curry,PHI,B.Schwab,2026-06-29T14:45:00.525Z
-0022100697,11,1,PT11M14.00S,Bridges S.FOUL (P1.T1) (J.DeRosa),YES,,landing_classifier,J. Holiday,IND,M. Bridges,PHX,J.DeRosa,2026-06-29T14:46:41.280Z
-0022100800,152,1,PT01M29.00S,Connaughton S.FOUL (P1.T3) (J.Goble),NO,,landing_classifier,B. McLemore,POR,P. Connaughton,MIL,J.Goble,2026-06-29T14:32:53.275Z
-0022101000,373,2,PT00M01.80S,Bane S.FOUL (P3.PN) (C.Kirkland),NO,,landing_classifier,E. Fournier,NYK,D. Bane,MEM,C.Kirkland,2026-06-29T14:26:58.580Z
-0022101050,534,4,PT09M21.00S,Satoransky S.FOUL (P5.PN) (E.Dalen),NO,Contact is made as shooter is going up,landing_classifier,I. Quickley,NYK,T. Satoransky,WAS,E.Dalen,2026-06-29T15:02:19.954Z
-0022101074,136,1,PT00M00.90S,Milton S.FOUL (P1.PN) (S.Twardoski),YES,Borderline,landing_classifier,J. Butler III,MIA,S. Milton,PHI,S.Twardoski,2026-06-29T14:59:32.648Z
-0022101197,574,4,PT00M22.30S,Achiuwa S.FOUL (P1.PN) (N.Buchert),NO,"Contest, Embiid pumps Achiuwa to leave his feet and he jumps into him as he's shooting",landing_classifier,J. Embiid,PHI,P. Achiuwa,TOR,N.Buchert,2026-06-29T14:53:31.139Z
-0022101226,27,1,PT09M21.00S,Brooks S.FOUL (P1.T2) (J.Goble),NO,Looks like contest contact is made prior to any landing zone activity,landing_classifier,I. Quickley,NYK,A. Brooks,TOR,J.Goble,2026-06-29T14:43:05.908Z
-0022200006,527,3,PT01M55.00S,Alvarado S.FOUL (P1.T3) (J.Butler),YES,,landing_classifier,K. Irving,BKN,J. Alvarado,NOP,J.Butler,2026-06-29T14:25:16.368Z
-0022200121,361,3,PT11M01.00S,Turner S.FOUL (P3.T1) (E.Malloy),YES,,landing_classifier,K. Lowry,MIA,M. Turner,IND,E.Malloy,2026-06-29T14:21:14.146Z
-0022200150,444,3,PT00M00.10S,Vincent S.FOUL (P3.PN) (P.Ransom),NO,Contest,landing_classifier,J. Hart,POR,G. Vincent,MIA,P.Ransom,2026-06-29T14:47:08.348Z
-0022200243,469,3,PT03M14.00S,Roddy S.FOUL (P3.T3) (D.Scott),YES,Borderline but my lean is landing,landing_classifier,K. Durant,BKN,D. Roddy,MEM,D.Scott,2026-06-29T14:55:55.855Z
-0022200286,351,3,PT08M56.00S,Boucher S.FOUL (P1.T2) (B.Barnaky),UNCLEAR,This clip does not show a shooting foul,landing_classifier,D. Finney-Smith,DAL,C. Boucher,TOR,B.Barnaky,2026-06-29T14:45:44.255Z
-0022200322,167,2,PT11M13.00S,Batum S.FOUL (P1.T1) (S.Mitchell),YES,,landing_classifier,L. Markkanen,UTA,N. Batum,LAC,S.Mitchell,2026-06-29T14:46:50.242Z
-0022200433,341,3,PT11M01.00S,VanVleet S.FOUL (P2.T1) (S.Wright),NO,Looks like at the contest level,landing_classifier,K. Irving,BKN,F. VanVleet,TOR,S.Wright,2026-06-29T14:54:20.322Z
-0022200484,380,3,PT09M09.00S,Siakam S.FOUL (P2.T2) (T.Ford),YES,,landing_classifier,K. Love,CLE,P. Siakam,TOR,T.Ford,2026-06-29T15:05:23.932Z
-0022200592,308,2,PT00M00.20S,Olynyk S.FOUL (P2.PN) (M.Smith),NO,Contest level,landing_classifier,Z. LaVine,CHI,K. Olynyk,UTA,M.Smith,2026-06-29T15:05:36.485Z
-0022200656,539,4,PT08M40.00S,Smith Jr. S.FOUL (P3.T4) (Z.Zarba),YES,,landing_classifier,D. White,BOS,D. Smith Jr.,CHA,Z.Zarba,2026-06-29T14:46:57.345Z
-0022200661,584,4,PT04M41.00S,Young S.FOUL (P4.PN) (A.Nagy),NO,Contest,landing_classifier,J. Butler III,MIA,T. Young,ATL,A.Nagy,2026-06-29T14:59:43.443Z
-0022200665,359,3,PT10M08.00S,VanVleet S.FOUL (P2.T1) (B.Kennedy),YES,,landing_classifier,G. Allen,MIL,F. VanVleet,TOR,B.Kennedy,2026-06-29T14:48:52.348Z
-0022200807,585,4,PT06M32.00S,Jones S.FOUL (P2.T4) (N.Green),YES,,landing_classifier,K. Ellis,SAC,H. Jones,NOP,N.Green,2026-06-29T14:48:34.248Z
-0022200856,293,2,PT01M37.00S,Poeltl S.FOUL (P3.PN) (N.Green),YES,,landing_classifier,B. Bogdanović,DET,J. Poeltl,TOR,N.Green,2026-06-29T14:22:06.713Z
-0022200960,606,4,PT02M36.00S,G. Antetokounmpo S.FOUL (P5.PN) (M.Kogut),YES,,landing_classifier,J. McDaniels,PHI,G. Antetokounmpo,MIL,M.Kogut,2026-06-29T14:57:20.086Z
-0022200971,712,5,PT04M16.00S,Mobley S.FOUL (P4.T1) (J.Goldenberg),YES,,landing_classifier,J. Brown,BOS,E. Mobley,CLE,J.Goldenberg,2026-06-29T14:58:24.499Z
-0022201129,22,1,PT10M10.00S,LaVine S.FOUL (P1.T2) (R.Acosta),NO,Gordon pumps defender into the air and jumps their shot into them,landing_classifier,E. Gordon,LAC,Z. LaVine,CHI,R.Acosta,2026-06-29T15:04:48.154Z
-0022201150,575,4,PT00M10.50S,Maxey S.FOUL (P2.PN) (D.Guthrie),NO,Contest foul,landing_classifier,F. VanVleet,TOR,T. Maxey,PHI,D.Guthrie,2026-06-29T14:30:14.721Z
-0022300060,174,1,PT00M19.00S,Monk S.FOUL (P1.T4) (J.Williams),YES,,landing_classifier,K. Thompson,GSW,M. Monk,SAC,J.Williams,2026-06-29T14:55:10.925Z
-0022300109,139,1,PT02M57.00S,Burks S.FOUL (P2.T2) (L.Holtkamp),YES,,landing_classifier,D. Bertans,OKC,A. Burks,DET,L.Holtkamp,2026-06-29T14:40:57.793Z
-0022300205,593,4,PT04M34.00S,Irving S.FOUL (P3.PN) (P.Fraher),NO,,landing_classifier,D. Lillard,MIL,K. Irving,DAL,P.Fraher,2026-06-29T14:24:17.316Z
-0022300287,223,2,PT10M37.00S,Curry S.FOUL (P2.T2) (D.Richardson),NO,,landing_classifier,D. Bertans,OKC,S. Curry,DAL,D.Richardson,2026-06-29T14:53:50.596Z
-0022300304,266,2,PT04M15.00S,Powell S.FOUL (P2.PN) (J.Goble),YES,,landing_classifier,S. Sharpe,POR,N. Powell,LAC,J.Goble,2026-06-29T14:41:54.842Z
-0022300598,175,2,PT11M42.00S,Tate S.FOUL (P1.T1) (M.Myers),YES,,landing_classifier,J. Clarkson,UTA,J. Tate,HOU,M.Myers,2026-06-29T14:44:43.176Z
-0022300605,419,3,PT03M43.00S,Reddish S.FOUL (P1.T1) (M.Dagher),YES,,landing_classifier,J. Grant,POR,C. Reddish,LAL,M.Dagher,2026-06-29T14:22:40.949Z
-0022300645,540,4,PT10M11.00S,VanVleet S.FOUL (P5.T2) (S.Wall),NO,Pumps VavVleet into the air and jumps into him for the foul,landing_classifier,C. Thomas,BKN,F. VanVleet,HOU,S.Wall,2026-06-29T14:44:24.117Z
-0022300676,69,1,PT05M57.00S,Jones S.FOUL (P1.T3) (J.Orr),NO,Contest/Reach-In,landing_classifier,A. Coffey,LAC,T. Jones,WAS,J.Orr,2026-06-29T14:56:15.750Z
-0022300850,590,4,PT02M28.00S,Suggs S.FOUL (P5.T4) (J.Conley),UNCLEAR,The landing contact is unambiguously clear; however it's unclear whether the shooter got hit in the face prior to the landing contact.,landing_classifier,K. George,UTA,J. Suggs,ORL,J.Conley,2026-06-29T14:27:59.567Z
-0022300896,389,3,PT06M23.00S,Williams Jr. S.FOUL (P2.T2) (S.Foster),YES,,landing_classifier,N. Batum,PHI,V. Williams Jr.,MEM,S.Foster,2026-06-29T14:22:31.545Z
-0022300982,612,4,PT01M41.00S,Moon S.FOUL (P2.PN) (J.Tiven),YES,,landing_classifier,V. Krejčí,ATL,X. Moon,LAC,J.Tiven,2026-06-29T14:39:30.039Z
-0022301007,559,4,PT04M24.00S,Schroder S.FOUL (P4.T1) (D.Taylor),UNCLEAR,"Borderline- defender moves into player's area after shot release, they make upper body contact before they fully go into the landing space",landing_classifier,D. Lillard,MIL,D. Schröder,BKN,D.Taylor,2026-06-29T14:35:50.627Z
-0022301012,125,1,PT03M29.00S,Ramsey S.FOUL (P1.T2) (T.Ford),YES,,landing_classifier,I. Joe,OKC,J. Ramsey,TOR,T.Ford,2026-06-29T14:21:43.444Z
+0021901318,628,4,PT00M45.70S,Johnson S.FOUL (P5.PN) (T.Brown),NO,,landing_classifier,P. Dozier,DEN,S. Johnson,TOR,T.Brown,2026-06-30T14:56:31.828Z
+0022000008,409,3,PT06M20.00S,Burke S.FOUL (P3.T4) (K.Cutler),UNCLEAR,"Borderline, lean contest foul more",landing_classifier,D. Schröder,LAL,T. Burke,DAL,K.Cutler,2026-06-30T14:39:47.791Z
+0022000033,144,1,PT01M06.00S,Smith S.FOUL (P1.PN) (H.Workman),NO,Contest,landing_classifier,T. Ross,ORL,I. Smith,WAS,H.Workman,2026-06-30T14:50:31.257Z
+0022000045,59,1,PT06M07.00S,Schroder S.FOUL (P1.T2) (N.Green),NO,,landing_classifier,D. Lillard,POR,D. Schröder,LAL,N.Green,2026-06-30T15:26:09.500Z
+0022000061,386,3,PT05M42.00S,Beverley S.FOUL (P3.T4) (S.Foster),NO,Contest level,landing_classifier,D. Lillard,POR,P. Beverley,LAC,S.Foster,2026-06-30T14:41:47.356Z
+0022000078,680,4,PT02M08.00S,Simons S.FOUL (P4.T4) (M.Ayotte),YES,,landing_classifier,J. Poole,GSW,A. Simons,POR,M.Ayotte,2026-06-30T15:16:41.028Z
+0022000114,603,4,PT00M47.60S,Ball S.FOUL (P4.PN) (J.Capers),NO,,landing_classifier,S. Gilgeous-Alexander,OKC,L. Ball,NOP,J.Capers,2026-06-30T15:26:31.387Z
+0022000120,351,2,PT01M25.00S,Marjanovic S.FOUL (P2.PN) (A.Moyer-Gleich),YES,,landing_classifier,P. Millsap,DEN,B. Marjanović,DAL,,2026-06-30T15:27:48.606Z
+0022000142,479,4,PT11M13.00S,Williams S.FOUL (P1.T2) (Z.Zarba),NO,,landing_classifier,L. Williams,LAC,P. Williams,CHI,Z.Zarba,2026-06-30T14:51:28.830Z
+0022000155,201,2,PT07M53.00S,Trent Jr. S.FOUL (P1.T1) (S.Jelks),NO,,landing_classifier,K. Lowry,TOR,G. Trent Jr.,POR,S.Jelks,2026-06-30T14:41:51.443Z
+0022000204,14,1,PT10M49.00S,Osman S.FOUL (P1.T1) (S.Wright),UNCLEAR,,landing_classifier,D. Bertans,WAS,C. Osman,CLE,S.Wright,2026-06-30T14:44:13.963Z
+0022000219,389,3,PT07M12.00S,Wright S.FOUL (P2.T4) (Z.Zarba),YES,,landing_classifier,T. Young,ATL,D. Wright,DET,Z.Zarba,2026-06-30T15:19:32.940Z
+0022000268,597,4,PT03M47.00S,Mann S.FOUL (P4.T3) (S.Wall),NO,Classic Trae Young jumps into defender,landing_classifier,T. Young,ATL,T. Mann,LAC,S.Wall,2026-06-30T14:59:44.141Z
+0022000305,194,2,PT08M35.00S,Bey S.FOUL (P1.T2) (K.Cutler),NO,,landing_classifier,J. Poole,GSW,S. Bey,DET,K.Cutler,2026-06-30T15:09:25.630Z
+0022000344,318,3,PT11M26.00S,Williams S.FOUL (P2.T1) (E.Lewis),YES,,landing_classifier,J. Ennis III,ORL,P. Williams,CHI,E.Lewis,2026-06-30T15:27:50.901Z
+0022000354,486,4,PT11M32.00S,Thybulle S.FOUL (P2.T1) (K.Lane),YES,Somewhat borderline as to whether Thybulle contacts Shamet in the arm prior to Shamet landing on Thybulle,landing_classifier,L. Shamet,BKN,M. Thybulle,PHI,K.Lane,2026-06-30T15:15:16.691Z
+0022000373,124,1,PT00M32.50S,Jokic S.FOUL (P1.T2) (S.Wright),YES,,landing_classifier,K. Middleton,MIL,N. Jokić,DEN,S.Wright,2026-06-30T14:56:13.286Z
+0022000411,450,3,PT03M08.00S,Finney-Smith S.FOUL (P3.PN) (J.Butler),NO,,landing_classifier,D. Lillard,POR,D. Finney-Smith,DAL,J.Butler,2026-06-30T14:53:20.811Z
+0022000435,597,4,PT04M20.00S,Mills S.FOUL (P1.PN) (P.Fraher),NO,,landing_classifier,D. Garland,CLE,P. Mills,SAS,P.Fraher,2026-06-30T15:27:29.446Z
+0022000436,508,4,PT09M02.00S,Gibson S.FOUL (P2.T1) (J.Conley),YES,,landing_classifier,T. Ross,ORL,T. Gibson,NYK,J.Conley,2026-06-30T15:21:29.794Z
+0022000437,535,4,PT09M21.00S,Hartenstein S.FOUL (P3.T2) (D.Mosher),NO,,landing_classifier,D. Bertans,WAS,I. Hartenstein,DEN,D.Mosher,2026-06-30T15:16:29.524Z
+0022000458,120,1,PT03M18.00S,Quickley S.FOUL (P1.T4) (J.DeRosa),YES,,landing_classifier,P. Mills,SAS,I. Quickley,NYK,J.DeRosa,2026-06-30T14:54:28.398Z
+0022000521,152,1,PT00M00.90S,Stewart S.FOUL (P1.PN) (T.Brothers),NO,,landing_classifier,I. Quickley,NYK,I. Stewart,DET,T.Brothers,2026-06-30T15:04:43.208Z
+0022000541,22,1,PT09M24.00S,Barrett S.FOUL (P1.T1) (S.Jelks),YES,,landing_classifier,L. Walker IV,SAS,R. Barrett,NYK,S.Jelks,2026-06-30T15:02:31.833Z
+0022000548,445,3,PT02M16.00S,Arcidiacono S.FOUL (P1.T2) (T.Washington),YES,,landing_classifier,J. Redick,NOP,R. Arcidiacono,CHI,T.Washington,2026-06-30T15:22:41.351Z
+0022000552,265,2,PT04M06.00S,Johnson S.FOUL (P2.T2) (B.Barnaky),YES,,landing_classifier,K. Walker,BOS,S. Johnson,TOR,B.Barnaky,2026-06-30T14:41:25.663Z
+0022000566,405,3,PT10M02.00S,Morant S.FOUL (P2.T1) (A.Moyer-Gleich),NO,,landing_classifier,G. Mathews,WAS,J. Morant,MEM,,2026-06-30T15:23:54.862Z
+0022000586,47,1,PT07M06.00S,Ntilikina S.FOUL (P1.T1) (J.Tiven),NO,,landing_classifier,L. Dort,OKC,F. Ntilikina,NYK,J.Tiven,2026-06-30T14:47:33.742Z
+0022000614,421,3,PT03M08.00S,Alexander-Walker S.FOUL (P1.T3) (E.Dalen),NO,,landing_classifier,D. Lillard,POR,N. Alexander-Walker,NOP,E.Dalen,2026-06-30T14:52:49.773Z
+0022000634,285,2,PT01M30.00S,Watson S.FOUL (P3.T3) (C.Washington),NO,,landing_classifier,D. Mitchell,UTA,P. Watson,TOR,C.Washington,2026-06-30T15:07:51.002Z
+0022000636,330,3,PT11M50.00S,Green S.FOUL (P2.T1) (S.Corbin),NO,,landing_classifier,K. Anderson,MEM,D. Green,GSW,S.Corbin,2026-06-30T15:05:33.851Z
+0022000672,308,2,PT00M28.90S,House Jr. S.FOUL (P2.PN) (J.Williams),YES,,landing_classifier,T. Rozier,CHA,D. House Jr.,HOU,J.Williams,2026-06-30T14:56:56.866Z
+0022000679,26,1,PT09M52.00S,Barrett S.FOUL (P1.T2) (R.Acosta),YES,,landing_classifier,G. Mathews,WAS,R. Barrett,NYK,R.Acosta,2026-06-30T15:15:55.513Z
+0022000685,7,1,PT11M46.00S,DiVincenzo S.FOUL (P1.T1) (E.Malloy),NO,,landing_classifier,K. Walker,BOS,D. DiVincenzo,MIL,E.Malloy,2026-06-30T15:07:59.012Z
+0022000768,504,4,PT09M55.00S,Martin Jr. S.FOUL (P2.T2) (M.Kogut),YES,,landing_classifier,C. Paul,PHX,K. Martin,HOU,M.Kogut,2026-06-30T15:05:48.493Z
+0022000813,302,3,PT11M09.00S,Morris Sr. S.FOUL (P2.T1) (J.Sterling),YES,,landing_classifier,S. Bey,DET,M. Morris Sr.,LAC,J.Sterling,2026-06-30T14:47:18.469Z
+0022000836,490,3,PT00M33.70S,Jerome S.FOUL (P2.PN) (N.Green),NO,,landing_classifier,S. Curry,GSW,T. Jerome,OKC,N.Green,2026-06-30T14:43:43.178Z
+0022000849,383,3,PT06M22.00S,Anthony S.FOUL (P2.T2) (H.Workman),NO,,landing_classifier,C. Boucher,TOR,C. Anthony,ORL,H.Workman,2026-06-30T15:22:01.205Z
+0022000915,260,2,PT03M26.00S,Hield S.FOUL (P2.PN) (Z.Zarba),NO,,landing_classifier,S. Curry,GSW,B. Hield,SAC,Z.Zarba,2026-06-30T14:53:42.856Z
+0022000921,520,4,PT05M45.00S,Osman S.FOUL (P3.T4) (C.Kirkland),YES,,landing_classifier,M. Flynn,TOR,C. Osman,CLE,C.Kirkland,2026-06-30T14:50:55.063Z
+0022001004,301,2,PT02M29.00S,Brazdeikis S.FOUL (P1.PN) (Z.Zarba),NO,,landing_classifier,C. Martin,CHA,I. Brazdeikis,ORL,Z.Zarba,2026-06-30T15:07:04.392Z
+0022001006,464,3,PT05M12.00S,Forbes S.FOUL (P1.T3) (D.Taylor),NO,Olynyk pumps defender into the air and jumps into them,landing_classifier,K. Olynyk,HOU,B. Forbes,MIL,D.Taylor,2026-06-30T15:30:51.909Z
+0022001016,252,2,PT03M46.00S,Brooks S.FOUL (P2.PN) (M.Davis),YES,,landing_classifier,J. Clarkson,UTA,A. Brooks,HOU,M.Davis,2026-06-30T14:53:24.197Z
+0022001019,361,3,PT05M47.00S,Randle S.FOUL (P3.T4) (E.Lewis),YES,,landing_classifier,M. Morris Sr.,LAC,J. Randle,NYK,E.Lewis,2026-06-30T15:04:31.296Z
+0022001038,483,4,PT10M59.00S,G. Antetokounmpo S.FOUL (P4.T1) (N.Buchert),YES,,landing_classifier,C. Randle,ORL,G. Antetokounmpo,MIL,N.Buchert,2026-06-30T14:51:27.076Z
+0022001046,255,2,PT04M03.00S,McLemore S.FOUL (P2.T3) (E.Dalen),NO,,landing_classifier,A. Brooks,HOU,B. McLemore,LAL,E.Dalen,2026-06-30T15:18:10.624Z
+0022001049,137,1,PT03M08.00S,Hall S.FOUL (P1.T4) (B.Adair),NO,,landing_classifier,D. Gallinari,ATL,D. Hall,ORL,B.Adair,2026-06-30T14:52:27.358Z
+0022001049,305,2,PT00M29.00S,Harris S.FOUL (P2.T1) (A.Smith),NO,Contest,landing_classifier,B. Bogdanović,ATL,G. Harris,ORL,A.Smith,2026-06-30T14:54:55.165Z
+0022001055,502,3,PT00M04.30S,Scott S.FOUL (P1.PN) (B.Forte),YES,,landing_classifier,C. Randle,ORL,M. Scott,PHI,B.Forte,2026-06-30T15:08:11.230Z
+0022001063,192,2,PT10M40.00S,McLaughlin S.FOUL (P1.T1) (N.Buchert),NO,,landing_classifier,T. Waters,BOS,J. McLaughlin,MIN,N.Buchert,2026-06-30T15:00:59.379Z
+0022001065,489,4,PT11M12.00S,Weatherspoon S.FOUL (P3.T1) (T.Brothers),NO,,landing_classifier,L. Galloway,PHX,Q. Weatherspoon,SAS,T.Brothers,2026-06-30T14:59:16.822Z
+0022100002,156,1,PT01M39.00S,Anthony S.FOUL (P2.PN) (R.Acosta),YES,,landing_classifier,S. Curry,GSW,C. Anthony,LAL,R.Acosta,2026-06-30T15:29:44.506Z
+0022100070,23,1,PT10M34.00S,Melton S.FOUL (P1.T1) (E.Dalen),YES,,landing_classifier,S. Curry,GSW,D. Melton,MEM,E.Dalen,2026-06-30T15:26:00.506Z
+0022100115,32,1,PT09M22.00S,Okogie S.FOUL (P1.T1) (M.Davis),NO,Contest,landing_classifier,P. George,LAC,J. Okogie,MIN,M.Davis,2026-06-30T14:54:06.906Z
+0022100165,678,4,PT02M18.00S,Alexander-Walker S.FOUL (P1.T3) (S.Foster),UNCLEAR,This is a jump ball,landing_classifier,L. Dort,OKC,N. Alexander-Walker,NOP,S.Foster,2026-06-30T15:03:31.799Z
+0022100172,139,1,PT00M15.20S,Bitadze S.FOUL (P1.T4) (R.Acosta),YES,,landing_classifier,J. Clarkson,UTA,G. Bitadze,IND,R.Acosta,2026-06-30T15:03:59.659Z
+0022100182,393,3,PT07M29.00S,Je. Green S.FOUL (P1.T1) (S.Wright),NO,,landing_classifier,T. Young,ATL,J. Green,DEN,S.Wright,2026-06-30T14:48:17.471Z
+0022100250,201,2,PT10M51.00S,White S.FOUL (P1.T1) (M.Kogut),NO,Arm contact slightly after the shot but not near a landing area,landing_classifier,A. Burks,NYK,C. White,CHI,M.Kogut,2026-06-30T15:25:16.592Z
+0022100255,567,4,PT05M18.00S,Robinson-Earl S.FOUL (P2.T2) (C.Blair),NO,,landing_classifier,T. Young,ATL,J. Robinson-Earl,OKC,C.Blair,2026-06-30T15:19:01.789Z
+0022100278,40,1,PT09M00.00S,Poole S.FOUL (P1.T1) (K.Fitzgerald),YES,,landing_classifier,S. Curry,PHI,J. Poole,GSW,K.Fitzgerald,2026-06-30T14:51:13.406Z
+0022100288,499,4,PT10M29.00S,Campazzo S.FOUL (P4.T1) (G.Petraitis),NO,Contact after shot but arm contact not related to landing zone,landing_classifier,K. Middleton,MIL,F. Campazzo,DEN,G.Petraitis,2026-06-30T14:54:15.615Z
+0022100297,483,3,PT00M01.90S,Augustin S.FOUL (P2.PN) (C.Kirkland),NO,,landing_classifier,T. Rozier,CHA,D. Augustin,HOU,C.Kirkland,2026-06-30T14:55:57.907Z
+0022100302,187,2,PT10M45.00S,Flynn S.FOUL (P1.T1) (S.Foster),YES,,landing_classifier,J. Richardson,BOS,M. Flynn,TOR,S.Foster,2026-06-30T14:44:38.075Z
+0022100369,373,3,PT07M34.00S,Turner S.FOUL (P1.T1) (B.Adair),YES,,landing_classifier,R. Barrett,NYK,M. Turner,IND,B.Adair,2026-06-30T15:27:52.279Z
+0022100375,585,4,PT00M56.80S,Ingram S.FOUL (P5.PN) (Z.Zarba),YES,,landing_classifier,M. Morris,DEN,B. Ingram,NOP,Z.Zarba,2026-06-30T14:51:35.414Z
+0022100423,607,4,PT01M39.00S,McDaniels S.FOUL (P5.T4) (J.Conley),UNCLEAR,"This is a layup, not 3pt attempt",landing_classifier,B. Forbes,SAS,J. McDaniels,CHA,J.Conley,2026-06-30T14:46:09.322Z
+0022100478,137,2,PT11M29.00S,Stephenson S.FOUL (P1.T1) (A.Smith),YES,,landing_classifier,I. Joe,PHI,L. Stephenson,ATL,A.Smith,2026-06-30T15:14:41.279Z
+0022100480,29,1,PT09M24.00S,Holiday S.FOUL (P1.T2) (S.Wright),NO,,landing_classifier,K. Walker,NYK,A. Holiday,WAS,S.Wright,2026-06-30T14:46:52.831Z
+0022100498,582,3,PT00M45.70S,Stanley S.FOUL (P2.PN) (S.Wright),UNCLEAR,Clip doesn't show a foul,landing_classifier,B. Forbes,SAS,C. Stanley,DET,S.Wright,2026-06-30T15:08:02.382Z
+0022100505,636,4,PT02M21.00S,Anderson S.FOUL (P4.PN) (J.Butler),YES,,landing_classifier,C. Johnson,PHX,K. Anderson,MEM,J.Butler,2026-06-30T14:51:20.581Z
+0022100617,532,4,PT11M37.00S,Joseph S.FOUL (P2.T1) (G.Petraitis),YES,,landing_classifier,L. Shamet,PHX,C. Joseph,DET,G.Petraitis,2026-06-30T14:55:41.994Z
+0022100645,371,3,PT08M16.00S,Curry S.FOUL (P2.T1) (B.Schwab),YES,,landing_classifier,M. Strus,MIA,S. Curry,PHI,B.Schwab,2026-06-30T14:42:20.710Z
+0022100670,629,4,PT03M04.00S,Huerter S.FOUL (P4.PN) (B.Kennedy),NO,,landing_classifier,D. Russell,MIN,K. Huerter,ATL,B.Kennedy,2026-06-30T14:52:16.857Z
+0022100697,11,1,PT11M14.00S,Bridges S.FOUL (P1.T1) (J.DeRosa),YES,,landing_classifier,J. Holiday,IND,M. Bridges,PHX,J.DeRosa,2026-06-30T15:08:55.695Z
+0022100705,437,3,PT06M28.00S,Morant S.FOUL (P3.T4) (M.Smith),NO,,landing_classifier,J. Brunson,DAL,J. Morant,MEM,M.Smith,2026-06-30T14:45:28.292Z
+0022100788,589,4,PT04M00.00S,Williams S.FOUL (P2.T4) (B.Barnaky),YES,,landing_classifier,S. Bey,DET,G. Williams,BOS,B.Barnaky,2026-06-30T15:02:55.910Z
+0022100800,152,1,PT01M29.00S,Connaughton S.FOUL (P1.T3) (J.Goble),NO,,landing_classifier,B. McLemore,POR,P. Connaughton,MIL,J.Goble,2026-06-30T15:00:50.753Z
+0022100803,635,4,PT02M02.00S,Hayes S.FOUL (P4.T4) (M.Myers),NO,Contest level on the arm/hand,landing_classifier,D. Russell,MIN,K. Hayes,DET,M.Myers,2026-06-30T15:31:04.231Z
+0022100819,194,2,PT08M33.00S,Temple S.FOUL (P1.T3) (P.Ransom),NO,,landing_classifier,G. Mathews,HOU,G. Temple,NOP,P.Ransom,2026-06-30T15:01:15.264Z
+0022100907,360,3,PT08M03.00S,Neto S.FOUL (P1.T1) (C.Kirkland),YES,,landing_classifier,L. Markkanen,CLE,R. Neto,WAS,C.Kirkland,2026-06-30T15:03:03.725Z
+0022100915,584,4,PT06M53.00S,Hayes S.FOUL (P2.T4) (E.Lewis),YES,,landing_classifier,T. Rozier,CHA,K. Hayes,DET,E.Lewis,2026-06-30T14:43:53.681Z
+0022100916,524,4,PT08M48.00S,Coffey S.FOUL (P3.T2) (E.Malloy),YES,,landing_classifier,G. Mathews,HOU,A. Coffey,LAC,E.Malloy,2026-06-30T15:15:46.505Z
+0022100957,47,1,PT07M40.00S,Hampton S.FOUL (P2.T3) (B.Schwab),NO,,landing_classifier,J. Jackson Jr.,MEM,R. Hampton,ORL,B.Schwab,2026-06-30T14:49:32.655Z
+0022100978,41,1,PT08M17.00S,Hayes S.FOUL (P1.T2) (K.Fitzgerald),NO,,landing_classifier,Z. Williams,MEM,J. Hayes,NOP,K.Fitzgerald,2026-06-30T15:27:58.508Z
+0022100979,390,3,PT08M27.00S,Mann S.FOUL (P3.T3) (L.Wood),NO,,landing_classifier,K. Middleton,MIL,T. Mann,OKC,L.Wood,2026-06-30T14:45:20.695Z
+0022100983,282,2,PT01M36.00S,Adebayo S.FOUL (P1.T1) (Z.Zarba),YES,,landing_classifier,D. Booker,PHX,B. Adebayo,MIA,Z.Zarba,2026-06-30T15:15:07.007Z
+0022100994,212,2,PT07M22.00S,Bjelica S.FOUL (P1.T2) (S.Twardoski),YES,,landing_classifier,B. Forbes,DEN,N. Bjelica,GSW,S.Twardoski,2026-06-30T15:22:13.935Z
+0022101000,373,2,PT00M01.80S,Bane S.FOUL (P3.PN) (C.Kirkland),NO,,landing_classifier,E. Fournier,NYK,D. Bane,MEM,C.Kirkland,2026-06-30T14:51:06.368Z
+0022101000,683,4,PT04M33.00S,Randle S.FOUL (P4.PN) (C.Kirkland),NO,,landing_classifier,J. Jackson Jr.,MEM,J. Randle,NYK,C.Kirkland,2026-06-30T14:59:39.919Z
+0022101050,534,4,PT09M21.00S,Satoransky S.FOUL (P5.PN) (E.Dalen),NO,Contact is made as shooter is going up,landing_classifier,I. Quickley,NYK,T. Satoransky,WAS,E.Dalen,2026-06-30T14:40:39.998Z
+0022101057,392,3,PT03M39.00S,White S.FOUL (P3.PN) (N.Sago),NO,,landing_classifier,D. DiVincenzo,SAC,D. White,BOS,N.Sago,2026-06-30T14:57:19.451Z
+0022101070,85,1,PT05M14.00S,Thompson S.FOUL (P1.T4) (N.Sago),YES,,landing_classifier,J. Richardson,SAS,K. Thompson,GSW,N.Sago,2026-06-30T14:54:05.247Z
+0022101074,136,1,PT00M00.90S,Milton S.FOUL (P1.PN) (S.Twardoski),YES,Borderline,landing_classifier,J. Butler III,MIA,S. Milton,PHI,S.Twardoski,2026-06-30T14:50:29.725Z
+0022101087,81,1,PT04M22.00S,Williams S.FOUL (P2.T3) (Z.Zarba),NO,,landing_classifier,D. Mitchell,UTA,G. Williams,BOS,Z.Zarba,2026-06-30T14:49:20.465Z
+0022101087,153,2,PT11M46.00S,Forrest S.FOUL (P2.T1) (K.Cutler),UNCLEAR,,landing_classifier,J. Tatum,BOS,T. Forrest,UTA,K.Cutler,2026-06-30T14:58:13.530Z
+0022101091,92,1,PT04M22.00S,F. Wagner S.FOUL (P2.T3) (P.Fraher),NO,,landing_classifier,T. Mann,OKC,F. Wagner,ORL,P.Fraher,2026-06-30T15:30:50.357Z
+0022101094,443,3,PT05M34.00S,Murray S.FOUL (P1.T4) (J.Tiven),NO,,landing_classifier,B. McLemore,POR,D. Murray,SAS,J.Tiven,2026-06-30T14:40:37.436Z
+0022101157,593,4,PT04M41.00S,Krejci S.FOUL (P4.T4) (N.Buchert),YES,,landing_classifier,F. Jackson,DET,V. Krejčí,OKC,N.Buchert,2026-06-30T14:50:19.584Z
+0022101165,268,2,PT02M36.00S,Bogdanovic S.FOUL (P1.T3) (J.Orr),YES,,landing_classifier,J. Poole,GSW,B. Bogdanović,UTA,J.Orr,2026-06-30T14:42:07.390Z
+0022101197,574,4,PT00M22.30S,Achiuwa S.FOUL (P1.PN) (N.Buchert),NO,"Contest, Embiid pumps Achiuwa to leave his feet and he jumps into him as he's shooting",landing_classifier,J. Embiid,PHI,P. Achiuwa,TOR,N.Buchert,2026-06-30T15:31:00.226Z
+0022101226,27,1,PT09M21.00S,Brooks S.FOUL (P1.T2) (J.Goble),NO,Looks like contest contact is made prior to any landing zone activity,landing_classifier,I. Quickley,NYK,A. Brooks,TOR,J.Goble,2026-06-30T15:19:34.764Z
+0022200006,527,3,PT01M55.00S,Alvarado S.FOUL (P1.T3) (J.Butler),YES,,landing_classifier,K. Irving,BKN,J. Alvarado,NOP,J.Butler,2026-06-30T14:45:29.845Z
+0022200026,346,3,PT11M04.00S,Caldwell-Pope S.FOUL (P2.T1) (C.Kirkland),YES,,landing_classifier,S. Curry,GSW,K. Caldwell-Pope,DEN,C.Kirkland,2026-06-30T15:31:18.836Z
+0022200070,72,1,PT05M31.00S,Hunter S.FOUL (P1.T2) (B.Barnaky),YES,,landing_classifier,B. Bogdanović,DET,D. Hunter,ATL,B.Barnaky,2026-06-30T15:23:09.506Z
+0022200121,361,3,PT11M01.00S,Turner S.FOUL (P3.T1) (E.Malloy),YES,,landing_classifier,K. Lowry,MIA,M. Turner,IND,E.Malloy,2026-06-30T15:07:05.493Z
+0022200123,135,1,PT01M08.00S,Avdija S.FOUL (P1.T4) (M.Myers),NO,,landing_classifier,K. Durant,BKN,D. Avdija,WAS,M.Myers,2026-06-30T15:18:50.583Z
+0022200124,465,3,PT01M47.00S,Caruso S.FOUL (P3.PN) (R.Acosta),YES,,landing_classifier,J. Brown,BOS,A. Caruso,CHI,R.Acosta,2026-06-30T14:50:06.211Z
+0022200150,444,3,PT00M00.10S,Vincent S.FOUL (P3.PN) (P.Ransom),NO,Contest,landing_classifier,J. Hart,POR,G. Vincent,MIA,P.Ransom,2026-06-30T14:48:28.095Z
+0022200174,485,3,PT00M40.30S,McDaniels S.FOUL (P3.PN) (M.Ervin),YES,,landing_classifier,J. Butler III,MIA,J. McDaniels,CHA,M.Ervin,2026-06-30T14:52:07.302Z
+0022200203,123,1,PT00M25.80S,Eason S.FOUL (P1.T2) (J.Tiven),NO,,landing_classifier,P. George,LAC,T. Eason,HOU,J.Tiven,2026-06-30T15:16:00.091Z
+0022200229,207,2,PT10M34.00S,K. Williams S.FOUL (P1.T1) (M.Smith),NO,,landing_classifier,J. Jackson Jr.,MEM,K. Williams,OKC,M.Smith,2026-06-30T15:04:06.467Z
+0022200240,62,1,PT07M29.00S,Randle S.FOUL (P1.T3) (T.Ford),YES,,landing_classifier,C. Payne,PHX,J. Randle,NYK,T.Ford,2026-06-30T14:51:41.027Z
+0022200240,627,4,PT00M54.40S,Okogie S.FOUL (P3.PN) (T.Ford),UNCLEAR,This isn't the clip depicted,landing_classifier,I. Hartenstein,NYK,J. Okogie,PHX,T.Ford,2026-06-30T15:30:38.827Z
+0022200243,469,3,PT03M14.00S,Roddy S.FOUL (P3.T3) (D.Scott),YES,Borderline but my lean is landing,landing_classifier,K. Durant,BKN,D. Roddy,MEM,D.Scott,2026-06-30T14:39:42.810Z
+0022200286,351,3,PT08M56.00S,Boucher S.FOUL (P1.T2) (B.Barnaky),UNCLEAR,This clip does not show a shooting foul,landing_classifier,D. Finney-Smith,DAL,C. Boucher,TOR,B.Barnaky,2026-06-30T14:50:21.334Z
+0022200289,594,4,PT03M38.00S,Bridges S.FOUL (P1.T2) (G.Petraitis),YES,,landing_classifier,L. Markkanen,UTA,M. Bridges,PHX,G.Petraitis,2026-06-30T15:01:08.244Z
+0022200322,167,2,PT11M13.00S,Batum S.FOUL (P1.T1) (S.Mitchell),YES,,landing_classifier,L. Markkanen,UTA,N. Batum,LAC,S.Mitchell,2026-06-30T14:51:14.822Z
+0022200343,403,3,PT04M15.00S,Beasley S.FOUL (P1.T4) (T.Brothers),YES,,landing_classifier,A. Simons,POR,M. Beasley,UTA,T.Brothers,2026-06-30T15:05:40.444Z
+0022200396,459,3,PT00M17.10S,Beverley S.FOUL (P4.T2) (T.Ricks),NO,,landing_classifier,B. Bogdanović,DET,P. Beverley,LAL,T.Ricks,2026-06-30T14:51:50.373Z
+0022200403,296,2,PT03M16.00S,Kispert S.FOUL (P1.T4) (K.Cutler),YES,,landing_classifier,K. Durant,BKN,C. Kispert,WAS,K.Cutler,2026-06-30T14:49:13.140Z
+0022200414,362,2,PT00M06.00S,Plumlee S.FOUL (P1.PN) (D.Guthrie),YES,,landing_classifier,A. Burks,DET,M. Plumlee,CHA,D.Guthrie,2026-06-30T14:57:34.279Z
+0022200416,325,2,PT02M05.00S,Banchero S.FOUL (P2.T4) (J.Conley),YES,,landing_classifier,D. Hunter,ATL,P. Banchero,ORL,J.Conley,2026-06-30T15:05:55.431Z
+0022200433,341,3,PT11M01.00S,VanVleet S.FOUL (P2.T1) (S.Wright),NO,Looks like at the contest level,landing_classifier,K. Irving,BKN,F. VanVleet,TOR,S.Wright,2026-06-30T14:51:34.238Z
+0022200484,380,3,PT09M09.00S,Siakam S.FOUL (P2.T2) (T.Ford),YES,,landing_classifier,K. Love,CLE,P. Siakam,TOR,T.Ford,2026-06-30T15:29:46.037Z
+0022200592,308,2,PT00M00.20S,Olynyk S.FOUL (P2.PN) (M.Smith),NO,Contest level,landing_classifier,Z. LaVine,CHI,K. Olynyk,UTA,M.Smith,2026-06-30T15:09:43.352Z
+0022200597,20,1,PT09M50.00S,Anunoby S.FOUL (P1.T1) (N.Sago),YES,,landing_classifier,A. Simons,POR,O. Anunoby,TOR,N.Sago,2026-06-30T15:18:26.586Z
+0022200656,539,4,PT08M40.00S,Smith Jr. S.FOUL (P3.T4) (Z.Zarba),YES,,landing_classifier,D. White,BOS,D. Smith Jr.,CHA,Z.Zarba,2026-06-30T14:59:41.557Z
+0022200658,123,1,PT02M09.00S,Osman S.FOUL (P1.PN) (R.Acosta),NO,,landing_classifier,D. Graham,NOP,C. Osman,CLE,R.Acosta,2026-06-30T15:28:34.526Z
+0022200661,584,4,PT04M41.00S,Young S.FOUL (P4.PN) (A.Nagy),NO,Contest,landing_classifier,J. Butler III,MIA,T. Young,ATL,A.Nagy,2026-06-30T14:49:22.232Z
+0022200665,359,3,PT10M08.00S,VanVleet S.FOUL (P2.T1) (B.Kennedy),YES,,landing_classifier,G. Allen,MIL,F. VanVleet,TOR,B.Kennedy,2026-06-30T14:42:09.308Z
+0022200738,605,4,PT00M28.90S,Butler S.FOUL (P1.PN) (T.Ford),YES,,landing_classifier,P. Banchero,ORL,J. Butler III,MIA,T.Ford,2026-06-30T15:24:45.904Z
+0022200763,572,4,PT01M37.00S,Hart S.FOUL (P4.T4) (B.Kennedy),YES,,landing_classifier,D. Murray,ATL,J. Hart,POR,B.Kennedy,2026-06-30T15:15:41.196Z
+0022200779,268,2,PT05M49.00S,Osman S.FOUL (P1.T2) (T.Brothers),NO,,landing_classifier,S. Aldama,MEM,C. Osman,CLE,T.Brothers,2026-06-30T15:30:10.962Z
+0022200807,585,4,PT06M32.00S,Jones S.FOUL (P2.T4) (N.Green),YES,,landing_classifier,K. Ellis,SAC,H. Jones,NOP,N.Green,2026-06-30T15:00:47.837Z
+0022200813,648,4,PT00M53.40S,Powell S.FOUL (P3.PN) (N.Sago),YES,,landing_classifier,J. Clarkson,UTA,D. Powell,DAL,N.Sago,2026-06-30T15:21:18.140Z
+0022200831,10,1,PT10M59.00S,F. Wagner S.FOUL (P1.T1) (E.Scott),YES,,landing_classifier,M. Porter Jr.,DEN,F. Wagner,ORL,E.Scott,2026-06-30T15:25:15.066Z
+0022200833,513,4,PT08M34.00S,Dosunmu S.FOUL (P3.T3) (E.Malloy),NO,,landing_classifier,S. Dinwiddie,BKN,A. Dosunmu,CHI,E.Malloy,2026-06-30T14:53:00.107Z
+0022200855,574,4,PT03M55.00S,Horford S.FOUL (P3.T4) (E.Lewis),YES,,landing_classifier,S. Aldama,MEM,A. Horford,BOS,E.Lewis,2026-06-30T14:47:52.523Z
+0022200856,293,2,PT01M37.00S,Poeltl S.FOUL (P3.PN) (N.Green),YES,,landing_classifier,B. Bogdanović,DET,J. Poeltl,TOR,N.Green,2026-06-30T14:44:15.718Z
+0022200875,411,3,PT01M43.00S,McDaniels S.FOUL (P1.T4) (N.Buchert),YES,,landing_classifier,D. Mitchell,CLE,J. McDaniels,PHI,N.Buchert,2026-06-30T14:41:36.257Z
+0022200884,589,4,PT05M03.00S,Avdija S.FOUL (P4.T2) (G.Petraitis),NO,,landing_classifier,K. Anderson,MIN,D. Avdija,WAS,G.Petraitis,2026-06-30T14:44:48.825Z
+0022200960,606,4,PT02M36.00S,G. Antetokounmpo S.FOUL (P5.PN) (M.Kogut),YES,,landing_classifier,J. McDaniels,PHI,G. Antetokounmpo,MIL,M.Kogut,2026-06-30T14:50:28.423Z
+0022200978,357,3,PT10M33.00S,Fultz S.FOUL (P2.T1) (J.DeRosa),NO,,landing_classifier,K. Middleton,MIL,M. Fultz,ORL,J.DeRosa,2026-06-30T14:43:19.026Z
+0022201073,157,2,PT11M28.00S,McLaughlin S.FOUL (P1.T1) (E.Lewis),NO,,landing_classifier,I. Quickley,NYK,J. McLaughlin,MIN,E.Lewis,2026-06-30T15:02:21.602Z
+0022201101,166,2,PT11M49.00S,Holiday S.FOUL (P1.T1) (E.Scott),YES,,landing_classifier,S. Mykhailiuk,CHA,J. Holiday,DAL,E.Scott,2026-06-30T15:08:54.077Z
+0022201110,390,3,PT05M32.00S,Tucker S.FOUL (P3.T3) (J.Williams),YES,,landing_classifier,C. Paul,PHX,P. Tucker,PHI,J.Williams,2026-06-30T15:18:56.500Z
+0022201125,532,4,PT10M59.00S,Toscano-Anderson S.FOUL (P3.T1) (Z.Zarba),NO,,landing_classifier,C. Payne,PHX,J. Toscano-Anderson,UTA,Z.Zarba,2026-06-30T15:19:08.450Z
+0022201129,22,1,PT10M10.00S,LaVine S.FOUL (P1.T2) (R.Acosta),NO,Gordon pumps defender into the air and jumps their shot into them,landing_classifier,E. Gordon,LAC,Z. LaVine,CHI,R.Acosta,2026-06-30T15:19:17.410Z
+0022201150,575,4,PT00M10.50S,Maxey S.FOUL (P2.PN) (D.Guthrie),NO,Contest foul,landing_classifier,F. VanVleet,TOR,T. Maxey,PHI,D.Guthrie,2026-06-30T14:40:22.975Z
+0022201170,709,5,PT02M58.00S,Murray S.FOUL (P3.T1) (N.Buchert),NO,,landing_classifier,D. McDermott,SAS,K. Murray,SAC,N.Buchert,2026-06-30T14:51:58.235Z
+0022201211,528,4,PT11M17.00S,Dozier S.FOUL (P3.T2) (B.Forte),YES,,landing_classifier,J. Poole,GSW,P. Dozier,SAC,B.Forte,2026-06-30T15:28:40.880Z
+0022300024,277,2,PT02M14.00S,Jackson S.FOUL (P2.PN) (N.Sago),NO,,landing_classifier,N. Powell,LAC,R. Jackson,DEN,N.Sago,2026-06-30T15:02:39.146Z
+0022300025,283,2,PT04M40.00S,Wiggins S.FOUL (P1.T3) (T.Ford),NO,,landing_classifier,A. Edwards,MIN,A. Wiggins,GSW,T.Ford,2026-06-30T14:57:49.064Z
+0022300060,174,1,PT00M19.00S,Monk S.FOUL (P1.T4) (J.Williams),YES,,landing_classifier,K. Thompson,GSW,M. Monk,SAC,J.Williams,2026-06-30T14:51:59.802Z
+0022300078,348,2,PT01M34.00S,Porter Jr. S.FOUL (P1.PN) (T.Maddox),NO,,landing_classifier,M. Smart,MEM,M. Porter Jr.,DEN,T.Maddox,2026-06-30T15:14:33.268Z
+0022300108,27,1,PT09M49.00S,Hawkins S.FOUL (P1.T2) (D.Mosher),YES,,landing_classifier,S. Curry,GSW,J. Hawkins,NOP,D.Mosher,2026-06-30T15:28:50.085Z
+0022300109,139,1,PT02M57.00S,Burks S.FOUL (P2.T2) (L.Holtkamp),YES,,landing_classifier,D. Bertans,OKC,A. Burks,DET,L.Holtkamp,2026-06-30T15:31:05.501Z
+0022300155,356,2,PT00M00.10S,Young S.FOUL (P1.PN) (T.Maddox),NO,,landing_classifier,L. Dort,OKC,T. Young,ATL,T.Maddox,2026-06-30T14:53:04.885Z
+0022300205,593,4,PT04M34.00S,Irving S.FOUL (P3.PN) (P.Fraher),NO,,landing_classifier,D. Lillard,MIL,K. Irving,DAL,P.Fraher,2026-06-30T15:20:34.790Z
+0022300207,11,1,PT11M35.00S,Dort S.FOUL (P1.T1) (B.Adair),UNCLEAR,,landing_classifier,K. Thompson,GSW,L. Dort,OKC,B.Adair,2026-06-30T15:25:58.489Z
+0022300214,799,6,PT04M45.00S,Agbaji S.FOUL (P4.T1) (A.Moyer-Gleich),YES,,landing_classifier,K. Durant,PHX,O. Agbaji,UTA,,2026-06-30T15:01:47.309Z
+0022300237,554,4,PT07M23.00S,Henderson S.FOUL (P4.PN) (T.Brothers),YES,,landing_classifier,K. George,UTA,S. Henderson,POR,T.Brothers,2026-06-30T14:44:59.240Z
+0022300272,323,2,PT01M23.00S,Young S.FOUL (P1.PN) (J.Orr),NO,,landing_classifier,K. Johnson,SAS,T. Young,ATL,J.Orr,2026-06-30T14:57:10.357Z
+0022300287,223,2,PT10M37.00S,Curry S.FOUL (P2.T2) (D.Richardson),NO,,landing_classifier,D. Bertans,OKC,S. Curry,DAL,D.Richardson,2026-06-30T14:54:53.885Z
+0022300299,134,1,PT01M44.00S,Powell S.FOUL (P1.T2) (L.Holtkamp),YES,,landing_classifier,J. Jackson Jr.,MEM,D. Powell,DAL,L.Holtkamp,2026-06-30T14:44:24.591Z
+0022300304,266,2,PT04M15.00S,Powell S.FOUL (P2.PN) (J.Goble),YES,,landing_classifier,S. Sharpe,POR,N. Powell,LAC,J.Goble,2026-06-30T14:50:56.831Z
+0022300323,369,3,PT08M13.00S,Camara S.FOUL (P2.T2) (C.Washington),YES,,landing_classifier,S. Fontecchio,UTA,T. Camara,POR,C.Washington,2026-06-30T14:48:26.290Z
+0022300325,45,1,PT09M02.00S,Podziemski S.FOUL (P1.T1) (T.Brothers),YES,,landing_classifier,J. Harden,LAC,B. Podziemski,GSW,T.Brothers,2026-06-30T15:29:38.357Z
+0022300336,317,2,PT01M30.00S,Mitchell S.FOUL (P1.PN) (T.Ricks),YES,,landing_classifier,D. Murray,ATL,D. Mitchell,CLE,T.Ricks,2026-06-30T15:01:54.859Z
+0022300369,494,4,PT08M01.00S,Watson S.FOUL (P1.T2) (J.Van Duyne),YES,,landing_classifier,G. Trent Jr.,TOR,P. Watson,DEN,,2026-06-30T14:46:14.675Z
+0022300386,320,2,PT01M29.00S,Poole S.FOUL (P2.T3) (G.Petraitis),YES,,landing_classifier,S. Curry,GSW,J. Poole,WAS,G.Petraitis,2026-06-30T15:24:14.237Z
+0022300402,366,3,PT09M01.00S,Podziemski S.FOUL (P1.T2) (M.Smith),NO,,landing_classifier,J. Murray,DEN,B. Podziemski,GSW,M.Smith,2026-06-30T15:04:20.571Z
+0022300449,149,2,PT11M16.00S,Morant S.FOUL (P1.T1) (M.Kallio),YES,,landing_classifier,D. Fox,SAC,J. Morant,MEM,M.Kallio,2026-06-30T15:31:03.118Z
+0022300598,175,2,PT11M42.00S,Tate S.FOUL (P1.T1) (M.Myers),YES,,landing_classifier,J. Clarkson,UTA,J. Tate,HOU,M.Myers,2026-06-30T15:04:08.021Z
+0022300605,419,3,PT03M43.00S,Reddish S.FOUL (P1.T1) (M.Dagher),YES,,landing_classifier,J. Grant,POR,C. Reddish,LAL,M.Dagher,2026-06-30T14:51:31.747Z
+0022300645,540,4,PT10M11.00S,VanVleet S.FOUL (P5.T2) (S.Wall),NO,Pumps VavVleet into the air and jumps into him for the foul,landing_classifier,C. Thomas,BKN,F. VanVleet,HOU,S.Wall,2026-06-30T15:00:49.200Z
+0022300658,583,4,PT05M38.00S,Harden S.FOUL (P2.T3) (S.Foster),NO,,landing_classifier,M. Strus,CLE,J. Harden,LAC,S.Foster,2026-06-30T15:19:15.569Z
+0022300676,69,1,PT05M57.00S,Jones S.FOUL (P1.T3) (J.Orr),NO,Contest/Reach-In,landing_classifier,A. Coffey,LAC,T. Jones,WAS,J.Orr,2026-06-30T14:52:40.840Z
+0022300684,344,3,PT11M22.00S,Brown S.FOUL (P1.T1) (G.Petraitis),YES,,landing_classifier,A. Reaves,LAL,J. Brown,BOS,G.Petraitis,2026-06-30T14:54:14.092Z
+0022300751,433,3,PT01M15.00S,Mann S.FOUL (P1.PN) (J.Goble),YES,,landing_classifier,L. Kennard,MEM,T. Mann,CHA,J.Goble,2026-06-30T15:03:09.793Z
+0022300775,492,4,PT11M45.00S,Alexander-Walker S.FOUL (P2.T1) (S.Mitchell),NO,,landing_classifier,S. Henderson,POR,N. Alexander-Walker,MIN,S.Mitchell,2026-06-30T15:00:36.269Z
+0022300812,587,4,PT04M36.00S,Banton S.FOUL (P1.T4) (M.Kogut),NO,,landing_classifier,K. Caldwell-Pope,DEN,D. Banton,POR,M.Kogut,2026-06-30T14:57:27.934Z
+0022300850,590,4,PT02M28.00S,Suggs S.FOUL (P5.T4) (J.Conley),UNCLEAR,The landing contact is unambiguously clear; however it's unclear whether the shooter got hit in the face prior to the landing contact.,landing_classifier,K. George,UTA,J. Suggs,ORL,J.Conley,2026-06-30T15:22:28.466Z
+0022300879,676,4,PT00M06.70S,Stevens S.FOUL (P2.PN) (M.Ervin),YES,,landing_classifier,M. Bridges,BKN,L. Stevens,MEM,M.Ervin,2026-06-30T14:43:13.244Z
+0022300896,389,3,PT06M23.00S,Williams Jr. S.FOUL (P2.T2) (S.Foster),YES,,landing_classifier,N. Batum,PHI,V. Williams Jr.,MEM,S.Foster,2026-06-30T15:01:00.833Z
+0022300913,7,1,PT11M46.00S,Capela S.FOUL (P1.T1) (P.Fraher),YES,,landing_classifier,J. Jackson Jr.,MEM,C. Capela,ATL,P.Fraher,2026-06-30T14:41:45.413Z
+0022300982,612,4,PT01M41.00S,Moon S.FOUL (P2.PN) (J.Tiven),YES,,landing_classifier,V. Krejčí,ATL,X. Moon,LAC,J.Tiven,2026-06-30T14:50:58.167Z
+0022301007,559,4,PT04M24.00S,Schroder S.FOUL (P4.T1) (D.Taylor),UNCLEAR,"Borderline- defender moves into player's area after shot release, they make upper body contact before they fully go into the landing space",landing_classifier,D. Lillard,MIL,D. Schröder,BKN,D.Taylor,2026-06-30T15:23:23.950Z
+0022301012,125,1,PT03M29.00S,Ramsey S.FOUL (P1.T2) (T.Ford),YES,,landing_classifier,I. Joe,OKC,J. Ramsey,TOR,T.Ford,2026-06-30T14:39:36.028Z
+0022301043,507,4,PT09M36.00S,Sheppard S.FOUL (P3.T1) (J.Orr),NO,,landing_classifier,J. Harden,LAC,B. Sheppard,IND,J.Orr,2026-06-30T14:53:58.335Z
+0022301061,171,2,PT11M29.00S,Beverley S.FOUL (P1.T1) (P.Ransom),YES,,landing_classifier,J. Hawkins,NOP,P. Beverley,MIL,P.Ransom,2026-06-30T14:42:38.307Z
 0022301076,124,1,PT00M36.60S,Krejci S.FOUL (P2.T2) (S.Wall),NO,v3 mechanism=DRV-INIT,v3_foul_type,,,,,,
 0022301076,227,2,PT06M11.00S,Hunter S.FOUL (P1.T3) (S.Wall),NO,v3 mechanism=DRV-INIT,v3_foul_type,,,,,,
 0022301076,263,2,PT03M43.00S,Capela S.FOUL (P2.PN) (Z.Zarba),NO,v3 mechanism=DRV-FINISH,v3_foul_type,,,,,,
@@ -109,27 +268,69 @@ game_id,event_id,period,clock,description,landing_foul,note,source,fouled_player
 0022301095,378,3,PT10M38.00S,Vukcevic S.FOUL (P4.T1) (M.Davis),NO,v3 mechanism=DRV-FINISH,v3_foul_type,,,,,,
 0022301095,562,4,PT09M09.00S,Avdija S.FOUL (P3.T2) (M.Davis),NO,v3 mechanism=DRV-FINISH,v3_foul_type,,,,,,
 0022301095,594,4,PT06M43.00S,Poole S.FOUL (P3.T3) (B.Schwab),NO,v3 mechanism=DRV-FINISH,v3_foul_type,,,,,,
-0022301097,23,1,PT10M34.00S,Irving S.FOUL (P1.T1) (K.Scott),NO,Contest foul,landing_classifier,M. Moody,GSW,K. Irving,DAL,K.Scott,2026-06-29T14:33:18.814Z
+0022301097,23,1,PT10M34.00S,Irving S.FOUL (P1.T1) (K.Scott),NO,Contest foul,landing_classifier,M. Moody,GSW,K. Irving,DAL,K.Scott,2026-06-30T14:55:43.103Z
+0022301101,201,2,PT10M12.00S,Theis S.FOUL (P1.T3) (S.Foster),UNCLEAR,No foul in clip,landing_classifier,D. Fox,SAC,D. Theis,LAC,S.Foster,2026-06-30T15:25:33.251Z
 0022301107,527,4,PT07M15.00S,LaRavia S.FOUL (P2.T2) (K.Lane),NO,v3 mechanism=DRV-FINISH,v3_foul_type,,,,,,
+0022301132,29,1,PT09M30.00S,Harden S.FOUL (P1.T1) (Z.Zarba),YES,,landing_classifier,M. Strus,CLE,J. Harden,LAC,Z.Zarba,2026-06-30T14:46:46.223Z
 0022301139,54,1,PT07M44.00S,Anunoby S.FOUL (P1.T2) (D.Guthrie),NO,v3 mechanism=DRV-INIT,v3_foul_type,,,,,,
 0022301139,291,2,PT03M29.00S,Brunson S.FOUL (P3.PN) (J.DeRosa),NO,v3 mechanism=DRV-INIT,v3_foul_type,,,,,,
 0022301139,379,3,PT09M32.00S,Hartenstein S.FOUL (P1.T2) (D.Guthrie),NO,v3 mechanism=DRV-FINISH,v3_foul_type,,,,,,
 0022301139,580,4,PT03M56.00S,Anunoby S.FOUL (P4.T2) (C.Flores),NO,v3 mechanism=DRV-INIT,v3_foul_type,,,,,,
 0022301148,131,1,PT00M19.00S,Kornet S.FOUL (P1.T1) (D.Scott),NO,v3 mechanism=PUTBACK,v3_foul_type,,,,,,
-0022301155,667,4,PT00M36.10S,Spencer S.FOUL (P1.PN) (J.Goldenberg),YES,,landing_classifier,M. Lewis,LAL,P. Spencer,GSW,J.Goldenberg,2026-06-29T14:46:14.053Z
-0022400001,379,3,PT09M57.00S,Johnson S.FOUL (P3.T1) (C.Kirkland),NO,,landing_classifier,J. Tatum,BOS,J. Johnson,ATL,C.Kirkland,2026-06-29T14:25:53.654Z
-0022400087,464,3,PT01M42.00S,Strawther S.FOUL (P3.T3) (A.Abazi),YES,,landing_classifier,J. Harden,LAC,J. Strawther,DEN,A.Abazi,2026-06-29T14:58:17.780Z
-0022400249,620,4,PT03M14.00S,Booker S.FOUL (P5.T3) (J.Butler),YES,,landing_classifier,F. Wagner,ORL,D. Booker,PHX,J.Butler,2026-06-29T14:26:24.220Z
-0022400466,117,1,PT02M14.00S,Mitchell S.FOUL (P1.T3) (J.Williams),YES,,landing_classifier,K. Porter Jr.,LAC,A. Mitchell,OKC,J.Williams,2026-06-29T14:44:35.067Z
-0022400482,572,4,PT05M29.00S,Hart S.FOUL (P3.T3) (J.Goldenberg),NO,Contest,landing_classifier,Z. LaVine,CHI,J. Hart,NYK,J.Goldenberg,2026-06-29T14:49:04.128Z
-0022400493,199,2,PT08M45.00S,Avdija S.FOUL (P2.T2) (D.Scott),NO,Contest level,landing_classifier,C. Cunningham,DET,D. Avdija,POR,D.Scott,2026-06-29T15:04:16.508Z
-0022400528,589,4,PT05M40.00S,Carter S.FOUL (P3.PN) (B.Barnaky),NO,Brown pumps his defender into the air and collides with him as he actually goes to shoot it,landing_classifier,J. Brown,BOS,D. Carter,SAC,B.Barnaky,2026-06-29T14:57:05.708Z
-0022400778,157,1,PT01M25.00S,Highsmith S.FOUL (P1.PN) (B.Nansel),YES,,landing_classifier,S. Gilgeous-Alexander,OKC,H. Highsmith,MIA,B.Nansel,2026-06-29T15:01:28.841Z
-0022400819,543,3,PT01M21.00S,Merrill S.FOUL (P3.PN) (N.Buchert),NO,,landing_classifier,D. Bane,MEM,S. Merrill,CLE,N.Buchert,2026-06-29T14:25:00.416Z
-0022400825,341,3,PT08M53.00S,Wiggins S.FOUL (P1.T1) (M.Lindsay),NO,Reach-In/Contest/Rip-through,landing_classifier,T. Young,ATL,A. Wiggins,MIA,M.Lindsay,2026-06-29T15:03:34.668Z
-0022400885,306,2,PT00M49.90S,Hield S.FOUL (P1.PN) (C.Washington),UNCLEAR,The clip doesn't show the foul,landing_classifier,J. Brunson,NYK,B. Hield,GSW,C.Washington,2026-06-29T14:48:21.104Z
-0022401031,140,1,PT00M03.90S,Brissett S.FOUL (P1.T2) (M.Myers),NO,"Contact made to the hands and arms of shooter after release, but not landing",landing_classifier,G. Niang,ATL,O. Brissett,PHI,M.Myers,2026-06-29T14:31:30.032Z
-0022401038,561,4,PT05M39.00S,Caldwell-Pope S.FOUL (P2.PN) (J.Goble),YES,,landing_classifier,L. Dončić,LAL,K. Caldwell-Pope,ORL,J.Goble,2026-06-29T14:48:45.937Z
-0022401112,394,3,PT07M49.00S,Jones S.FOUL (P3.T3) (M.Davis),NO,,landing_classifier,K. Caldwell-Pope,ORL,C. Jones,WAS,M.Davis,2026-06-29T14:29:37.275Z
-0022401146,467,3,PT02M36.00S,Pippen Jr. S.FOUL (P2.T4) (J.Butler),YES,,landing_classifier,S. Curry,CHA,S. Pippen Jr.,MEM,J.Butler,2026-06-29T14:24:33.174Z
-0022401212,116,1,PT04M05.00S,Simpson S.FOUL (P1.T3) (J.Goble),YES,,landing_classifier,L. Ball,CHI,K. Simpson,CHA,J.Goble,2026-06-29T14:40:50.426Z
+0022301155,174,1,PT00M02.30S,Kuminga S.FOUL (P1.T4) (J.Van Duyne),NO,Contest level,landing_classifier,D. Russell,LAL,J. Kuminga,GSW,,2026-06-30T15:31:01.577Z
+0022301155,667,4,PT00M36.10S,Spencer S.FOUL (P1.PN) (J.Goldenberg),YES,,landing_classifier,M. Lewis,LAL,P. Spencer,GSW,J.Goldenberg,2026-06-30T15:22:16.776Z
+0022301156,340,3,PT10M30.00S,Mann S.FOUL (P2.T1) (P.Ransom),YES,,landing_classifier,D. Booker,PHX,T. Mann,LAC,P.Ransom,2026-06-30T15:08:35.563Z
+0022301191,133,1,PT02M12.00S,Fultz S.FOUL (P1.T4) (J.Williams),NO,,landing_classifier,D. Lillard,MIL,M. Fultz,ORL,J.Williams,2026-06-30T15:03:53.425Z
+0022301192,184,2,PT09M33.00S,Wilson S.FOUL (P1.T1) (A.Nagy),NO,Hacks him on the arm after the shot is released,landing_classifier,B. Hield,PHI,J. Wilson,BKN,A.Nagy,2026-06-30T14:41:16.760Z
+0022301222,716,5,PT04M48.00S,Thompson S.FOUL (P4.T1) (C.Blair),NO,,landing_classifier,I. Joe,OKC,K. Thompson,GSW,C.Blair,2026-06-30T14:54:50.046Z
+0022400001,379,3,PT09M57.00S,Johnson S.FOUL (P3.T1) (C.Kirkland),NO,,landing_classifier,J. Tatum,BOS,J. Johnson,ATL,C.Kirkland,2026-06-30T14:52:30.290Z
+0022400087,464,3,PT01M42.00S,Strawther S.FOUL (P3.T3) (A.Abazi),YES,,landing_classifier,J. Harden,LAC,J. Strawther,DEN,A.Abazi,2026-06-30T14:44:50.601Z
+0022400146,37,1,PT07M07.00S,Sochan S.FOUL (P1.T1) (D.Scott),NO,,landing_classifier,J. Randle,MIN,J. Sochan,SAS,D.Scott,2026-06-30T14:45:07.123Z
+0022400219,645,4,PT00M03.20S,Hart S.FOUL (P3.PN) (R.Acosta),NO,,landing_classifier,C. White,CHI,J. Hart,NYK,R.Acosta,2026-06-30T15:17:22.291Z
+0022400239,273,2,PT06M55.00S,Sharpe S.FOUL (P2.T2) (J.Tiven),NO,,landing_classifier,Z. Risacher,ATL,S. Sharpe,POR,J.Tiven,2026-06-30T14:47:27.105Z
+0022400249,620,4,PT03M14.00S,Booker S.FOUL (P5.T3) (J.Butler),YES,,landing_classifier,F. Wagner,ORL,D. Booker,PHX,J.Butler,2026-06-30T15:07:02.969Z
+0022400284,328,2,PT01M41.00S,Payton II S.FOUL (P2.PN) (J.Orr),YES,,landing_classifier,C. Thomas,BKN,G. Payton II,GSW,J.Orr,2026-06-30T15:17:37.924Z
+0022400302,317,3,PT10M50.00S,Prince S.FOUL (P3.T1) (S.Twardoski),NO,,landing_classifier,M. Brogdon,WAS,T. Prince,MIL,S.Twardoski,2026-06-30T15:17:14.700Z
+0022400314,496,4,PT08M38.00S,Strawther S.FOUL (P1.T2) (J.Butler),YES,,landing_classifier,J. Harden,LAC,J. Strawther,DEN,J.Butler,2026-06-30T15:06:49.999Z
+0022400328,525,3,PT00M20.80S,Mitchell S.FOUL (P4.PN) (N.Green),YES,,landing_classifier,S. Gilgeous-Alexander,OKC,D. Mitchell,TOR,N.Green,2026-06-30T15:20:33.065Z
+0022400390,571,4,PT10M30.00S,Murray S.FOUL (P2.T1) (J.Williams),YES,,landing_classifier,D. Murray,NOP,J. Murray,DEN,J.Williams,2026-06-30T15:24:55.828Z
+0022400466,117,1,PT02M14.00S,Mitchell S.FOUL (P1.T3) (J.Williams),YES,,landing_classifier,K. Porter Jr.,LAC,A. Mitchell,OKC,J.Williams,2026-06-30T14:43:03.083Z
+0022400482,572,4,PT05M29.00S,Hart S.FOUL (P3.T3) (J.Goldenberg),NO,Contest,landing_classifier,Z. LaVine,CHI,J. Hart,NYK,J.Goldenberg,2026-06-30T14:42:18.595Z
+0022400493,199,2,PT08M45.00S,Avdija S.FOUL (P2.T2) (D.Scott),NO,Contest level,landing_classifier,C. Cunningham,DET,D. Avdija,POR,D.Scott,2026-06-30T15:22:30.000Z
+0022400503,536,4,PT10M25.00S,Champagnie S.FOUL (P3.T2) (R.Hussey),NO,,landing_classifier,F. VanVleet,HOU,J. Champagnie,WAS,R.Hussey,2026-06-30T14:40:19.448Z
+0022400528,589,4,PT05M40.00S,Carter S.FOUL (P3.PN) (B.Barnaky),NO,Brown pumps his defender into the air and collides with him as he actually goes to shoot it,landing_classifier,J. Brown,BOS,D. Carter,SAC,B.Barnaky,2026-06-30T15:30:53.092Z
+0022400570,170,2,PT10M16.00S,Milton S.FOUL (P1.T2) (J.Butler),NO,,landing_classifier,D. Robinson,MIA,S. Milton,LAL,J.Butler,2026-06-30T15:27:40.979Z
+0022400591,446,3,PT05M04.00S,Brooks S.FOUL (P2.T2) (M.Dagher),NO,,landing_classifier,S. Henderson,POR,D. Brooks,HOU,M.Dagher,2026-06-30T15:02:49.625Z
+0022400601,686,4,PT04M14.00S,Reid S.FOUL (P2.T4) (J.Ralls),YES,,landing_classifier,J. Wells,MEM,N. Reid,MIN,J.Ralls,2026-06-30T14:56:40.583Z
+0022400666,33,1,PT09M27.00S,Brown S.FOUL (P1.T1) (B.Barnaky),YES,,landing_classifier,L. Ball,CHI,J. Brown,BOS,B.Barnaky,2026-06-30T14:56:07.062Z
+0022400709,246,2,PT04M56.00S,Camara S.FOUL (P2.PN) (T.Ford),YES,,landing_classifier,D. Booker,PHX,T. Camara,POR,T.Ford,2026-06-30T15:18:20.046Z
+0022400726,171,1,PT00M01.00S,Strawther S.FOUL (P1.PN) (J.Goldenberg),NO,,landing_classifier,J. Hawkins,NOP,J. Strawther,DEN,J.Goldenberg,2026-06-30T15:14:59.561Z
+0022400778,157,1,PT01M25.00S,Highsmith S.FOUL (P1.PN) (B.Nansel),YES,,landing_classifier,S. Gilgeous-Alexander,OKC,H. Highsmith,MIA,B.Nansel,2026-06-30T15:28:06.360Z
+0022400819,543,3,PT01M21.00S,Merrill S.FOUL (P3.PN) (N.Buchert),NO,,landing_classifier,D. Bane,MEM,S. Merrill,CLE,N.Buchert,2026-06-30T15:22:03.591Z
+0022400825,341,3,PT08M53.00S,Wiggins S.FOUL (P1.T1) (M.Lindsay),NO,Reach-In/Contest/Rip-through,landing_classifier,T. Young,ATL,A. Wiggins,MIA,M.Lindsay,2026-06-30T14:42:54.808Z
+0022400846,19,1,PT09M56.00S,Lopez S.FOUL (P1.T1) (P.Ransom),NO,,landing_classifier,N. Jokić,DEN,B. Lopez,MIL,P.Ransom,2026-06-30T14:45:42.372Z
+0022400885,306,2,PT00M49.90S,Hield S.FOUL (P1.PN) (C.Washington),UNCLEAR,The clip doesn't show the foul,landing_classifier,J. Brunson,NYK,B. Hield,GSW,C.Washington,2026-06-30T15:25:05.684Z
+0022400918,567,4,PT04M45.00S,Vanderbilt S.FOUL (P3.T3) (J.Goldenberg),NO,,landing_classifier,D. White,BOS,J. Vanderbilt,LAL,J.Goldenberg,2026-06-30T15:14:14.907Z
+0022400955,203,2,PT10M10.00S,Reaves S.FOUL (P2.T3) (C.Kirkland),NO,,landing_classifier,D. Lillard,MIL,A. Reaves,LAL,C.Kirkland,2026-06-30T15:04:38.260Z
+0022400962,11,1,PT11M16.00S,Bane S.FOUL (P1.T1) (M.Kallio),NO,,landing_classifier,M. Strus,CLE,D. Bane,MEM,M.Kallio,2026-06-30T15:30:57.489Z
+0022400978,308,2,PT03M51.00S,Wilson S.FOUL (P1.T3) (J.Goble),NO,,landing_classifier,T. Young,ATL,J. Wilson,BKN,J.Goble,2026-06-30T14:42:16.802Z
+0022400989,185,2,PT10M58.00S,Williams S.FOUL (P2.T2) (J.Butler),UNCLEAR,,landing_classifier,J. Clarkson,UTA,P. Williams,CHI,J.Butler,2026-06-30T15:29:28.238Z
+0022400996,349,3,PT09M35.00S,Lopez S.FOUL (P3.T2) (D.Collins),YES,,landing_classifier,D. Knecht,LAL,B. Lopez,MIL,D.Collins,2026-06-30T14:53:41.330Z
+0022400996,478,3,PT00M55.20S,James S.FOUL (P3.PN) (D.Collins),YES,,landing_classifier,G. Trent Jr.,MIL,B. James,LAL,D.Collins,2026-06-30T15:22:26.565Z
+0022400998,645,4,PT01M07.00S,Siakam S.FOUL (P4.PN) (J.Goldenberg),NO,,landing_classifier,M. Christie,DAL,P. Siakam,IND,J.Goldenberg,2026-06-30T15:24:18.736Z
+0022401001,391,3,PT07M32.00S,Williamson S.FOUL (P2.T2) (K.Lane),YES,,landing_classifier,A. Edwards,MIN,Z. Williamson,NOP,K.Lane,2026-06-30T15:26:25.057Z
+0022401031,140,1,PT00M03.90S,Brissett S.FOUL (P1.T2) (M.Myers),NO,"Contact made to the hands and arms of shooter after release, but not landing",landing_classifier,G. Niang,ATL,O. Brissett,PHI,M.Myers,2026-06-30T15:22:05.451Z
+0022401038,561,4,PT05M39.00S,Caldwell-Pope S.FOUL (P2.PN) (J.Goble),YES,,landing_classifier,L. Dončić,LAL,K. Caldwell-Pope,ORL,J.Goble,2026-06-30T14:59:18.666Z
+0022401048,191,2,PT07M35.00S,Kolek S.FOUL (P1.T2) (T.Brothers),YES,,landing_classifier,S. Dinwiddie,DAL,T. Kolek,NYK,T.Brothers,2026-06-30T15:26:16.537Z
+0022401049,552,4,PT11M34.00S,Holiday S.FOUL (P1.T1) (J.Tiven),YES,,landing_classifier,V. Krejčí,ATL,A. Holiday,HOU,J.Tiven,2026-06-30T14:52:38.935Z
+0022401084,473,3,PT09M28.00S,Schroder S.FOUL (P4.T1) (J.Goldenberg),NO,,landing_classifier,M. Conley,MIN,D. Schröder,DET,J.Goldenberg,2026-06-30T15:06:26.081Z
+0022401112,394,3,PT07M49.00S,Jones S.FOUL (P3.T3) (M.Davis),NO,,landing_classifier,K. Caldwell-Pope,ORL,C. Jones,WAS,M.Davis,2026-06-30T14:53:25.547Z
+0022401146,467,3,PT02M36.00S,Pippen Jr. S.FOUL (P2.T4) (J.Butler),YES,,landing_classifier,S. Curry,CHA,S. Pippen Jr.,MEM,J.Butler,2026-06-30T15:01:01.992Z
+0022401148,582,4,PT05M21.00S,Carrington S.FOUL (P3.T2) (S.Twardoski),UNCLEAR,,landing_classifier,T. Haliburton,IND,B. Carrington,WAS,S.Twardoski,2026-06-30T15:26:57.512Z
+0022401166,60,1,PT06M21.00S,Sheppard S.FOUL (P1.T1) (E.Malloy),YES,,landing_classifier,J. Harden,LAC,R. Sheppard,HOU,E.Malloy,2026-06-30T15:28:22.322Z
+0022401205,586,4,PT03M01.00S,Moore Jr. S.FOUL (P1.T1) (J.Conley),NO,,landing_classifier,D. Peterson,BOS,W. Moore Jr.,DET,J.Conley,2026-06-30T15:23:22.295Z
+0022401212,116,1,PT04M05.00S,Simpson S.FOUL (P1.T3) (J.Goble),YES,,landing_classifier,L. Ball,CHI,K. Simpson,CHA,J.Goble,2026-06-30T14:44:17.321Z
+0022401222,381,3,PT11M47.00S,Martin S.FOUL (P3.T1) (S.Wright),YES,,landing_classifier,B. Miller,CHA,K. Martin,PHI,S.Wright,2026-06-30T15:30:02.163Z
+0022401226,81,1,PT05M29.00S,Sensabaugh S.FOUL (P1.T3) (D.Richardson),NO,,landing_classifier,J. Harden,LAC,B. Sensabaugh,UTA,D.Richardson,2026-06-30T14:47:06.388Z
+0022401228,668,4,PT01M03.00S,Wiggins S.FOUL (P2.PN) (E.Malloy),NO,,landing_classifier,K. Thompson,DAL,A. Wiggins,GSW,E.Malloy,2026-06-30T15:19:26.699Z
+0042300164,29,1,PT09M36.00S,O'Neale S.FOUL (P1.T2) (P.Fraher),YES,,landing_classifier,J. McDaniels,MIN,R. O'Neale,PHX,P.Fraher,2026-06-30T14:50:43.862Z
