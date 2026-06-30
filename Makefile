@@ -1,6 +1,6 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate landing-grade-observe video-download video-extract video-split video-train video-train-mlp video-cv video-pipeline
+.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate landing-grade-observe video-download video-extract video-split video-train video-train-mlp video-cv video-pipeline video-finetune video-finetune-evaluate
 
 venv:
 	python3 -m venv .venv
@@ -169,3 +169,28 @@ video-cv:
 	PYTHONPATH=. $(PYTHON) src/landing_foul_video_train.py --model logreg --cv $(or $(FOLDS),5)
 
 video-pipeline: video-download video-extract video-split video-train
+
+# --- Step 10c: end-to-end VideoMAE fine-tuning ---
+#   make video-finetune
+#   make video-finetune SMOKE=1            # tiny run to validate the pipeline
+#   make video-finetune PHASE=head HEAD_EPOCHS=5
+#   make video-finetune-evaluate
+#   make video-finetune-evaluate CHECKPOINT=data/processed/landing_foul_video_best.pt
+
+video-finetune:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_video_finetune.py \
+		--phase $(or $(PHASE),two-phase) \
+		--head-epochs $(or $(HEAD_EPOCHS),5) --finetune-epochs $(or $(FINETUNE_EPOCHS),15) \
+		--head-lr $(or $(HEAD_LR),1e-3) --finetune-lr $(or $(FINETUNE_LR),2e-5) \
+		--unfreeze-layers $(or $(UNFREEZE_LAYERS),4) --batch-size $(or $(BATCH_SIZE),4) \
+		--temporal-window "$(if $(TEMPORAL_WINDOW),$(TEMPORAL_WINDOW),0.0,1.0)" --jitter $(or $(JITTER),6) \
+		--dropout $(or $(DROPOUT),0.4) --weight-decay $(or $(WEIGHT_DECAY),0.01) \
+		--yes-weight $(or $(YES_WEIGHT),1.0) --patience $(or $(PATIENCE),6) --seed $(or $(SEED),42) \
+		--device $(or $(DEVICE),auto) \
+		$(if $(SMOKE),--head-epochs 1 --finetune-epochs 1 --batch-size 2 --patience 0)
+
+video-finetune-evaluate:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_video_finetune.py --evaluate-only \
+		--checkpoint $(or $(CHECKPOINT),data/processed/landing_foul_video_best.pt) \
+		--device $(or $(DEVICE),auto) --batch-size $(or $(BATCH_SIZE),4) \
+		--temporal-window "$(if $(TEMPORAL_WINDOW),$(TEMPORAL_WINDOW),0.0,1.0)"

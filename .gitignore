@@ -34,7 +34,9 @@ output/
 !output/figures/*.png
 data/cache/
 data/raw/
-data/processed/
+data/processed/*
+!data/processed/landing_foul_manifest.json
+!data/processed/landing_foul_split.json
 !data/.gitkeep
 !data/foul_type_classifications.csv
 !data/landing_foul_classifications.csv
