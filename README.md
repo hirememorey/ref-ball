@@ -18,10 +18,10 @@ The dataset has three layers, each with a different novelty moat:
 |---|---|---|---|
 | **Layer 1: Per-official attribution** | Official name parsed from PBP `description` field | Weak (anyone can parse it) | **Complete** — 13,278 games ingested, 13,464 with crew |
 | **Player x official profiles** | FTA/36 deltas per player under each official, defense-adjusted | Medium (requires crew + game logs) | **Built (40 players)** — full crew, 3,846 pairs, ANOVA p=0.000003 |
-| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Active** — Step 10b: 284 clips downloaded, frozen VideoMAE baseline tested (zero signal); **next: end-to-end fine-tuning** |
+| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Active** — Colab fine-tune run degenerate (51% precision, constant output); **next: manual clip anchors → retrain** |
 | **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
 
-**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (300/300 clips, merged to 335 rows). Step 10 LLM grader is **exhausted** (best: 55% precision, 98% recall). Step 10b frozen VideoMAE baseline tested — **zero signal** from pre-trained Kinetics features. **START HERE: end-to-end VideoMAE fine-tuning** (`landing_foul_video_finetune.py` — not yet built). See [HANDOFF.md](documents/development/HANDOFF.md) Step 10b for full plan.
+**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (300/300 clips, merged to 335 rows). Step 10 LLM grader is **exhausted** (best: 55% precision, 98% recall). Step 10b frozen VideoMAE baseline tested — **zero signal**. Step 10c Colab fine-tune run completed — **degenerate** (predicts YES on all val clips; full-clip temporal window dilutes signal). **START HERE: annotate per-clip foul anchors** (`make video-annotate`) then rebuild frame cache and re-run fine-tuning. See [HANDOFF.md](documents/development/HANDOFF.md) Step 10b.
 
 ## The Paper Sequence
 
@@ -134,12 +134,13 @@ LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 9-12 — ACTIVE)
 12b. Frozen baseline       →  src/landing_foul_video_dataset.py   →  zero signal (all degenerate) ✗
                            →  src/landing_foul_video_split.py    →  data/processed/landing_foul_split.json ✓
                            →  src/landing_foul_video_train.py    →  logreg/MLP on frozen embeddings ✗
-12c. Fine-tune VideoMAE    →  src/landing_foul_video_finetune.py →  end-to-end fine-tuning ← START HERE
+12c. Fine-tune VideoMAE    →  src/landing_foul_video_finetune.py →  Colab run degenerate (51% P) ✗
+12d. Clip anchors           →  src/landing_foul_annotate_anchors.py →  per-clip contact window ← START HERE
 13. Per-official rates      →  src/landing_foul_video_predict.py →  batch inference (blocked on 12c gate)
 14. Variance analysis       →  (TBD)                             →  ANOVA on per-official rates
 ```
 
-Steps 1-11 (data + labels) are **complete**. Step 12b frozen baseline is **complete** (zero signal). Step 12c (end-to-end fine-tuning) is the **active frontier** — target ≥85% precision on YES before Steps 13-14.
+Steps 1-11 (data + labels) are **complete**. Step 12b frozen baseline is **complete** (zero signal). Step 12c fine-tuning script is **built**; first Colab run **failed the gate** (degenerate constant predictor — full-clip window). Step 12d (manual clip anchors) is the **active frontier** before retraining.
 
 ### 1. Ingest (Layer 1 — built)
 
@@ -205,7 +206,7 @@ make dhc-merge                   # does-harden-choke merge (Step 7)
 
 ### 2b. Landing foul classification (Layer 2 — active)
 
-Binary classification of 3-point shooting fouls as landing fouls (yes/no). Manual ground truth complete; building fine-tuned video classifier next.
+Binary classification of 3-point shooting fouls as landing fouls (yes/no). Manual ground truth complete; first Colab fine-tune run degenerate — annotate per-clip contact anchors next.
 
 ```bash
 # Step 9 (complete): manifest + manual classification + merge
@@ -223,9 +224,16 @@ make video-train                 # logistic regression on frozen features (degen
 make video-train-mlp             # MLP on frozen features (degenerate — all-YES)
 make video-cv FOLDS=5            # 5-fold CV (degenerate — all-NO)
 
-# Step 10c (START HERE): end-to-end fine-tuning — see HANDOFF.md Step 10b
-#   src/landing_foul_video_finetune.py  — fine-tune VideoMAE end-to-end (NOT YET BUILT)
-#   src/landing_foul_video_predict.py   — batch inference for Step 11 (NOT YET BUILT)
+# Step 10c (fine-tuning — built; first Colab run failed gate):
+make video-finetune              # two-phase VideoMAE fine-tune (GPU; see documents/development/colab-finetune.ipynb)
+make video-finetune-evaluate     # evaluate saved checkpoint
+
+# Step 10d (START HERE): per-clip temporal anchors — mark contact frame in browser
+make video-annotate              # → http://127.0.0.1:8765 (284 clips; saves data/processed/landing_foul_clip_anchors.json)
+# After anchors: rebuild frame cache on Colab/local, then re-run make video-finetune
+
+# Step 11 (blocked on ≥85% precision gate):
+#   src/landing_foul_video_predict.py  — batch inference (NOT YET BUILT)
 
 # Step 10 LLM grader (exhausted — reference only):
 make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash
@@ -401,6 +409,8 @@ ref-ball/
 │   ├── landing_foul_video_dataset.py # Step 10b: download clips + extract frozen embeddings
 │   ├── landing_foul_video_split.py  # Step 10b: stratified train/val split
 │   ├── landing_foul_video_train.py  # Step 10b: classifier head on frozen embeddings (baseline)
+│   ├── landing_foul_video_finetune.py # Step 10c: end-to-end VideoMAE fine-tuning
+│   ├── landing_foul_annotate_anchors.py # Step 10d: browser UI for per-clip contact anchors
 │   └── generate_abstract_figures.py # SSAC27 abstract figures (Table 1 + Figure 1)
 ├── output/
 │   ├── figures/
@@ -444,9 +454,9 @@ ref-ball/
 
 1. **Does official heterogeneity survive taxonomy conditioning?** cranky-scott-foster found context dominates error rates. CSF taxonomy import for L2M conditioning not yet done.
 
-2. **Can a fine-tuned video classifier reliably grade landing fouls?** LLM path exhausted (55% precision). Frozen VideoMAE baseline tested — zero discriminative signal from Kinetics-pretrained features. End-to-end fine-tuning is the next test. 284 clips downloaded, split ready. Target: ≥85% precision on YES.
+2. **Can a fine-tuned video classifier reliably grade landing fouls?** LLM path exhausted (55% precision). Frozen VideoMAE baseline — zero signal. First Colab fine-tune run degenerate (51% precision, constant 0.587 prob on all clips) — likely full-clip temporal window. **Next:** manual per-clip anchors, then retrain. Target: ≥85% precision on YES.
 
-3. **Do landing foul calling rates vary significantly across officials?** This is the core Paper 2 hypothesis. Blocked on Step 10b classifier gate.
+3. **Do landing foul calling rates vary significantly across officials?** This is the core Paper 2 hypothesis. Blocked on Step 10c classifier gate (after anchor + retrain).
 
 4. **What is the right sample design for per-official classification?** Player-diverse sampling (used in DHC) vs. official-diverse sampling (needed here). Need enough clips per official for statistical power (~100-150 per ref, 10-15 refs).
 

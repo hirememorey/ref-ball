@@ -1,6 +1,6 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate landing-grade-observe video-download video-extract video-split video-train video-train-mlp video-cv video-pipeline video-finetune video-finetune-evaluate
+.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate landing-grade-observe video-download video-extract video-split video-train video-train-mlp video-cv video-pipeline video-finetune video-finetune-evaluate video-annotate
 
 venv:
 	python3 -m venv .venv
@@ -194,3 +194,10 @@ video-finetune-evaluate:
 		--checkpoint $(or $(CHECKPOINT),data/processed/landing_foul_video_best.pt) \
 		--device $(or $(DEVICE),auto) --batch-size $(or $(BATCH_SIZE),4) \
 		--temporal-window "$(if $(TEMPORAL_WINDOW),$(TEMPORAL_WINDOW),0.0,1.0)"
+
+# Annotate per-clip foul anchors (temporal window) in a local browser UI.
+#   make video-annotate
+#   make video-annotate PORT=8765
+video-annotate:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_annotate_anchors.py \
+		--host 127.0.0.1 --port $(or $(PORT),8765)
