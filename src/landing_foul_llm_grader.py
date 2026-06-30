@@ -61,6 +61,78 @@ logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Prompts
+# OBSERVE_LANDING_PROMPT — structured observation-only prompt. No
+# classification ask. The model describes what it sees across six binary
+# feature dimensions, then produces a free-text narrative. The classification
+# is derived post-hoc from the feature vector, not by the model itself.
+#
+# Design rationale: Phase 0 analysis of the spatial V1 run showed that the
+# model's classification is 100% YES-biased on `defender_in_landing_zone` and
+# `contact_vs_descent` — the structured fields carry zero discriminative
+# information because the classification prompt collapses the model's
+# perception into a single template narrative. The observation prompt forces
+# the model to answer specific, narrow questions about what it sees without
+# the pressure to classify. Each feature is independently correlatable
+# against ground truth post-hoc.
+OBSERVE_LANDING_PROMPT = """You are watching a short video clip of a basketball shooting foul. Your job is to DESCRIBE what you see — NOT to classify or judge the play. You are a camera, not a referee.
+
+Answer each question based ONLY on what you can directly observe in the video. If you cannot tell, say UNCLEAR. Do not infer or guess.
+
+QUESTIONS:
+
+1. SHOT_TYPE: What kind of shot is the fouled player attempting?
+   - JUMP_SHOT: Player leaves the ground on a perimeter/wing 3-point attempt
+   - DRIVE: Player is driving to the rim or attempting a layup/floater
+   - STEP_BACK: Player steps back and rises for a shot
+   - PULL_UP: Player pulls up off the dribble for a shot
+   - OTHER: None of the above
+   - UNCLEAR: Cannot determine
+
+2. SHOOTER_AIRBORNE: Is the shooter in the air (both feet off the floor) at the moment of contact?
+   - YES / NO / UNCLEAR
+
+3. WHO_INITIATED: Who caused the contact that was called?
+   - DEFENDER: The defender moved into the shooter's space (closeout, step-in, undercut)
+   - SHOOTER: The shooter moved into the defender's space (pump-fake then jump into, lean-in, rip-through)
+   - MUTUAL: Both players moved toward each other simultaneously
+   - UNCLEAR: Cannot determine
+
+4. PRIMARY_CONTACT_BODY_PART: Where on the SHOOTER'S body is the main contact that caused the whistle?
+   - FEET_OR_LOWER_LEGS: Contact on the shooter's feet, ankles, or lower legs (below the knee)
+   - UPPER_LEGS_OR_HIPS: Contact on the shooter's thighs, hips, or pelvis
+   - TORSO: Contact on the shooter's chest, back, or midsection
+   - ARM_OR_HAND: Contact on the shooter's arm, wrist, or hand
+   - HEAD: Contact on the shooter's head or face
+   - MULTIPLE: Contact across multiple body areas simultaneously
+   - UNCLEAR: Cannot determine
+
+5. DEFENDER_FEET_AT_SHOOTER_LANDING: When the shooter comes down to land, where are the defender's feet relative to the shooter's landing spot?
+   - DIRECTLY_UNDER: The defender's feet are underneath or inside the spot where the shooter needs to land
+   - NEAR_BUT_NOT_UNDER: The defender is nearby but their feet are to the side or just outside the landing zone
+   - AWAY_FROM_LANDING: The defender's feet are clearly not near the shooter's landing area
+   - UNCLEAR: Cannot determine
+
+6. CONTACT_TIMING: When does the called contact occur relative to the shot?
+   - BEFORE_RELEASE: While the ball is still in the shooter's hands
+   - AT_RELEASE: As the ball is leaving the shooter's hands
+   - AFTER_RELEASE_DESCENDING: After the ball is released, while the shooter is still in the air descending
+   - AFTER_LANDING: After the shooter has already come down to the floor
+   - UNCLEAR: Cannot determine
+
+Finally, write a 2-3 sentence NARRATIVE describing what you see in the clip chronologically — who does what, in what order, and what contact occurs. Be specific about body parts and directions. Do NOT use the phrase "landing foul" or make any judgment about the call.
+
+Return a raw JSON object (no markdown):
+{
+  "shot_type": "...",
+  "shooter_airborne": "...",
+  "who_initiated": "...",
+  "primary_contact_body_part": "...",
+  "defender_feet_at_shooter_landing": "...",
+  "contact_timing": "...",
+  "narrative": "..."
+}"""
+
+
 # ---------------------------------------------------------------------------
 
 # SPATIAL_LANDING_PROMPT — the primary prompt. Asks for the spatial
@@ -295,21 +367,79 @@ def load_clips_by_key(extended: bool = False) -> Dict[Tuple[str, int], Dict[str,
 class _LandingMixin:
     """Shared landing-specific behavior mixed into each provider subclass."""
 
-    prompt_mode: str  # "spatial" | "sequence" | "whistle"
+    prompt_mode: str  # "spatial" | "sequence" | "whistle" | "observe"
 
     def _landing_system_prompt(self) -> str:
         if self.prompt_mode == "sequence":
             return SEQUENCE_LANDING_PROMPT
         if self.prompt_mode == "whistle":
             return WHISTLE_LANDING_PROMPT
+        if self.prompt_mode == "observe":
+            return OBSERVE_LANDING_PROMPT
         return SPATIAL_LANDING_PROMPT
 
     def _normalize_landing(self, grade: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize the model's landing response.
 
-        Trusts the model's `landing_foul` field; derives it from observations
-        only if missing. Always uppercases and ensures the field is present.
+        For "observe" mode, derives classification from the feature vector
+        rather than trusting a model-produced label. For other modes, trusts
+        the model's `landing_foul` field; derives it from observations only
+        if missing.
         """
+        if self.prompt_mode == "observe":
+            label = "UNCLEAR"
+            shot = str(grade.get("shot_type", "")).strip().upper()
+            airborne = str(grade.get("shooter_airborne", "")).strip().upper()
+            who = str(grade.get("who_initiated", "")).strip().upper()
+            body = str(grade.get("primary_contact_body_part", "")).strip().upper()
+            feet = str(grade.get("defender_feet_at_shooter_landing", "")).strip().upper()
+            timing = str(grade.get("contact_timing", "")).strip().upper()
+
+            # Decision rule derived from Phase 0 FP analysis:
+            # YES requires: airborne jump shot + defender-initiated + feet under
+            #   + lower-body contact + contact after release
+            # NO if: shooter-initiated, arm/hand contact, defender not under,
+            #   or contact before/at release
+            if shot in ("DRIVE",) or airborne == "NO":
+                label = "NO"
+            elif who == "SHOOTER":
+                label = "NO"
+            elif body == "ARM_OR_HAND":
+                label = "NO"
+            elif feet == "DIRECTLY_UNDER" and who == "DEFENDER" and airborne == "YES":
+                label = "YES"
+            elif feet in ("NEAR_BUT_NOT_UNDER", "AWAY_FROM_LANDING"):
+                label = "NO"
+            elif timing in ("BEFORE_RELEASE", "AT_RELEASE") and body not in ("FEET_OR_LOWER_LEGS",):
+                label = "NO"
+            # Default for observe: if enough signals align, classify, else UNCLEAR
+            grade["landing_foul"] = label
+            grade["confidence"] = "MEDIUM" if label != "UNCLEAR" else "LOW"
+            grade["reasoning"] = (
+                f"Derived from observe features: shot={shot} airborne={airborne} "
+                f"who={who} body={body} feet={feet} timing={timing}"
+            )
+            grade["obs_shot_type"] = shot
+            grade["obs_shooter_airborne"] = airborne
+            grade["obs_who_initiated"] = who
+            grade["obs_primary_contact_body_part"] = body
+            grade["obs_defender_feet"] = feet
+            grade["obs_contact_timing"] = timing
+            # Populate legacy fields for validation comparison
+            if feet == "DIRECTLY_UNDER":
+                grade["defender_in_landing_zone"] = "YES"
+            elif feet in ("NEAR_BUT_NOT_UNDER", "AWAY_FROM_LANDING"):
+                grade["defender_in_landing_zone"] = "NO"
+            else:
+                grade["defender_in_landing_zone"] = "UNCLEAR"
+            if timing == "AFTER_RELEASE_DESCENDING":
+                grade["contact_vs_descent"] = "DURING_DESCENT_OR_LANDING"
+            elif timing in ("BEFORE_RELEASE", "AT_RELEASE"):
+                grade["contact_vs_descent"] = "DURING_SHOT_MOTION"
+            else:
+                grade["contact_vs_descent"] = "UNCLEAR"
+            return grade
+
         label = str(grade.get("landing_foul", "")).strip().upper()
         if label not in ("YES", "NO", "UNCLEAR"):
             shot = str(grade.get("shot_type", "")).upper()
@@ -374,6 +504,14 @@ class _LandingMixin:
                 f"\n\nPlay-by-play description: {description}\n\n"
                 "Watch the clip above. Determine whether this is a landing foul "
                 "using the event-ordering steps. Return a raw JSON object."
+            )
+        if self.prompt_mode == "observe":
+            return (
+                f"\n\nPlay-by-play description: {description}\n\n"
+                "Watch the clip above carefully. Answer the six observation "
+                "questions based on what you see. Do NOT classify the play. "
+                "Do NOT say whether it is a landing foul. Just describe what "
+                "happened. Return a raw JSON object."
             )
         return (
             f"\n\nPlay-by-play description: {description}\n\n"
@@ -738,10 +876,12 @@ def main() -> None:
                         help="LLM provider")
     parser.add_argument("--model", required=True,
                         help="Model name (e.g. gemini-2.5-flash, claude-sonnet-4-6, gpt-5.4-mini)")
-    parser.add_argument("--prompt-mode", default="spatial", choices=["spatial", "sequence", "whistle"],
+    parser.add_argument("--prompt-mode", default="spatial", choices=["spatial", "sequence", "whistle", "observe"],
                         help="Prompt strategy: spatial (default), event-ordering sequence, "
-                             "or whistle (attribution via the referee's whistle — audio, "
-                             "best with gemini/vertex native video)")
+                             "whistle (attribution via the referee's whistle — audio, "
+                             "best with gemini/vertex native video), "
+                             "observe (structured observation only — no classification, "
+                             "derive post-hoc from feature vector)")
     parser.add_argument("--validate-only", action="store_true",
                         help="Only grade clips that have manual ground truth")
     parser.add_argument("--extended", action="store_true",

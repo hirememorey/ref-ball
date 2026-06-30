@@ -218,34 +218,30 @@ python -m http.server 8080 --directory output
 
 ---
 
-#### YOUR FIRST TASK: Run sequence + few-shot, then decide the path
+#### YOUR FIRST TASK: Manual Grading of 300 New Clips (Phase 1 of Fine-Tuning Pipeline)
 
-The sequence prompt + few-shot combination has not been run yet. This is the highest-priority experiment because: (a) the event-ordering approach was the single biggest accuracy jump on the does-harden-choke timing axis (40% → 71%), and (b) few-shot examples are implemented but untested. Run it, record results, then choose a path based on what happens.
+The LLM approach (even sequence + few-shot) has hit a modality wall — the YES bias persists because multimodal LLMs cannot distinguish sub-second cause and consequence or perfectly track a defender's feet relative to the shooter's descending center of mass.
 
-**Run these two commands (Vertex, ~30 min each):**
+**The pivot:** We are moving away from LLM grading and building a **fine-tuned video classifier** (e.g., SlowFast or VideoMAE) for Layer 2.
 
-```bash
-cd /Users/harrisgordon/Documents/Development/ref-ball
+To do this, we need ~400–500 perfectly labeled clips. We already have 134. A new batch of 300 candidates has been fetched. **Your next step is to manually grade them.**
 
-# 1. Sequence prompt WITHOUT few-shot (baseline for the sequence approach):
-make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash PROMPT_MODE=sequence
+**How to grade the next 300 clips:**
 
-# 2. Sequence prompt WITH few-shot:
-make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash PROMPT_MODE=sequence FEW_SHOT=1
-```
+1. Start the local web server:
+   ```bash
+   python -m http.server 8080 --directory /Users/harrisgordon/Documents/Development/ref-ball/output
+   ```
+2. Open your browser to: `http://localhost:8080/landing_foul_classifier.html`
+3. Use the keyboard shortcuts (`Y` for YES, `N` for NO, `U` for UNCLEAR) to burn through the 300 clips.
+4. When finished, click the **Export CSV** button at the bottom of the page.
+5. Save the downloaded file over your existing `data/landing_foul_classifications.csv` file.
+6. Run `make landing-merge` to combine the new labels with the legacy v3 labels into a final ~430-row ground truth dataset:
+   ```bash
+   make landing-merge
+   ```
 
-**What to look for:** Precision on YES (the binding constraint). Recall is already 98% on spatial — the question is whether sequence + few-shot can push precision above 70–75%.
-
-**Decision tree after the run:**
-
-| Precision (YES) result | Next action |
-|---|---|
-| **≥ 85%** | Precision target met. Proceed to Step 11 (per-official scale-up). |
-| **75–84%** | Close. Try spatial_v2 + few-shot (`PROMPT_MODE=spatial FEW_SHOT=1`), or further prompt edits. One more iteration cycle is warranted. |
-| **60–74%** | Marginal improvement. The pure-LLM path is unlikely to reach 85%. Switch to **hybrid pipeline** (see below). |
-| **< 60%** | No improvement over spatial. Abandon pure-LLM grading for this task. Use hybrid pipeline or manual classification. |
-
----
+Once this is complete, you will have the raw dataset required to start Phase 2: Video Preprocessing & Formatting for the fine-tuned model.
 
 #### THE HYBRID PIPELINE (if precision stays below 75%)
 

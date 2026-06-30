@@ -1,6 +1,6 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate
+.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate landing-grade-observe
 
 venv:
 	python3 -m venv .venv
@@ -135,3 +135,13 @@ landing-grade-validate:
 		$(if $(LIMIT),--limit $(LIMIT))
 
 landing-ground-truth: landing-manifest landing-classifier
+
+# --- Step 10 observe: structured observation-only prompt (Phase 1) ---
+# Derives classification from feature vector post-hoc, not from the model.
+#   make landing-grade-observe PROVIDER=vertex MODEL=gemini-3.5-flash
+#   make landing-grade-observe PROVIDER=vertex MODEL=gemini-3.5-flash LIMIT=10
+
+landing-grade-observe:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_llm_grader.py \
+		--provider $(PROVIDER) --model $(MODEL) --prompt-mode observe --validate-only \
+		$(if $(EXTENDED),--extended) $(if $(LIMIT),--limit $(LIMIT))
