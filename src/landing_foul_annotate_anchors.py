@@ -34,12 +34,17 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import config
+from landing_foul_video_dataset import (
+    CLIPS_DIR,
+    GROUND_TRUTH_PATH,
+    MANIFEST_PATH,
+    is_placeholder_file,
+)
+from nba_client import NBAStatsClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-CLIPS_DIR = config.DATA_DIR / "clips" / "landing_foul"
-GROUND_TRUTH_PATH = config.DATA_DIR / "landing_foul_ground_truth.csv"
 ANCHORS_PATH = config.PROCESSED_DIR / "landing_foul_clip_anchors.json"
 SKIPPED_PATH = config.PROCESSED_DIR / "landing_foul_clip_anchors_skipped.json"
 
@@ -114,6 +119,36 @@ class AnnotationState:
 
 STATE = AnnotationState()
 
+# Lazy NBA session for CDN proxy (plain HTTP gets a "video not available" placeholder).
+_nba_session = None
+_nba_session_lock = threading.Lock()
+
+
+def nba_session():
+    global _nba_session
+    with _nba_session_lock:
+        if _nba_session is None:
+            _nba_session = NBAStatsClient().session
+        return _nba_session
+
+
+def load_manifest_urls() -> dict[str, str]:
+    if not MANIFEST_PATH.exists():
+        return {}
+    with open(MANIFEST_PATH) as f:
+        data = json.load(f)
+    out = {}
+    for c in data.get("clips", []):
+        gid = str(c["game_id"]).zfill(10)
+        eid = int(c["event_id"])
+        url = c.get("video_url_960") or c.get("video_url_720")
+        if url:
+            out[f"{gid}_{eid}"] = url
+    return out
+
+
+MANIFEST_URLS = load_manifest_urls()
+
 
 # ---------------------------------------------------------------------------
 # Clip list (ground truth rows that have a downloaded MP4 on disk)
@@ -138,6 +173,7 @@ def build_clip_list() -> list[dict]:
         path = CLIPS_DIR / fname
         if not path.exists():
             continue
+        placeholder = is_placeholder_file(path)
         clips.append({
             "key": key,
             "game_id": gid,
@@ -148,6 +184,8 @@ def build_clip_list() -> list[dict]:
             "note": _clean_note(r.get("note", "")),
             "period": str(r.get("period", "") or ""),
             "clock": str(r.get("clock", "") or ""),
+            "placeholder": placeholder,
+            "video_url": MANIFEST_URLS.get(key, ""),
         })
     return clips
 
@@ -165,6 +203,13 @@ def _clean_note(val) -> str:
 
 CLIP_LIST = build_clip_list()
 CLIP_BY_KEY = {c["key"]: c for c in CLIP_LIST}
+N_PLACEHOLDER = sum(1 for c in CLIP_LIST if c.get("placeholder"))
+if N_PLACEHOLDER:
+    logger.warning(
+        "%d/%d local clips are NBA CDN placeholders — serving via CDN proxy. "
+        "Run: make video-download",
+        N_PLACEHOLDER, len(CLIP_LIST),
+    )
 logger.info("Annotator ready: %d clips on disk", len(CLIP_LIST))
 
 
@@ -223,6 +268,7 @@ class Handler(BaseHTTPRequestHandler):
             "total": len(items),
             "n_done": len(anchors),
             "n_skipped": len(skipped),
+            "n_placeholder": sum(1 for c in items if c.get("placeholder")),
             "default_half_width": DEFAULT_HALF_WIDTH,
         }
         self._send_json(payload)
@@ -265,7 +311,45 @@ class Handler(BaseHTTPRequestHandler):
         if not path.exists() or path.suffix.lower() != ".mp4":
             self.send_error(404, "clip not found")
             return
+        key = fname[:-4]  # strip .mp4
+        clip = CLIP_BY_KEY.get(key)
+        if clip and clip.get("placeholder") and clip.get("video_url"):
+            self._proxy_cdn_range(clip["video_url"])
+            return
         self._send_file_range(path, "video/mp4")
+
+    def _proxy_cdn_range(self, url: str):
+        """Stream from NBA CDN with stats session headers (avoids placeholder MP4)."""
+        headers = {}
+        range_header = self.headers.get("Range")
+        if range_header:
+            headers["Range"] = range_header
+        try:
+            resp = nba_session().get(url, headers=headers, timeout=60, stream=True)
+        except Exception as exc:
+            logger.warning("CDN proxy failed for %s: %s", url, exc)
+            self.send_error(502, "CDN fetch failed")
+            return
+        if resp.status_code not in (200, 206):
+            self.send_error(resp.status_code, "CDN error")
+            return
+        self.send_response(resp.status_code)
+        for h in ("Content-Type", "Content-Length", "Content-Range", "Accept-Ranges"):
+            if h in resp.headers:
+                self.send_header(h, resp.headers[h])
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if self.command == "HEAD":
+            resp.close()
+            return
+        try:
+            for chunk in resp.iter_content(chunk_size=CHUNK):
+                if chunk:
+                    self.wfile.write(chunk)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        finally:
+            resp.close()
 
     def _send_file_range(self, path: Path, content_type: str):
         size = path.stat().st_size
@@ -346,6 +430,8 @@ PAGE_HTML = r"""<!doctype html>
            background:var(--panel); border-bottom:1px solid var(--border); }
   header h1 { font-size:15px; margin:0; font-weight:600; }
   #progress { color:var(--muted); font-variant-numeric:tabular-nums; }
+  #warn { display:none; background:#4a3520; color:#f0c674; padding:8px 16px;
+          border-bottom:1px solid #6b4f2a; font-size:13px; }
   .filters { display:flex; gap:6px; margin-left:auto; }
   .filters button { background:var(--panel2); color:var(--muted); border:1px solid var(--border);
                     border-radius:6px; padding:4px 10px; cursor:pointer; font-size:12px; }
@@ -400,6 +486,7 @@ PAGE_HTML = r"""<!doctype html>
     <button data-filter="all" class="active">All</button>
   </div>
 </header>
+<div id="warn"></div>
 <div class="layout">
   <div id="sidebar"></div>
   <main>
@@ -455,7 +542,15 @@ async function loadList() {
 function renderProgress(d) {
   const nDone = d ? d.n_done : clips.filter(c=>c.status==='done').length;
   const nSkip = d ? d.n_skipped : clips.filter(c=>c.status==='skipped').length;
+  const nPh = d ? (d.n_placeholder || 0) : clips.filter(c=>c.placeholder).length;
   $('#progress').textContent = `${nDone} done · ${nSkip} skipped · ${clips.length} total`;
+  const warn = $('#warn');
+  if (nPh > 0) {
+    warn.style.display = 'block';
+    warn.textContent = `${nPh} clips streaming from NBA CDN (local files are placeholders). Run make video-download to cache real clips.`;
+  } else {
+    warn.style.display = 'none';
+  }
 }
 
 function visibleIndices() {

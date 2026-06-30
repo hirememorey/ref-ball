@@ -17,16 +17,17 @@ Output:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List
 
 import numpy as np
-import requests
 from tqdm import tqdm
 
 import config
+from nba_client import NBAStatsClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -38,6 +39,33 @@ EMBEDDINGS_PATH = config.PROCESSED_DIR / "landing_foul_embeddings.npz"
 
 DEFAULT_MODEL = "MCG-NJU/videomae-base-finetuned-kinetics"
 NUM_FRAMES = 16
+
+# NBA CDN returns this generic "video not available" MP4 when requests lack
+# NBA.com Referer / stats headers (plain requests.get gets the placeholder).
+PLACEHOLDER_MD5 = "2dd8e05a98fc6949fa7ec979b0905464"
+PLACEHOLDER_SIZE = 31_580_089
+
+
+def is_placeholder_bytes(data: bytes) -> bool:
+    if len(data) == PLACEHOLDER_SIZE:
+        return hashlib.md5(data).hexdigest() == PLACEHOLDER_MD5
+    return False
+
+
+def is_placeholder_file(path: Path, *, verify_md5: bool = False) -> bool:
+    """Detect NBA CDN 'video not available' placeholder saved locally.
+
+  Real PBP clips are typically 3–8 MB. The placeholder is always exactly
+  PLACEHOLDER_SIZE bytes. Set verify_md5=True when writing downloads; for
+  bulk scans (annotator startup) size-only is sufficient.
+    """
+    if not path.exists():
+        return False
+    if path.stat().st_size != PLACEHOLDER_SIZE:
+        return False
+    if not verify_md5:
+        return True
+    return hashlib.md5(path.read_bytes()).hexdigest() == PLACEHOLDER_MD5
 
 
 def load_manifest() -> List[Dict[str, Any]]:
@@ -67,7 +95,12 @@ def clip_path(game_id: str, event_id: int) -> Path:
 
 
 def download_clips(limit: int | None = None, resume: bool = True) -> None:
-    """Download MP4 clips from NBA CDN for all ground-truth-labeled clips."""
+    """Download MP4 clips from NBA CDN for all ground-truth-labeled clips.
+
+    Uses NBAStatsClient session headers — plain requests.get() receives a
+    generic "video not available" placeholder (~31 MB) instead of the clip.
+    With resume=True, existing placeholder files are re-downloaded automatically.
+    """
     CLIPS_DIR.mkdir(parents=True, exist_ok=True)
 
     clips = load_manifest()
@@ -86,15 +119,21 @@ def download_clips(limit: int | None = None, resume: bool = True) -> None:
     if limit:
         labeled_clips = labeled_clips[:limit]
 
-    downloaded, skipped, failed = 0, 0, 0
+    client = NBAStatsClient()
+    session = client.session
+
+    downloaded, skipped, failed, refreshed = 0, 0, 0, 0
     for clip in tqdm(labeled_clips, desc="Downloading clips"):
         gid = str(clip["game_id"]).zfill(10)
         eid = int(clip["event_id"])
         out = clip_path(gid, eid)
 
-        if resume and out.exists() and out.stat().st_size > 1000:
+        if resume and out.exists() and out.stat().st_size > 1000 and not is_placeholder_file(out, verify_md5=True):
             skipped += 1
             continue
+
+        if out.exists() and is_placeholder_file(out, verify_md5=True):
+            refreshed += 1
 
         url = clip.get("video_url_960") or clip.get("video_url_720")
         if not url:
@@ -103,8 +142,15 @@ def download_clips(limit: int | None = None, resume: bool = True) -> None:
             continue
 
         try:
-            resp = requests.get(url, timeout=30)
+            resp = session.get(url, timeout=60)
             resp.raise_for_status()
+            if is_placeholder_bytes(resp.content):
+                logger.warning(
+                    "CDN returned placeholder for %s_%s (check NBA session headers)",
+                    gid, eid,
+                )
+                failed += 1
+                continue
             out.write_bytes(resp.content)
             downloaded += 1
         except Exception as e:
@@ -112,8 +158,9 @@ def download_clips(limit: int | None = None, resume: bool = True) -> None:
             failed += 1
 
     logger.info(
-        "Download complete: %d downloaded, %d skipped (existing), %d failed",
-        downloaded, skipped, failed,
+        "Download complete: %d downloaded, %d skipped (valid existing), "
+        "%d refreshed (was placeholder), %d failed",
+        downloaded, skipped, refreshed, failed,
     )
 
 
