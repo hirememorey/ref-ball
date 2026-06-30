@@ -63,6 +63,7 @@ SPLIT_PATH = config.PROCESSED_DIR / "landing_foul_split.json"
 ANCHORS_PATH = config.PROCESSED_DIR / "landing_foul_clip_anchors.json"
 BEST_CKPT_PATH = config.PROCESSED_DIR / "landing_foul_video_best.pt"
 METRICS_PATH = config.PROCESSED_DIR / "landing_foul_video_metrics.json"
+DEFAULT_CACHE_PATH = config.PROCESSED_DIR / "landing_foul_frames.npz"
 
 # Quality gate
 PRECISION_GATE = 0.85
@@ -241,6 +242,88 @@ def sample_frames_windowed(
 
 
 # ---------------------------------------------------------------------------
+# Frame cache: decode each clip once, reuse across epochs.
+#
+# Decoding 1080p MP4s is the dominant cost (~7s/clip); re-decoding every epoch
+# makes a 20-epoch run take ~10 hours. Caching ~32 frames/clip at 256x256 uint8
+# (~1.8 GB) drops epoch time to ~1-2 min. Cache is built with the same window
+# resolution logic as live decoding, so results are identical modulo resize.
+# ---------------------------------------------------------------------------
+
+
+def _resize_frames(frames: np.ndarray, size: int) -> np.ndarray:
+    import cv2
+
+    out = np.empty((frames.shape[0], size, size, 3), dtype=np.uint8)
+    for i, f in enumerate(frames):
+        out[i] = cv2.resize(f, (size, size), interpolation=cv2.INTER_AREA)
+    return out
+
+
+def build_frame_cache(
+    keys: list[tuple[str, int]],
+    labels: dict[tuple[str, int], int],
+    anchors: dict[str, dict[str, float]],
+    global_window: tuple[float, float],
+    cache_frames: int,
+    cache_size: int,
+    out_path: Path,
+) -> None:
+    """Decode every clip once and store `cache_frames` resized frames per clip."""
+    import cv2  # noqa: F401  (sample_frames_windowed imports cv2 lazily)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    frame_arrays, key_tags, label_list = [], [], []
+    failed = []
+    for i, key in enumerate(keys):
+        gid, eid = key
+        vpath = clip_path(gid, eid)
+        if not vpath.exists():
+            failed.append(f"{gid}_{eid} (missing)")
+            continue
+        try:
+            win = resolve_window(key, anchors, global_window)
+            frames = sample_frames_windowed(
+                vpath, num_frames=cache_frames, start_frac=win[0], end_frac=win[1],
+                jitter_extra=0,
+            )
+            frames = _resize_frames(frames, cache_size)
+        except Exception as e:
+            failed.append(f"{gid}_{eid} ({e})")
+            continue
+        frame_arrays.append(frames)
+        key_tags.append(f"{gid}_{eid}")
+        label_list.append(labels[key])
+        if (i + 1) % 25 == 0:
+            logger.info("  cache: %d/%d clips decoded", i + 1, len(keys))
+
+    if failed:
+        logger.warning("Cache build: %d clips failed: %s", len(failed), failed[:5])
+    if not frame_arrays:
+        raise SystemExit("No clips decoded for cache.")
+
+    stacked = np.stack(frame_arrays)  # (N, cache_frames, size, size, 3) uint8
+    np.savez(
+        out_path,
+        frames=stacked,
+        keys=np.array(key_tags, dtype=object),
+        labels=np.array(label_list, dtype=np.int64),
+        cache_frames=cache_frames,
+        cache_size=cache_size,
+    )
+    logger.info("Saved frame cache: %s | %d clips x %d frames x %dx%d (~%.1f GB)",
+                out_path, len(frame_arrays), cache_frames, cache_size, cache_size,
+                stacked.nbytes / 1e9)
+
+
+def load_frame_cache(path: Path) -> dict[str, np.ndarray]:
+    data = np.load(path, allow_pickle=True)
+    frames = data["frames"]  # (N, T, H, W, 3)
+    keys = [str(k) for k in data["keys"]]
+    return {keys[i]: frames[i] for i in range(len(keys))}
+
+
+# ---------------------------------------------------------------------------
 # Dataset
 # ---------------------------------------------------------------------------
 
@@ -263,6 +346,8 @@ class LandingFoulDataset:
         jitter_extra: int = 6,
         model_name: str = DEFAULT_MODEL,
         seed: int = 42,
+        frame_cache: dict[str, np.ndarray] | None = None,
+        cache_frames: int = 32,
     ) -> None:
         self.keys = keys
         self.labels = labels
@@ -273,6 +358,8 @@ class LandingFoulDataset:
         self.jitter_extra = jitter_extra if augment else 0
         self.seed = seed
         self._rng = np.random.default_rng(seed)
+        self.frame_cache = frame_cache
+        self.cache_frames = cache_frames
 
         # Lazily build the processor (HuggingFace).
         from transformers import VideoMAEImageProcessor
@@ -292,6 +379,18 @@ class LandingFoulDataset:
         return len(self.keys)
 
     def _read_frames(self, key: tuple[str, int]) -> np.ndarray:
+        # Cached path: frames already decoded + resized. Apply temporal subsample/jitter.
+        if self.frame_cache is not None:
+            cached = self.frame_cache.get(f"{key[0]}_{key[1]}")
+            if cached is not None:
+                T = cached.shape[0]
+                if self.augment and T > self.num_frames:
+                    max_start = T - self.num_frames
+                    start = int(self._rng.integers(0, max_start + 1))
+                    return cached[start : start + self.num_frames]
+                idx = np.linspace(0, T - 1, self.num_frames, dtype=int)
+                return cached[idx]
+        # Live decode path.
         gid, eid = key
         vpath = clip_path(gid, eid)
         if not vpath.exists():
@@ -613,9 +712,27 @@ def run_training(args: argparse.Namespace) -> None:
     anchors = load_anchors()
     window = parse_window(args.temporal_window)
 
+    # Optional frame cache: build-once, reuse across epochs (eliminates per-epoch decode).
+    if args.build_cache:
+        logger.info("Building frame cache -> %s", args.frame_cache)
+        build_frame_cache(
+            train_keys + val_keys, labels, anchors, window,
+            cache_frames=args.cache_frames, cache_size=args.cache_size,
+            out_path=Path(args.frame_cache),
+        )
+        logger.info("Cache built. Re-run without --build-cache to train.")
+        return
+
+    frame_cache = None
+    if Path(args.frame_cache).exists():
+        logger.info("Loading frame cache: %s", args.frame_cache)
+        frame_cache = load_frame_cache(Path(args.frame_cache))
+        logger.info("Cache loaded: %d clips", len(frame_cache))
+
     logger.info(
-        "Split: train=%d val=%d | window=%s | jitter_extra=%d | augment=%s",
+        "Split: train=%d val=%d | window=%s | jitter_extra=%d | augment=%s | cache=%s",
         len(train_keys), len(val_keys), window, args.jitter if args.augment else 0, args.augment,
+        "yes" if frame_cache is not None else "no (live decode)",
     )
 
     train_ds = LandingFoulDataset(
@@ -623,11 +740,13 @@ def run_training(args: argparse.Namespace) -> None:
         augment=args.augment, num_frames=args.num_frames,
         jitter_extra=args.jitter if args.augment else 0,
         model_name=args.model, seed=args.seed,
+        frame_cache=frame_cache, cache_frames=args.cache_frames,
     )
     val_ds = LandingFoulDataset(
         val_keys, labels, anchors, window,
         augment=False, num_frames=args.num_frames,
         jitter_extra=0, model_name=args.model, seed=args.seed + 1,
+        frame_cache=frame_cache, cache_frames=args.cache_frames,
     )
 
     g = torch.Generator()
@@ -772,10 +891,15 @@ def run_evaluate_only(args: argparse.Namespace) -> None:
     anchors = load_anchors()
     window = parse_window(args.temporal_window)
 
+    frame_cache = None
+    if Path(args.frame_cache).exists():
+        frame_cache = load_frame_cache(Path(args.frame_cache))
+
     val_ds = LandingFoulDataset(
         val_keys, labels, anchors, window,
         augment=False, num_frames=args.num_frames,
         jitter_extra=0, model_name=args.model, seed=args.seed + 1,
+        frame_cache=frame_cache, cache_frames=args.cache_frames,
     )
     val_loader = DataLoader(
         val_ds, batch_size=args.batch_size, shuffle=False, drop_last=False,
@@ -830,6 +954,10 @@ def main() -> None:
     p.add_argument("--patience", type=int, default=6, help="Early stopping patience on val precision (0=off)")
     p.add_argument("--max-train-batches", type=int, default=0, help="Cap train batches/epoch (0=unlimited; smoke testing)")
     p.add_argument("--max-val-batches", type=int, default=0, help="Cap val batches/epoch (0=unlimited; smoke testing)")
+    p.add_argument("--frame-cache", default=str(DEFAULT_CACHE_PATH), help="Path to frame cache npz (decode-once)")
+    p.add_argument("--build-cache", action="store_true", help="Decode all clips once and write frame cache, then exit")
+    p.add_argument("--cache-frames", type=int, default=32, help="Frames per clip stored in cache")
+    p.add_argument("--cache-size", type=int, default=256, help="Cached frame side length (resized before storage)")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--device", default="auto", choices=["auto", "cuda", "mps", "cpu"])
     p.add_argument("--evaluate-only", action="store_true")
