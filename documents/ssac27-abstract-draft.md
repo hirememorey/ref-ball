@@ -8,6 +8,8 @@
 **Figures:** `output/figures/table_a_suppressor_amplifier.png` (Table 1), `output/figures/figure_b_crew_prediction_scatter.png` (Figure 1)
 **Generator:** `src/generate_abstract_figures.py`
 
+**TODO (v3):** Incorporate foul-type specificity finding — SF/NSF per-official rate independence (r=0.152, p=0.15), residualized ANOVA (100% of effect survives), η² by foul type table. This strengthens the "interpretive" vs "volumetric" claim in Results.
+
 ---
 
 ## Individual NBA Referees Have Systematically Different Effects on Free Throw Rates: Evidence from 13,278 Games

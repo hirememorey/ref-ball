@@ -150,6 +150,7 @@ Near-miss players not included (insufficient FTA/36 or GP): Jalen Brunson (4.79)
 - **Step 5 — game-level prediction weak.** Honest temporal holdout: OLS R²≈0.005 for game SF count; league average is competitive. Crew-pair interaction effects are real (53/529 pairs |z|>1.96, 2× expected).
 - **Step 5b — player-level prediction modest.** Temporal holdout: R²=0.13 (crew + baseline) vs 0.12 (baseline only). Static/leaky upper bound R²≈0.31. Westbrook, CP3, Harden benefit most.
 - **Step 6 — L2M validation mixed.** `suppressor_score` vs L2M INC/(INC+CC): r=+0.02, p=0.86 (not confirmed). `sf_per_game` vs L2M INC rate: r=−0.45, p<0.001 (Layer 1 validated). Player-conditioned L2M test also not significant.
+- **Foul-type specificity (new 2026-07-01).** Shooting foul heterogeneity is **independent** of non-shooting foul heterogeneity. Per-official SF rate and NSF rate are uncorrelated (r=0.152, p=0.15, n=92 officials). After residualizing SF rate on NSF rate, 100% of the shooting foul ANOVA effect survives (η²: 0.032 vs 0.031 raw). Officials who call lots of shooting fouls do NOT systematically call lots of non-shooting fouls. See "Foul-type specificity analysis" below for full breakdown.
 
 ---
 
@@ -165,9 +166,10 @@ Steps 1-9 are **complete**. Step 9 manual grading **complete** (300/300). Step 1
 - Figure 1 generated: `output/figures/figure_b_crew_prediction_scatter.png` — predicted crew suppression vs actual FTA/36 deviation (Spearman r=0.406, p<0.001, n=433 player-games, 20 players)
 - Open-source decision resolved: full transparency, all data published, named officials
 - Figure generator: `src/generate_abstract_figures.py`
+- **Foul-type specificity analysis (2026-07-01):** Shooting foul heterogeneity is independent of non-shooting foul volume. SF/NSF per-official correlation r=0.152 (p=0.15). Residualized ANOVA: 100% of effect survives. See "Foul-type specificity analysis" section.
 
 **What's remaining before submission:**
-1. Final wording pass on abstract (iterate v2 → v3)
+1. Final wording pass on abstract (iterate v2 → v3) — **TODO: incorporate foul-type specificity finding** (SF/NSF independence, residualized ANOVA)
 2. Prepare GitHub repo for open-source link (required at submission) — clean README, reproducible pipeline, publish parquets
 3. Submit via https://bit.ly/4xIaYy9 before October 1, 2026
 4. If abstract accepted (notification late-October): full manuscript due December 4, 2026
@@ -811,6 +813,61 @@ make dhc-merge-summary  # print results
 ```
 
 **Outputs:** `data/processed/model/dhc_merge/`
+
+---
+
+## Foul-Type Specificity Analysis (2026-07-01)
+
+**Question:** Is the shooting foul heterogeneity just a volume effect (some refs call more of everything), or is it foul-type-specific (refs differ specifically in how they judge shooting contact)?
+
+**Method:** Compute per-official rates for shooting fouls (SF) and non-shooting fouls (NSF) per game. Run ANOVA on each category. Test SF/NSF correlation across officials. Residualize SF rate on NSF rate and re-run ANOVA.
+
+### ANOVA results by foul type (officials with ≥30 games)
+
+| Category | η² | F | p | CV of official means | Officials |
+|---|---|---|---|---|---|
+| **Shooting** | 0.031 | 12.12 | 4.59e-172 | 0.078 | 93 |
+| Personal | 0.064 | 25.38 | ~0 | 0.141 | 93 |
+| Offensive | 0.030 | 6.47 | 3.27e-70 | 0.092 | 89 |
+| Loose Ball | 0.034 | 7.32 | 1.12e-83 | 0.096 | 89 |
+| Personal Take | 0.010 | 1.23 | 0.074 | 0.057 | 84 |
+| Off. Charge | 0.009 | 1.10 | 0.261 | 0.044 | 80 |
+| Technical | 0.032 | 2.91 | 1.10e-14 | 0.071 | 71 |
+| **ALL Non-Shooting** | 0.098 | 41.41 | ~0 | 0.153 | 93 |
+
+### Key finding: SF and NSF are independent
+
+- **Per-official SF rate vs NSF rate correlation: r=0.152, p=0.15** (not significant, n=92 officials with ≥50 games)
+- **After residualizing SF rate on NSF rate:** η² goes from 0.031 (raw) to 0.032 (residualized) — **100% of the shooting foul effect survives controlling for non-shooting foul volume**
+- Officials who call lots of shooting fouls do NOT systematically call lots of non-shooting fouls
+
+### Interpretation
+
+The shooting-foul heterogeneity is **not** a volume artifact. It is a separate dimension. This has two implications:
+
+1. **For Paper 1:** The specificity finding strengthens the claim that referee effects are interpretive, not just volumetric. Suppressor/amplifier profiles on shooting fouls cannot be explained by "some refs just call more fouls." Add to Results section.
+
+2. **For Paper 2:** If SF heterogeneity is interpretation-specific and independent of general volume, then foul-type-specific variance (landing foul rates) is the right next question. The landing foul classifier (when it clears the gate) is measuring the mechanism behind the shooting foul effect, not just re-observing overall volume.
+
+3. **Personal fouls show the largest effect (η²=0.064)** — roughly 2× the shooting foul effect. This is expected: "Personal" is a broad category covering many types of contact judgment. Personal Take (η²=0.010, p=0.07) and Offensive Charge (η²=0.009, p=0.26) show no significant variance — these are more rule-bound calls with less interpretive room.
+
+### Extreme officials (residualized SF rate)
+
+| Official | sf_resid | SF/G | NSF/G | Reading |
+|---|---|---|---|---|
+| D.Jones | −1.662 | 4.81 | 5.81 | Calls far fewer shooting fouls than their NSF rate predicts |
+| B.Spooner | −1.094 | 5.37 | 6.22 | Suppressor on shooting despite above-average overall volume |
+| T.Ford | +0.835 | 7.26 | 7.93 | Calls more shooting fouls but also more of everything |
+| C.Washington | +0.878 | 7.32 | 7.24 | Amplifier on shooting despite average NSF rate |
+| A.Nagy | +0.926 | 7.40 | 5.79 | Strong shooting amplifier despite below-average NSF rate |
+| B.Nansel | +0.936 | 7.40 | 6.14 | Strongest residualized shooting amplifier |
+
+### TODO
+
+- [ ] Update SSAC27 abstract to include foul-type specificity finding (SF/NSF independence, residualized ANOVA)
+- [ ] Generate figure: scatter of per-official SF rate vs NSF rate (showing r=0.152)
+- [ ] Add residualized SF rate to ref_profiles.parquet output
+- [ ] Consider adding η² by foul type as a supplementary table for the full manuscript
 
 ---
 

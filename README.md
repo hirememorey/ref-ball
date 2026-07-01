@@ -10,6 +10,8 @@
 
 **Secondary aim:** Predict the officiating profile of a game from crew assignment. Steps 5-7 (predictive crew models + does-harden-choke merge) are complete. Game-level prediction is weak (R^2~0.005); player-level prediction is modest (R^2=0.13). The continuous prediction works (r=0.406) but crew assignment is not the mechanism behind playoff FTA collapse.
 
+**Key finding (2026-07-01):** Shooting foul heterogeneity is **independent** of non-shooting foul heterogeneity. Per-official SF rate and NSF rate are uncorrelated (r=0.152, p=0.15). After residualizing SF rate on NSF rate, 100% of the shooting foul ANOVA effect survives (η²: 0.032 vs 0.031 raw). The effect is foul-type-specific, not a volume artifact. Personal fouls show the largest effect (η²=0.064); Personal Take and Offensive Charge show no significant variance (p>0.05). See [HANDOFF.md](documents/development/HANDOFF.md) "Foul-Type Specificity Analysis" for full breakdown.
+
 The dataset is the asset. Papers are downstream products. Build the dataset once, then query it for multiple findings.
 
 The dataset has three layers, each with a different novelty moat:
