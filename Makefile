@@ -153,6 +153,12 @@ landing-grade-observe:
 video-download:
 	PYTHONPATH=. $(PYTHON) src/landing_foul_video_dataset.py download $(if $(LIMIT),--limit $(LIMIT))
 
+video-verify:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_video_dataset.py verify
+
+video-package:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_video_dataset.py package
+
 video-extract:
 	PYTHONPATH=. $(PYTHON) src/landing_foul_video_dataset.py extract $(if $(MODEL),--model $(MODEL))
 

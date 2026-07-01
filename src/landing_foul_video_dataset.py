@@ -27,6 +27,7 @@ import numpy as np
 from tqdm import tqdm
 
 import config
+from foul_type_scraper import fetch_video_for_event
 from nba_client import NBAStatsClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -89,6 +90,46 @@ def clip_path(game_id: str, event_id: int) -> Path:
     return CLIPS_DIR / f"{game_id}_{event_id}.mp4"
 
 
+def count_placeholder_clips() -> tuple[int, int]:
+    """Return (n_placeholder, n_total) for clips on disk."""
+    files = list(CLIPS_DIR.glob("*.mp4"))
+    n_ph = sum(1 for f in files if is_placeholder_file(f))
+    return n_ph, len(files)
+
+
+def fetch_clip_bytes(
+    client: NBAStatsClient,
+    game_id: str,
+    event_id: int,
+    fallback_url: str,
+) -> bytes | None:
+    """Download one clip via stats API + CDN. Returns None if placeholder or error."""
+    session = client.session
+    video_info = fetch_video_for_event(client, game_id, event_id)
+    url = (video_info or {}).get("murl") or fallback_url
+    if not url:
+        return None
+    headers = {"Referer": f"https://www.nba.com/game/{game_id}"}
+    resp = session.get(url, headers=headers, timeout=60)
+    resp.raise_for_status()
+    if is_placeholder_bytes(resp.content):
+        return None
+    return resp.content
+
+
+def verify_clips(min_valid: int = 280) -> None:
+    """Print clip inventory; exit non-zero if too many placeholders."""
+    n_ph, n_total = count_placeholder_clips()
+    n_ok = n_total - n_ph
+    logger.info("Clips on disk: %d total, %d valid, %d placeholder", n_total, n_ok, n_ph)
+    if n_ok < min_valid:
+        raise SystemExit(
+            f"Only {n_ok} valid clips (need ≥{min_valid}). "
+            "NBA CDN often blocks Colab/datacenter IPs — upload local clips via Google Drive "
+            "(see documents/development/colab-finetune.ipynb §4b)."
+        )
+
+
 # ---------------------------------------------------------------------------
 # Phase 1: Download clips
 # ---------------------------------------------------------------------------
@@ -120,7 +161,11 @@ def download_clips(limit: int | None = None, resume: bool = True) -> None:
         labeled_clips = labeled_clips[:limit]
 
     client = NBAStatsClient()
-    session = client.session
+    # Warm stats.nba.com session (cookies) before CDN fetches.
+    try:
+        client._make_request("commonplayoffseries", {"LeagueID": "00", "Season": "2023-24"})
+    except Exception:
+        pass
 
     downloaded, skipped, failed, refreshed = 0, 0, 0, 0
     for clip in tqdm(labeled_clips, desc="Downloading clips"):
@@ -142,16 +187,15 @@ def download_clips(limit: int | None = None, resume: bool = True) -> None:
             continue
 
         try:
-            resp = session.get(url, timeout=60)
-            resp.raise_for_status()
-            if is_placeholder_bytes(resp.content):
+            data = fetch_clip_bytes(client, gid, eid, url)
+            if data is None:
                 logger.warning(
-                    "CDN returned placeholder for %s_%s (check NBA session headers)",
+                    "CDN returned placeholder for %s_%s (datacenter IP? upload clips from local machine)",
                     gid, eid,
                 )
                 failed += 1
                 continue
-            out.write_bytes(resp.content)
+            out.write_bytes(data)
             downloaded += 1
         except Exception as e:
             logger.warning("Failed to download %s_%s: %s", gid, eid, e)
@@ -162,6 +206,13 @@ def download_clips(limit: int | None = None, resume: bool = True) -> None:
         "%d refreshed (was placeholder), %d failed",
         downloaded, skipped, refreshed, failed,
     )
+    n_ph, n_total = count_placeholder_clips()
+    if n_ph > 0:
+        logger.warning(
+            "%d/%d clips on disk are still placeholders. Colab cannot reach NBA CDN — "
+            "zip local data/clips/landing_foul/ and upload via Drive (colab §4b).",
+            n_ph, n_total,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -289,6 +340,25 @@ def extract_embeddings(model_name: str = DEFAULT_MODEL) -> None:
     logger.info("Saved embeddings to %s", EMBEDDINGS_PATH)
 
 
+def package_clips(out_path: Path | None = None) -> Path:
+    """Zip valid clips for Colab upload (~1.2 GB). Skips placeholders."""
+    import zipfile
+
+    out_path = out_path or (config.PROJECT_ROOT / "landing_foul_clips.zip")
+    files = sorted(CLIPS_DIR.glob("*.mp4"))
+    if not files:
+        raise SystemExit(f"No clips in {CLIPS_DIR}")
+    n_ph, _ = count_placeholder_clips()
+    if n_ph:
+        raise SystemExit(f"{n_ph} placeholders on disk — re-download locally before packaging.")
+
+    with zipfile.ZipFile(out_path, "w", compression=zipfile.ZIP_STORED) as zf:
+        for f in files:
+            zf.write(f, arcname=f"landing_foul/{f.name}")
+    logger.info("Wrote %s (%d clips, %.1f GB)", out_path, len(files), out_path.stat().st_size / 1e9)
+    return out_path
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Download clips and extract VideoMAE embeddings")
     sub = parser.add_subparsers(dest="command")
@@ -297,6 +367,11 @@ def main() -> None:
     dl.add_argument("--limit", type=int, default=None, help="Max clips to download")
     dl.add_argument("--no-resume", action="store_true", help="Re-download existing clips")
 
+    sub.add_parser("verify", help="Check clips on disk (fails if placeholders remain)")
+
+    pkg = sub.add_parser("package", help="Zip clips for Colab/Google Drive upload")
+    pkg.add_argument("--out", default=str(config.PROJECT_ROOT / "landing_foul_clips.zip"))
+
     ext = sub.add_parser("extract", help="Extract frozen VideoMAE embeddings")
     ext.add_argument("--model", default=DEFAULT_MODEL, help=f"HuggingFace model ID (default: {DEFAULT_MODEL})")
 
@@ -304,6 +379,10 @@ def main() -> None:
 
     if args.command == "download":
         download_clips(limit=args.limit, resume=not args.no_resume)
+    elif args.command == "verify":
+        verify_clips()
+    elif args.command == "package":
+        package_clips(Path(args.out))
     elif args.command == "extract":
         extract_embeddings(model_name=args.model)
     else:
