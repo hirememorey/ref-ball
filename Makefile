@@ -155,6 +155,9 @@ landing-grade-describe:
 		$(if $(VAL_SPLIT),--val-split) $(if $(LOCAL_CLIPS),--local-clips) \
 		$(if $(EXTENDED),--extended) $(if $(LIMIT),--limit $(LIMIT))
 
+# Run 5 Colab defaults (see HANDOFF.md Step 10b):
+#   make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 FINETUNE_EPOCHS=5
+
 # --- Step 10b: Video classifier (frozen VideoMAE → logistic regression) ---
 #   Full pipeline: make video-pipeline
 #   Individual steps: make video-download && make video-extract && make video-split && make video-train

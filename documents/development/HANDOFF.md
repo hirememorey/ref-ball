@@ -15,9 +15,10 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 2. **Step 10b — fine-tuned video classifier (Paper 2).** Manual ground truth **complete** (300/300 clips). LLM grader **exhausted** as sole classifier (~55% precision, 98% recall). **Frozen VideoMAE:** zero signal. **Colab fine-tune runs (2026-07-01):**
    - Run 1 (full clip): degenerate constant predictor (51% P, 100% R).
    - Run 2 (real clips, full window): ultra-conservative (80% P, 14% R).
-   - Run 3 (**284 anchors ±0.15**): **69% P, 76% R** — best automatic classifier; gate **MARGINAL**.
-   - **LLM describe → rules (57-val):** 50% P, 93% R — Layer 1 over-tags "descent + body contact".
-   - **START HERE:** Colab **Run 4** — tighter crop (`anchor_half_width=0.10`), `yes_weight=0.7`, rebuild cache. See [Step 10b](#step-10b-fine-tuned-video-classifier--colab-run-4).
+   - Run 3 (anchors ±0.15): **69% P, 76% R** — best recall; gate MARGINAL.
+   - Run 4 (anchors ±0.10, `yes_weight=0.7`): **81% P, 59% R** — best precision; 4 FPs (down from 10); recall fails gate.
+   - LLM describe → rules (57-val): 50% P, 93% R.
+   - **START HERE:** Colab **Run 5** — blend Run 3/4: `yes_weight=0.85`, shorter finetune. See [Step 10b](#step-10b-fine-tuned-video-classifier--colab-run-5).
 
 **Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 1-7), L2M validation, does-harden-choke merge, SSAC27 abstract draft + figures. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
 
@@ -48,8 +49,9 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | Downloaded video clips | `data/clips/landing_foul/{game_id}_{event_id}.mp4` | 284 clips (YES/NO only) | **Complete** — 960x540, ~8-12s each, gitignored |
 | Frozen VideoMAE embeddings | `data/processed/landing_foul_embeddings.npz` | 284 clips × 768-dim | **Complete** — CLS token from `videomae-base-finetuned-kinetics`; zero signal for landing fouls |
 | Train/val split | `data/processed/landing_foul_split.json` | 227 train / 57 val | **Complete** — stratified 80/20, seed=42, YES/NO only |
-| Fine-tune checkpoint | `data/processed/landing_foul_video_best.pt` | Run 3 (2026-07-01) | **69% P / 76% R** on 57-val — best so far; gitignored |
-| Fine-tune metrics | `data/processed/landing_foul_video_metrics.json` | Run 3 (2026-07-01) | MARGINAL — 10 contest FPs; gitignored |
+| Fine-tune checkpoint | `data/processed/landing_foul_video_best.pt` | Run 4 (2026-07-01) | **81% P / 59% R** — best precision; gitignored |
+| Fine-tune metrics | `data/processed/landing_foul_video_metrics.json` | Run 4 (2026-07-01) | PROMISING — 4 FPs, 12 FNs; gitignored |
+| Run 3 checkpoint (reference) | Drive / local backup | Run 3 (2026-07-01) | **69% P / 76% R** — keep for ensemble |
 | Clip anchors | `data/processed/landing_foul_clip_anchors.json` | **284 / 284** | **Complete** — committed; foul_frac per clip |
 | LLM describe val | `data/processed/landing_foul_llm_results_describe_val57.json` | 57-val | 50% P / 93% R — gitignored |
 | Frame cache | `data/processed/landing_foul_frames.npz` | Colab | **Rebuild** when `anchor_half_width` changes; gitignored |
@@ -261,46 +263,63 @@ Full run details, provider setup, and confusion matrices remain in the sections 
 
 ---
 
-### Step 10b: Fine-tuned video classifier — Colab Run 4
+### Step 10b: Fine-tuned video classifier — Colab Run 5
 
 **Goal:** Train a supervised video classifier on the 284 labeled manifest clips (YES/NO only, UNCLEAR excluded). Same quality gate as the LLM: **precision ≥ 85% on YES**, **recall ≥ 70% on YES** on a held-out validation set. Do **not** proceed to Steps 11–12 until the gate clears.
 
 #### Run history (57-clip val split, seed=42)
 
-| Run | Date | Setup | P (YES) | R (YES) | Confusion (tp/fp/fn/tn) | Verdict |
-|---|---|---|---|---|---|---|
-| 1 | 2026-06-30 | Full clip `0.0,1.0`, placeholders | 0.51 | 1.00 | 29/28/0/0 | BELOW_BASELINE — constant predictor |
-| 2 | 2026-07-01 | Real clips, full window | 0.80 | 0.14 | 4/1/25/27 | PROMISING — epoch-1 precision trap |
-| 3 | 2026-07-01 | **Anchors ±0.15**, real clips | **0.688** | **0.759** | 22/10/7/18 | **MARGINAL** — best VideoMAE |
-| — | 2026-07-01 | LLM describe → rules (same val) | 0.500 | 0.931 | 27/27/2/1 | All FPs = `descent_body_contact` |
-| **4** | **next** | **Anchors ±0.10**, `yes_weight=0.7` | ? | ? | — | **START HERE** |
+| Run | Date | Setup | P (YES) | R (YES) | Confusion (tp/fp/fn/tn) | Best epoch | Verdict |
+|---|---|---|---|---|---|---|---|
+| 1 | 2026-06-30 | Full clip `0.0,1.0`, placeholders | 0.51 | 1.00 | 29/28/0/0 | 2 head | BELOW_BASELINE |
+| 2 | 2026-07-01 | Real clips, full window | 0.80 | 0.14 | 4/1/25/27 | 1 head | PROMISING — precision trap |
+| 3 | 2026-07-01 | Anchors ±0.15, `yes_weight=1.0` | 0.688 | 0.759 | 22/10/7/18 | 7 finetune | MARGINAL — best recall |
+| 4 | 2026-07-01 | Anchors ±0.10, `yes_weight=0.7` | **0.810** | 0.586 | 17/4/12/24 | 5 head | PROMISING — best precision |
+| — | 2026-07-01 | LLM describe → rules | 0.500 | 0.931 | 27/27/2/1 | — | Rules too permissive |
+| **5** | **next** | **±0.10, `yes_weight=0.85`, finetune=5** | ? | ? | — | — | **START HERE** |
 
-Run 3 failure mode: 10 false positives are **contest-level shooting fouls** (not landing fouls) — model sees body contact on descent but can't distinguish contest vs undercut. Run 4 tightens the temporal crop and penalizes false YES.
+**Run 4 takeaways:** FP count dropped 10 → 4 (Teague, Murray, Sochan, Osman still slip through). Recall dropped below gate (76% → 59%) because `yes_weight=0.7` was too aggressive. Best checkpoint was **head epoch 5** — finetune epochs degraded val metrics (overfit). No threshold on Run 4 checkpoint clears both gates (t=0.45 → 64% P / 72% R).
 
-#### START HERE: Colab Run 4
+**Run 5 hypothesis:** Keep Run 4's tight crop (±0.10) and low FP count, but raise `yes_weight` to 0.85 and shorten finetune to limit overfit. Target: ~75% P / ~70% R — the Pareto middle between Runs 3 and 4.
+
+#### START HERE: Colab Run 5
 
 Open [`documents/development/colab-finetune.ipynb`](colab-finetune.ipynb) (GPU runtime). Defaults in §5:
 
-| Parameter | Run 3 | Run 4 |
-|---|---|---|
-| `anchor_half_width` | 0.15 (from JSON) | **0.10** (CLI override) |
-| `yes_weight` | 1.0 | **0.7** |
-| Other | unchanged | head=5, finetune=15, lr, dropout=0.4 |
+| Parameter | Run 3 | Run 4 | **Run 5** |
+|---|---|---|---|
+| `anchor_half_width` | 0.15 | 0.10 | **0.10** (same cache as Run 4) |
+| `yes_weight` | 1.0 | 0.7 | **0.85** |
+| `finetune_epochs` | 15 | 15 | **5** |
+| `head_epochs` | 5 | 5 | 5 |
+| `finetune_lr` | 2e-5 | 2e-5 | 2e-5 |
+| Other | — | — | dropout=0.4, patience=6, seed=42 |
 
 **Workflow:**
 
 1. §2 Clone repo (anchors + split come with clone).
 2. §4 Upload `landing_foul_clips.zip` from Drive (`make video-package` locally).
-3. §5 Set hyperparameters (defaults already updated for Run 4).
-4. **§5b Rebuild frame cache** — required; `--anchor-half-width 0.10` changes cropped frames.
-5. §6 Fine-tune → §7 Save checkpoint to Drive.
+3. §5 Confirm Run 5 hyperparameters (notebook defaults updated).
+4. **§5b Frame cache** — **skip rebuild if you still have Run 4's cache** (`anchor_half_width=0.10`). Rebuild only if cache is missing or you changed half_width.
+5. §6 Fine-tune → §7 Save checkpoint + metrics to Drive.
 
 Local equivalent:
 
 ```bash
+# Cache only if missing (Run 4 cache at half_width=0.10 is reusable):
 PYTHONPATH=. python src/landing_foul_video_finetune.py --build-cache --anchor-half-width 0.10
-make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.7
+
+make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 FINETUNE_EPOCHS=5
 ```
+
+**If Run 5 still misses the gate:**
+
+| Next lever | Rationale |
+|---|---|
+| `yes_weight=0.9` | Nudge recall up if Run 5 precision ≥80% but recall <70% |
+| `phase=head` only | Run 4's best was head epoch 5; skip finetune entirely |
+| Ensemble Run 3 + Run 4 | Union for recall, intersection for precision; manual review on disagreement |
+| LLM Layer 2 on describe JSON | Text classifier on top of Gemini observations |
 
 #### What's been built and tested
 
@@ -389,8 +408,9 @@ Colab runbook: `documents/development/colab-finetune.ipynb`.
 | Lever | What it does | When to try |
 |---|---|---|
 | **Per-clip anchors (manual)** | Mark contact frame; `resolve_window` crops to ±half_width | **Complete** — 284/284 |
-| **Anchor half-width override** | `--anchor-half-width 0.10` tightens crop without re-annotating | **Run 4** — targets contest FPs |
-| **YES class weight** | `--yes-weight 0.7` penalizes false positives | **Run 4** — recall already ≥70% |
+| **Anchor half-width override** | `--anchor-half-width 0.10` tightens crop without re-annotating | **Runs 4–5** — 4 FPs vs 10 at 0.15 |
+| **YES class weight** | `--yes-weight` trades precision vs recall | Run 3: 1.0 · Run 4: 0.7 · **Run 5: 0.85** |
+| **Shorter finetune** | `--finetune-epochs 5` — Run 4 best was head-only | **Run 5** — limit overfit |
 | **Temporal cropping** | Trim clips to the 2-3s around the foul before frame sampling | Automatic once anchors exist |
 | **Spatial cropping** | Crop to the relevant court region. Feet are tiny in 960x540 wide-angle broadcast. If the foul location is roughly known (perimeter vs paint), crop before resizing to 224x224. | Second lever if temporal crop doesn't help |
 | **Frame count** | Increase from 16 to 32 frames for higher temporal resolution. Trade-off: more memory, more overfitting risk. | Try alongside temporal cropping |
@@ -408,7 +428,7 @@ make video-cv FOLDS=5            # k-fold CV on frozen embeddings (baseline — 
 make video-pipeline              # full frozen baseline pipeline
 make video-annotate              # browser UI for per-clip contact anchors (complete)
 make video-finetune              # two-phase VideoMAE fine-tuning
-make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.7   # Run 4 defaults
+make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 FINETUNE_EPOCHS=5   # Run 5 defaults
 make landing-grade-describe PROVIDER=vertex MODEL=gemini-3.5-flash VAL_SPLIT=1 LOCAL_CLIPS=1
 make video-finetune-evaluate     # evaluate saved checkpoint
 ```

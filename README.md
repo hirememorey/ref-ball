@@ -18,10 +18,10 @@ The dataset has three layers, each with a different novelty moat:
 |---|---|---|---|
 | **Layer 1: Per-official attribution** | Official name parsed from PBP `description` field | Weak (anyone can parse it) | **Complete** — 13,278 games ingested, 13,464 with crew |
 | **Player x official profiles** | FTA/36 deltas per player under each official, defense-adjusted | Medium (requires crew + game logs) | **Built (40 players)** — full crew, 3,846 pairs, ANOVA p=0.000003 |
-| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Active** — VideoMAE Run 3: **69% P / 76% R** with anchors; gate not cleared; **Colab Run 4 next** (half_width=0.10) |
+| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Active** — Run 4: **81% P / 59% R**; Run 3: **69% P / 76% R**; **Colab Run 5 next** |
 | **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
 
-**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (300/300 clips, merged to 335 rows). Step 10 LLM grader is **exhausted** (best: 55% precision, 98% recall). Step 10b frozen VideoMAE baseline tested — **zero signal**. Step 10c Colab fine-tune: Run 3 with **284 anchors** → **69% P / 76% R** (MARGINAL). **START HERE: Colab Run 4** — `anchor_half_width=0.10`, `yes_weight=0.7`, rebuild cache. See [HANDOFF.md](documents/development/HANDOFF.md) Step 10b.
+**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (300/300 clips, merged to 335 rows). Step 10 LLM grader is **exhausted** (best: 55% precision, 98% recall). Step 10b frozen VideoMAE baseline tested — **zero signal**. Step 10c Colab: Run 3 **69% P / 76% R**, Run 4 **81% P / 59% R**. **START HERE: Colab Run 5** — `yes_weight=0.85`, `finetune_epochs=5`, same `anchor_half_width=0.10`. See [HANDOFF.md](documents/development/HANDOFF.md) Step 10b.
 
 ## The Paper Sequence
 
@@ -140,7 +140,7 @@ LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 9-12 — ACTIVE)
 14. Variance analysis       →  (TBD)                             →  ANOVA on per-official rates
 ```
 
-Steps 1-11 (data + labels) are **complete**. Step 12b frozen baseline is **complete** (zero signal). Step 12c fine-tuning: Run 3 **69% P / 76% R** with anchors. Step 12d anchors **complete** (284/284). **Active frontier:** Colab Run 4 (tighter crop + yes_weight). See [HANDOFF.md](documents/development/HANDOFF.md).
+Steps 1-11 (data + labels) are **complete**. Step 12b frozen baseline is **complete** (zero signal). Step 12c fine-tuning: Run 4 **81% P / 59% R**, Run 3 **69% P / 76% R**. Step 12d anchors **complete** (284/284). **Active frontier:** Colab Run 5 (balance precision/recall). See [HANDOFF.md](documents/development/HANDOFF.md).
 
 ### 1. Ingest (Layer 1 — built)
 
@@ -224,9 +224,9 @@ make video-train                 # logistic regression on frozen features (degen
 make video-train-mlp             # MLP on frozen features (degenerate — all-YES)
 make video-cv FOLDS=5            # 5-fold CV (degenerate — all-NO)
 
-# Step 10c (fine-tuning — Run 3: 69% P / 76% R; Run 4: see Colab notebook):
+# Step 10c (fine-tuning — Run 4: 81% P / 59% R; Run 5: see Colab notebook):
 make video-finetune              # two-phase VideoMAE fine-tune (GPU; see documents/development/colab-finetune.ipynb)
-make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.7   # Run 4 precision push
+make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 FINETUNE_EPOCHS=5   # Run 5
 make video-finetune-evaluate     # evaluate saved checkpoint
 
 # Step 10d (anchors — complete 2026-07-01):
