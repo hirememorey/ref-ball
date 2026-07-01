@@ -43,11 +43,13 @@ import argparse
 import json
 import logging
 import random
+import sys
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import config
 from landing_foul_video_dataset import (
     CLIPS_DIR,
