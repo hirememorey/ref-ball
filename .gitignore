@@ -37,6 +37,7 @@ data/raw/
 data/processed/*
 !data/processed/landing_foul_manifest.json
 !data/processed/landing_foul_split.json
+!data/processed/landing_foul_clip_anchors.json
 !data/.gitkeep
 !data/foul_type_classifications.csv
 !data/landing_foul_classifications.csv
