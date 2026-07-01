@@ -1,6 +1,6 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate landing-grade-observe landing-grade-describe video-download video-extract video-split video-train video-train-mlp video-cv video-pipeline video-finetune video-finetune-evaluate video-annotate
+.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate landing-grade-observe landing-grade-describe video-download video-extract video-split video-train video-train-mlp video-cv video-pipeline video-finetune video-finetune-evaluate video-annotate pose-extract pose-validate pose-visualize pose-features pose-classify pose-evaluate
 
 venv:
 	python3 -m venv .venv
@@ -220,3 +220,50 @@ video-finetune-evaluate:
 video-annotate:
 	PYTHONPATH=. $(PYTHON) src/landing_foul_annotate_anchors.py \
 		--host 127.0.0.1 --port $(or $(PORT),8765)
+
+# --- Step 10e: pose estimation (YOLOv8-Pose) ---
+#   make pose-validate LIMIT=10                 # Phase 0: keypoint quality on 10 clips
+#   make pose-extract                           # extract poses for all 284 clips
+#   make pose-extract CLIP=0021900028_532       # single clip
+#   make pose-visualize CLIP=0021900028_532     # overlay skeletons → output/pose_viz/
+
+pose-extract:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_pose_extract.py extract \
+		$(if $(CLIP),--clip $(CLIP)) $(if $(LIMIT),--limit $(LIMIT)) \
+		--model $(or $(POSE_MODEL),yolov8s-pose.pt) \
+		--max-frames $(or $(MAX_FRAMES),60) \
+		$(if $(ANCHOR_HALF_WIDTH),--anchor-half-width $(ANCHOR_HALF_WIDTH)) \
+		--device $(or $(DEVICE),auto) $(if $(OVERWRITE),--overwrite)
+
+pose-validate:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_pose_extract.py validate \
+		$(if $(CLIP),--clip $(CLIP)) $(if $(LIMIT),--limit $(LIMIT)) \
+		--model $(or $(POSE_MODEL),yolov8s-pose.pt) \
+		--max-frames $(or $(MAX_FRAMES),60) \
+		$(if $(ANCHOR_HALF_WIDTH),--anchor-half-width $(ANCHOR_HALF_WIDTH)) \
+		--device $(or $(DEVICE),auto)
+
+pose-visualize:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_pose_extract.py visualize \
+		--clip $(CLIP) --model $(or $(POSE_MODEL),yolov8s-pose.pt) \
+		--max-frames $(or $(MAX_FRAMES),60) \
+		$(if $(ANCHOR_HALF_WIDTH),--anchor-half-width $(ANCHOR_HALF_WIDTH)) \
+		--device $(or $(DEVICE),auto)
+
+# --- Step 10e Phase 2/3: geometric features + classifier ---
+#   make pose-features
+#   make pose-classify MODE=xgboost
+#   make pose-classify MODE=rules
+#   make pose-classify MODE=cv
+#   make pose-evaluate
+
+pose-features:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_pose_features.py
+
+pose-classify:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_pose_classify.py --mode $(or $(MODE),xgboost) \
+		--threshold $(or $(THRESHOLD),0.5) $(if $(CV_FOLDS),--cv-folds $(CV_FOLDS))
+
+pose-evaluate:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_pose_classify.py --evaluate-only \
+		--threshold $(or $(THRESHOLD),0.5)

@@ -54,6 +54,11 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | Run 3 checkpoint (reference) | Drive / local backup | Run 3 (2026-07-01) | **69% P / 76% R** — keep for ensemble |
 | Clip anchors | `data/processed/landing_foul_clip_anchors.json` | **284 / 284** | **Complete** — committed; foul_frac per clip |
 | LLM describe val | `data/processed/landing_foul_llm_results_describe_val57.json` | 57-val | 50% P / 93% R — gitignored |
+| Pose keypoints | `data/processed/landing_foul_poses.json` | 284 clips × 60 frames | **Complete** — YOLOv8-Pose; 219 MB; gitignored |
+| Pose validation | `data/processed/landing_foul_pose_validation.json` | 10 clips | Phase 0 report — ankle conf 0.84; gitignored |
+| Pose features | `data/processed/landing_foul_pose_features.npz` | 284 × 22 | **Complete** — geometric; gitignored |
+| Pose roles | `data/processed/landing_foul_pose_roles.json` | 284 clips | Role-assignment diagnostics; gitignored |
+| Pose model | `data/processed/landing_foul_pose_model.json` + `.xgb` | XGBoost | 54% P / 52% R val; train OOF F1 0.61; gitignored |
 | Frame cache | `data/processed/landing_foul_frames.npz` | Colab | **Rebuild** when `anchor_half_width` changes; gitignored |
 | SSAC27 abstract draft | `documents/ssac27-abstract-draft.md` | ~460 words (v2) | **Draft** — deadline Oct 1, 2026 |
 | SSAC27 Table 1 | `output/figures/table_a_suppressor_amplifier.png` | Top 5 suppressors + amplifiers | **Generated** — named officials, SF/game |
@@ -98,6 +103,9 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | `src/landing_foul_video_train.py` | **Step 10b:** train classifier head on embeddings + evaluate | `make video-train` / `make video-cv` |
 | `src/landing_foul_video_finetune.py` | **Step 10c:** end-to-end VideoMAE fine-tuning | `make video-finetune` / `make video-finetune-evaluate` |
 | `src/landing_foul_annotate_anchors.py` | **Step 10d:** browser UI for per-clip contact temporal anchors | `make video-annotate` |
+| `src/landing_foul_pose_extract.py` | **Step 10e:** YOLOv8-Pose + BoT-SORT keypoint extraction (`extract`/`validate`/`visualize`) | `make pose-extract` / `make pose-validate` / `make pose-visualize` |
+| `src/landing_foul_pose_features.py` | **Step 10e:** closest-pair role assignment + 22 geometric features | `make pose-features` |
+| `src/landing_foul_pose_classify.py` | **Step 10e:** rules / XGBoost / CV classifier + threshold sweep | `make pose-classify MODE=xgboost` |
 | `src/generate_abstract_figures.py` | **SSAC27:** Table 1 (suppressor/amplifier profiles) + Figure 1 (crew prediction scatter) | `PYTHONPATH=. .venv/bin/python src/generate_abstract_figures.py` |
 
 All commands require `PYTHONPATH=.` from the project root (or use `make` targets).
@@ -640,32 +648,51 @@ make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash LIMIT=3
 make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash EXTENDED=1
 ```
 
-### Step 10e: Pose estimation — PLANNED
+### Step 10e: Pose estimation — Phases 0–3 COMPLETE (2026-07-01)
 
 **Goal:** Extract skeleton keypoints from broadcast video and classify landing fouls based on geometric relationships (defender feet under shooter's landing zone). Addresses the core limitation of both LLM and VideoMAE approaches: feet are tiny in 960×540 broadcast footage.
 
 **Full implementation plan:** [POSE-ESTIMATION-PLAN.md](POSE-ESTIMATION-PLAN.md)
 
-**Summary:** Five phases — (0) validate keypoint quality on 10 clips, (1) extract poses for all 284 clips, (2) engineer geometric features from keypoint trajectories, (3) train rule-based or XGBoost classifier, (4) ensemble with VideoMAE. Estimated timeline: ~2 weeks.
+**Backend:** YOLOv8-Pose (`yolov8s-pose.pt`) via `ultralytics` + built-in BoT-SORT tracker. Chosen over the plan's ViTPose/mmpose recommendation because mmpose is hard to install on macOS/Python 3.13; ultralytics is a one-liner and gives multi-person keypoints + tracking out of the box.
 
-**Key insight:** Landing fouls are defined by a geometric relationship (defender's feet inside shooter's landing zone). Pose estimation makes this relationship explicit and computable, rather than asking a video model to learn it implicitly from pixels.
+**Phase results:**
 
-**When to start:** Run in parallel with VideoMAE Run 5+. If Run 5 clears the gate (≥ 85% P / ≥ 70% R), pose estimation becomes optional (but still valuable for Paper 2 interpretability). If Run 5 falls short, pose estimation is the primary path forward — either standalone or as an ensemble component.
+| Phase | Status | Result |
+|---|---|---|
+| 0 — Estimator validation (10 clips) | **PASS** | Mean 9.1 persons/frame, two-ankle tracking 0.98, ankle confidence 0.84. Clears ≥0.60/≥0.80 bars. |
+| 1 — Extraction (all 284 clips) | **DONE** | 0 failures; 0 clips with no persons; 219 MB `landing_foul_poses.json` (gitignored). |
+| 2 — Geometric features (22) | **DONE** | Closest-pair-at-contact role assignment + nearest-neighbor trajectories (robust to ~24 BoT-SORT track IDs/clip from fragmentation). Core signal in correct direction: `defender_ankle_in_zone_frac` YES 0.113 vs NO 0.039. |
+| 3 — Classifier (rules + XGBoost) | **DONE** | Rules val 52% P / 100% R (YES-biased). XGBoost val **54% P / 52% R** (train OOF F1 0.61). Does not clear gate standalone. Top features: `defender_ankle_in_zone_frac`, `shooter_peak_height`, `defender_stance_width`, `contact_height` — all basketball-meaningful (Paper 2 interpretability). |
+| 4 — Ensemble with VideoMAE | **BLOCKED** | Needs Run 5 VideoMAE val predictions. Pose OOF/val probabilities saved in `landing_foul_pose_model.json` for ensembling. |
 
-**New scripts:**
-- `src/landing_foul_pose_extract.py` — keypoint extraction (Phase 1)
-- `src/landing_foul_pose_features.py` — geometric feature engineering (Phase 2)
-- `src/landing_foul_pose_classify.py` — classifier (Phase 3)
-- `src/landing_foul_ensemble.py` — VideoMAE + pose ensemble (Phase 4)
+**Key engineering notes:**
+- Frame-by-frame inference (`persist=True`) instead of batched — avoids ultralytics' 5s batched-NMS timeout silently dropping whole frames.
+- Role assignment pivoted from "max hip-excursion track" (picked running players / ID-switch artifacts with excursion > 1 body height) to "closest pair of persons at the contact frame, build trajectories by nearest-neighbor bbox matching, shooter = larger hip excursion." This fixed inverted/noisy zone features.
+- Hip excursion uses p10–p90 percentile range to suppress ID-switch spikes.
 
-**New Makefile targets:**
+**Decision-tree placement:** P < 75% and R < 65% → pose features too noisy standalone; **ensemble with VideoMAE** is the path (Phase 4).
+
+**Scripts:**
+- `src/landing_foul_pose_extract.py` — `extract` / `validate` / `visualize` subcommands
+- `src/landing_foul_pose_features.py` — role assignment + 22 geometric features → `landing_foul_pose_features.npz`
+- `src/landing_foul_pose_classify.py` — `rules` / `xgboost` / `cv` / `--evaluate-only`
+- `src/landing_foul_ensemble.py` — Phase 4 (not yet built)
+
+**Makefile targets:**
 ```bash
-make pose-extract                    # extract keypoints for all 284 clips
-make pose-features                   # compute geometric features
-make pose-classify MODE=rules        # rule-based classifier
-make pose-classify MODE=xgboost      # gradient-boosted trees
-make pose-ensemble                   # ensemble with VideoMAE
+make pose-validate LIMIT=10             # Phase 0 keypoint-quality report
+make pose-extract                       # extract keypoints for all 284 clips
+make pose-extract CLIP=0021900028_532   # single clip
+make pose-visualize CLIP=0021900028_532 # overlay skeletons → output/pose_viz/
+make pose-features                      # geometric features → landing_foul_pose_features.npz
+make pose-classify MODE=xgboost         # XGBoost + 5-fold CV + val threshold sweep
+make pose-classify MODE=rules           # rule-based
+make pose-classify MODE=cv              # train-only CV estimate (no val peeking)
+make pose-evaluate                      # evaluate saved xgboost model
 ```
+
+**New deps (added to `requirements-ml.txt`):** `ultralytics>=8.2.0`, `xgboost>=2.1.0`. (`lap` is auto-installed by ultralytics for the tracker.)
 
 ---
 

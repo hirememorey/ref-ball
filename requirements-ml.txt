@@ -6,3 +6,7 @@ torchvision>=0.15.0
 transformers>=4.30.0
 opencv-python-headless>=4.8.0
 scikit-learn>=1.3.0
+# Step 10e: pose estimation (YOLOv8-Pose, multi-person + built-in tracker)
+ultralytics>=8.2.0
+# Step 10e Phase 3: gradient-boosted tree classifier on geometric pose features
+xgboost>=2.1.0

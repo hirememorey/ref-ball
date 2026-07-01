@@ -44,3 +44,7 @@ data/processed/*
 
 # Video clips (large, reproducible via download)
 data/clips/
+
+# Pose / video model weights (downloaded automatically, large)
+*.pt
+landing_foul_clips.zip

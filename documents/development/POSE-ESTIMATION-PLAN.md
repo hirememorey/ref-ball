@@ -1,5 +1,18 @@
 # Pose Estimation for Landing Foul Detection
 
+> **Status (2026-07-01): Phases 0–3 COMPLETE; Phase 4 BLOCKED on VideoMAE Run 5.**
+>
+| Phase | Status | Result |
+|---|---|---|
+| 0 — Estimator validation | **PASS** | YOLOv8-Pose (not ViTPose/mmpose — macOS/Py3.13 install friction). 10 clips: 9.1 persons/frame, two-ankle tracking 0.98, ankle conf 0.84. |
+| 1 — Extraction | **DONE** | 284/284 clips, 0 failures, 219 MB `landing_foul_poses.json`. |
+| 2 — Geometric features | **DONE** | 22 features. Closest-pair-at-contact role assignment + NN trajectories (robust to BoT-SORT fragmentation). Core signal correct direction. |
+| 3 — Classifier | **DONE** | XGBoost val **54% P / 52% R** (train OOF F1 0.61); rules 52% P / 100% R. Gate not cleared standalone. Top features: `defender_ankle_in_zone_frac`, `shooter_peak_height`, `contact_height`. |
+| 4 — Ensemble | **BLOCKED** | Needs VideoMAE Run 5 val predictions. Pose probabilities saved for ensembling. |
+>
+> **Decision-tree placement:** P < 75% and R < 65% → ensemble with VideoMAE (Phase 4).
+> **Backend change vs. plan below:** ViTPose-Base/mmpose was replaced by YOLOv8-Pose/ultralytics (easier install on this machine, multi-person + tracker included). The phase structure, feature definitions, and classifier design below are implemented as written; the role-assignment heuristic was upgraded to closest-pair-at-contact + nearest-neighbor trajectories to handle BoT-SORT track fragmentation on crowded broadcast frames.
+
 Implementation plan for skeleton-based landing foul classification. This approach extracts human body keypoints from broadcast video and classifies fouls based on geometric relationships between shooter and defender body positions — bypassing the "feet are tiny in the frame" problem that limits both LLM grading and end-to-end video model approaches.
 
 ---

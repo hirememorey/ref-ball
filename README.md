@@ -18,10 +18,10 @@ The dataset has three layers, each with a different novelty moat:
 |---|---|---|---|
 | **Layer 1: Per-official attribution** | Official name parsed from PBP `description` field | Weak (anyone can parse it) | **Complete** — 13,278 games ingested, 13,464 with crew |
 | **Player x official profiles** | FTA/36 deltas per player under each official, defense-adjusted | Medium (requires crew + game logs) | **Built (40 players)** — full crew, 3,846 pairs, ANOVA p=0.000003 |
-| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Active** — Run 4: **81% P / 59% R**; Run 3: **69% P / 76% R**; **Colab Run 5 + pose estimation (Step 10e)** |
+| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Active** — Run 4: **81% P / 59% R**; Run 3: **69% P / 76% R**; **Colab Run 5**; pose Step 10e Phases 0–3 done (**54% P standalone**, ensemble next) |
 | **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
 
-**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (300/300 clips, merged to 335 rows). Step 10 LLM grader is **exhausted** (best: 55% precision, 98% recall). Step 10b frozen VideoMAE baseline tested — **zero signal**. Step 10c Colab: Run 3 **69% P / 76% R**, Run 4 **81% P / 59% R**. **Two parallel tracks: (1) Colab Run 5** — `yes_weight=0.85`, `finetune_epochs=5`, same `anchor_half_width=0.10`. **(2) Step 10e Pose estimation** — skeleton keypoints → geometric features → classifier; addresses "feet are tiny" limitation. See [HANDOFF.md](documents/development/HANDOFF.md) Step 10b + [POSE-ESTIMATION-PLAN.md](documents/development/POSE-ESTIMATION-PLAN.md).
+**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (300/300 clips, merged to 335 rows). Step 10 LLM grader is **exhausted** (best: 55% precision, 98% recall). Step 10b frozen VideoMAE baseline tested — **zero signal**. Step 10c Colab: Run 3 **69% P / 76% R**, Run 4 **81% P / 59% R**. **Two parallel tracks: (1) Colab Run 5** — `yes_weight=0.85`, `finetune_epochs=5`, same `anchor_half_width=0.10`. **(2) Step 10e Pose estimation — Phases 0–3 COMPLETE** — YOLOv8-Pose keypoints extracted for all 284 clips, 22 geometric features, XGBoost **54% P / 52% R** standalone (train OOF F1 0.61); Phase 4 ensemble with VideoMAE blocked on Run 5. See [HANDOFF.md](documents/development/HANDOFF.md) Step 10b + [POSE-ESTIMATION-PLAN.md](documents/development/POSE-ESTIMATION-PLAN.md).
 
 ## The Paper Sequence
 
@@ -136,9 +136,9 @@ LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 9-12 — ACTIVE)
                            →  src/landing_foul_video_train.py    →  logreg/MLP on frozen embeddings ✗
 12c. Fine-tune VideoMAE    →  src/landing_foul_video_finetune.py →  Colab run degenerate (51% P) ✗
 12d. Clip anchors           →  src/landing_foul_annotate_anchors.py →  per-clip contact window ← START HERE
-12e. Pose estimation       →  src/landing_foul_pose_extract.py  →  skeleton keypoints → geometric features → classifier (PLANNED)
-                           →  src/landing_foul_pose_features.py →  landing zone geometry from keypoint trajectories
-                           →  src/landing_foul_pose_classify.py →  rule-based / XGBoost on pose features
+12e. Pose estimation       →  src/landing_foul_pose_extract.py  →  YOLOv8-Pose + BoT-SORT keypoints ✓ (284/284)
+                           →  src/landing_foul_pose_features.py →  closest-pair role assignment + 22 geometric features ✓
+                           →  src/landing_foul_pose_classify.py →  rules / XGBoost on pose features ✓ (54% P / 52% R standalone)
 12f. Ensemble              →  src/landing_foul_ensemble.py      →  VideoMAE + pose (if neither clears gate alone)
 13. Per-official rates      →  src/landing_foul_video_predict.py →  batch inference (blocked on 12c gate)
 14. Variance analysis       →  (TBD)                             →  ANOVA on per-official rates
@@ -335,7 +335,7 @@ Landing fouls are the ideal starting category because:
 1. **Ground truth (manual, 300 clips) — COMPLETE:** 300 clips classified via HTML tool → `data/landing_foul_classifications.csv`. Merged with v3 labels via `make landing-merge` → `data/landing_foul_ground_truth.csv` (335 rows).
 2. **LLM grader (Step 10) — EXHAUSTED:** Best result 55% precision / 98% recall. Do not iterate further.
 3. **Fine-tuned video classifier (Step 10b/c) — ACTIVE:** Frozen VideoMAE baseline tested (zero signal). End-to-end fine-tuning: Run 4 **81% P / 59% R**. Run 5 next. See [HANDOFF.md Step 10b](documents/development/HANDOFF.md#step-10b-fine-tuned-video-classifier--colab-run-5) for full plan.
-4. **Pose estimation (Step 10e) — PLANNED:** Extract skeleton keypoints (ViTPose/MediaPipe) → geometric features (defender feet relative to landing zone) → rule-based or XGBoost classifier. Addresses the core limitation: feet are tiny in broadcast footage. Standalone or ensemble with VideoMAE. See [POSE-ESTIMATION-PLAN.md](documents/development/POSE-ESTIMATION-PLAN.md) for full implementation plan.
+4. **Pose estimation (Step 10e) — Phases 0–3 COMPLETE:** YOLOv8-Pose + BoT-SORT keypoints extracted for all 284 clips (Phase 0 keypoint quality passed: 0.84 ankle confidence, 0.98 two-ankle tracking). 22 geometric features engineered via closest-pair-at-contact role assignment. XGBoost val **54% P / 52% R** standalone (train OOF F1 0.61) — real interpretable signal but does not clear the gate alone; top features are `defender_ankle_in_zone_frac`, `shooter_peak_height`, `contact_height`. Slotted for Phase 4 ensemble with VideoMAE. See [POSE-ESTIMATION-PLAN.md](documents/development/POSE-ESTIMATION-PLAN.md).
 5. **Scale (Step 11):** ~100-150 shooting foul clips per official across 10-15 officials spanning suppressor/amplifier spectrum.
 6. **Analysis (Step 12):** ANOVA on per-official landing foul rates. Correlation with suppressor/amplifier profiles.
 
@@ -419,10 +419,10 @@ ref-ball/
 │   ├── landing_foul_video_train.py  # Step 10b: classifier head on frozen embeddings (baseline)
 │   ├── landing_foul_video_finetune.py # Step 10c: end-to-end VideoMAE fine-tuning
 │   ├── landing_foul_annotate_anchors.py # Step 10d: browser UI for per-clip contact anchors
-│   ├── landing_foul_pose_extract.py # Step 10e: skeleton keypoint extraction (PLANNED)
-│   ├── landing_foul_pose_features.py # Step 10e: geometric feature engineering (PLANNED)
-│   ├── landing_foul_pose_classify.py # Step 10e: pose-based classifier (PLANNED)
-│   ├── landing_foul_ensemble.py     # Step 10f: VideoMAE + pose ensemble (PLANNED)
+│   ├── landing_foul_pose_extract.py # Step 10e: YOLOv8-Pose keypoint extraction (BUILT)
+│   ├── landing_foul_pose_features.py # Step 10e: geometric feature engineering (BUILT)
+│   ├── landing_foul_pose_classify.py # Step 10e: rules / XGBoost classifier (BUILT)
+│   ├── landing_foul_ensemble.py     # Step 10f: VideoMAE + pose ensemble (PLANNED — blocked on Run 5)
 │   └── generate_abstract_figures.py # SSAC27 abstract figures (Table 1 + Figure 1)
 ├── output/
 │   ├── figures/
