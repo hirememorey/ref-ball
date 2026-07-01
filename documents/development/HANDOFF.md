@@ -1,4 +1,4 @@
-# Development Handoff (June 30, 2026)
+# Development Handoff (July 1, 2026)
 
 Operational snapshot for a new developer or LLM picking up this codebase. For project goals, literature positioning, and long-term paper sequence, see the root [README.md](../../README.md).
 
@@ -12,7 +12,12 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 
 1. **SSAC27 Submission (Paper 1).** Abstract draft complete (~460 words, v2). Two publication-quality figures generated (Table 1: suppressor/amplifier profiles with named officials; Figure 1: crew prediction vs actual FTA deviation scatter, r=0.406). **Abstract deadline: October 1, 2026.** Full paper due December 4, 2026 if selected. Open-source decision resolved: publishing all data, named officials, no anonymization. See `documents/ssac27-abstract-draft.md` and `output/figures/`.
 
-2. **Step 10b — fine-tuned video classifier (Paper 2).** Manual ground truth **complete** (300/300 clips classified 2026-06-30; merged with 35 legacy v3 labels → **335-row ground truth**). LLM grader **exhausted** (spatial, spatial_v2, whistle, sequence — all miss 85% precision target; best recall 98%, best precision ~55%). **Frozen VideoMAE baseline tested (2026-06-30):** zero discriminative signal. **Colab fine-tune run (2026-06-30):** degenerate — predicts YES on all 57 val clips (51% precision = class prior); constant `prob_yes=0.587` on every clip; gate **BELOW_BASELINE**. Root cause: full-clip temporal window (`0.0,1.0`) dilutes the ~400ms contact signal. **START HERE:** manually annotate per-clip contact anchors (`make video-annotate`), rebuild frame cache, re-run fine-tuning. See [Step 10b: Fine-tuned video classifier](#step-10b-fine-tuned-video-classifier--start-here) below.
+2. **Step 10b — fine-tuned video classifier (Paper 2).** Manual ground truth **complete** (300/300 clips). LLM grader **exhausted** as sole classifier (~55% precision, 98% recall). **Frozen VideoMAE:** zero signal. **Colab fine-tune runs (2026-07-01):**
+   - Run 1 (full clip): degenerate constant predictor (51% P, 100% R).
+   - Run 2 (real clips, full window): ultra-conservative (80% P, 14% R).
+   - Run 3 (**284 anchors ±0.15**): **69% P, 76% R** — best automatic classifier; gate **MARGINAL**.
+   - **LLM describe → rules (57-val):** 50% P, 93% R — Layer 1 over-tags "descent + body contact".
+   - **START HERE:** Colab **Run 4** — tighter crop (`anchor_half_width=0.10`), `yes_weight=0.7`, rebuild cache. See [Step 10b](#step-10b-fine-tuned-video-classifier--colab-run-4).
 
 **Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 1-7), L2M validation, does-harden-choke merge, SSAC27 abstract draft + figures. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
 
@@ -43,10 +48,11 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | Downloaded video clips | `data/clips/landing_foul/{game_id}_{event_id}.mp4` | 284 clips (YES/NO only) | **Complete** — 960x540, ~8-12s each, gitignored |
 | Frozen VideoMAE embeddings | `data/processed/landing_foul_embeddings.npz` | 284 clips × 768-dim | **Complete** — CLS token from `videomae-base-finetuned-kinetics`; zero signal for landing fouls |
 | Train/val split | `data/processed/landing_foul_split.json` | 227 train / 57 val | **Complete** — stratified 80/20, seed=42, YES/NO only |
-| Fine-tune checkpoint | `data/processed/landing_foul_video_best.pt` | Colab run 2026-06-30 | **Degenerate** — do not use; constant predictor (gitignored) |
-| Fine-tune metrics | `data/processed/landing_foul_video_metrics.json` | Colab run 2026-06-30 | **BELOW_BASELINE** — P=0.51, R=1.0, all FPs at prob 0.587 |
-| Clip anchors | `data/processed/landing_foul_clip_anchors.json` | 0 / 284 clips | **Pending** — `make video-annotate` |
-| Frame cache | `data/processed/landing_foul_frames.npz` | 284 clips × 32 frames | **Built on Colab** — rebuild after anchors (gitignored) |
+| Fine-tune checkpoint | `data/processed/landing_foul_video_best.pt` | Run 3 (2026-07-01) | **69% P / 76% R** on 57-val — best so far; gitignored |
+| Fine-tune metrics | `data/processed/landing_foul_video_metrics.json` | Run 3 (2026-07-01) | MARGINAL — 10 contest FPs; gitignored |
+| Clip anchors | `data/processed/landing_foul_clip_anchors.json` | **284 / 284** | **Complete** — committed; foul_frac per clip |
+| LLM describe val | `data/processed/landing_foul_llm_results_describe_val57.json` | 57-val | 50% P / 93% R — gitignored |
+| Frame cache | `data/processed/landing_foul_frames.npz` | Colab | **Rebuild** when `anchor_half_width` changes; gitignored |
 | SSAC27 abstract draft | `documents/ssac27-abstract-draft.md` | ~460 words (v2) | **Draft** — deadline Oct 1, 2026 |
 | SSAC27 Table 1 | `output/figures/table_a_suppressor_amplifier.png` | Top 5 suppressors + amplifiers | **Generated** — named officials, SF/game |
 | SSAC27 Figure 1 | `output/figures/figure_b_crew_prediction_scatter.png` | r=0.406, 433 player-games | **Generated** — crew prediction vs actual FTA deviation |
@@ -255,9 +261,46 @@ Full run details, provider setup, and confusion matrices remain in the sections 
 
 ---
 
-### Step 10b: Fine-tuned video classifier — START HERE (annotate anchors)
+### Step 10b: Fine-tuned video classifier — Colab Run 4
 
 **Goal:** Train a supervised video classifier on the 284 labeled manifest clips (YES/NO only, UNCLEAR excluded). Same quality gate as the LLM: **precision ≥ 85% on YES**, **recall ≥ 70% on YES** on a held-out validation set. Do **not** proceed to Steps 11–12 until the gate clears.
+
+#### Run history (57-clip val split, seed=42)
+
+| Run | Date | Setup | P (YES) | R (YES) | Confusion (tp/fp/fn/tn) | Verdict |
+|---|---|---|---|---|---|---|
+| 1 | 2026-06-30 | Full clip `0.0,1.0`, placeholders | 0.51 | 1.00 | 29/28/0/0 | BELOW_BASELINE — constant predictor |
+| 2 | 2026-07-01 | Real clips, full window | 0.80 | 0.14 | 4/1/25/27 | PROMISING — epoch-1 precision trap |
+| 3 | 2026-07-01 | **Anchors ±0.15**, real clips | **0.688** | **0.759** | 22/10/7/18 | **MARGINAL** — best VideoMAE |
+| — | 2026-07-01 | LLM describe → rules (same val) | 0.500 | 0.931 | 27/27/2/1 | All FPs = `descent_body_contact` |
+| **4** | **next** | **Anchors ±0.10**, `yes_weight=0.7` | ? | ? | — | **START HERE** |
+
+Run 3 failure mode: 10 false positives are **contest-level shooting fouls** (not landing fouls) — model sees body contact on descent but can't distinguish contest vs undercut. Run 4 tightens the temporal crop and penalizes false YES.
+
+#### START HERE: Colab Run 4
+
+Open [`documents/development/colab-finetune.ipynb`](colab-finetune.ipynb) (GPU runtime). Defaults in §5:
+
+| Parameter | Run 3 | Run 4 |
+|---|---|---|
+| `anchor_half_width` | 0.15 (from JSON) | **0.10** (CLI override) |
+| `yes_weight` | 1.0 | **0.7** |
+| Other | unchanged | head=5, finetune=15, lr, dropout=0.4 |
+
+**Workflow:**
+
+1. §2 Clone repo (anchors + split come with clone).
+2. §4 Upload `landing_foul_clips.zip` from Drive (`make video-package` locally).
+3. §5 Set hyperparameters (defaults already updated for Run 4).
+4. **§5b Rebuild frame cache** — required; `--anchor-half-width 0.10` changes cropped frames.
+5. §6 Fine-tune → §7 Save checkpoint to Drive.
+
+Local equivalent:
+
+```bash
+PYTHONPATH=. python src/landing_foul_video_finetune.py --build-cache --anchor-half-width 0.10
+make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.7
+```
 
 #### What's been built and tested
 
@@ -306,7 +349,7 @@ Full run details, provider setup, and confusion matrices remain in the sections 
 | Downloaded clips | `data/clips/landing_foul/{game_id}_{event_id}.mp4` | 284 (YES/NO only) | **Complete** — 960x540, gitignored |
 | Frozen embeddings | `data/processed/landing_foul_embeddings.npz` | 284 × 768-dim | **Complete** — zero signal, reference only |
 | Train/val split | `data/processed/landing_foul_split.json` | 227 train (114 YES, 113 NO) / 57 val (29 YES, 28 NO) | **Complete** — seed=42 |
-| Clip anchors | `data/processed/landing_foul_clip_anchors.json` | 0 / 284 | **Pending** — manual annotation |
+| Clip anchors | `data/processed/landing_foul_clip_anchors.json` | 284 / 284 | **Complete** — foul_frac per clip; half_width overridable via CLI |
 | Video URLs + metadata | `data/processed/landing_foul_manifest.json` | 300 clips | **Complete** — NBA CDN URLs verified live 2026-06-30 |
 
 **Label handling:**
@@ -314,39 +357,18 @@ Full run details, provider setup, and confusion matrices remain in the sections 
 - **Optional augmentation:** 35 v3 legacy clips (Harden/Giannis) are in `landing_foul_ground_truth.csv` but were **not downloaded** (no manifest video URLs). They would require separate video fetching via `foul_type_scraper.py` if needed.
 - **Split is fixed:** `data/processed/landing_foul_split.json` — do not regenerate unless you have a specific reason.
 
-#### START HERE: Annotate per-clip contact anchors
+#### Anchor annotation (complete 2026-07-01)
 
-The Colab fine-tune run proved that full-clip frame sampling produces a degenerate model. The next step is **manual temporal anchoring** — mark the contact frame in each clip so `resolve_window()` in `landing_foul_video_finetune.py` crops to ±`half_width` around the foul.
-
-**Run the annotator:**
+All 284 clips annotated via `make video-annotate`. Output committed to repo. Annotator stores `foul_frac` + default `half_width=0.15`; **Run 4 overrides to 0.10** without re-annotating:
 
 ```bash
-make video-annotate
-# → http://127.0.0.1:8765
+--anchor-half-width 0.10
 ```
 
-**Workflow per clip (~10–15 seconds each, ~1 hour total for 284):**
+**After changing half_width:**
 
-1. Scrub to the contact moment (defender foot/body under shooter, or arm contact at landing).
-2. Press **M** (Mark foul here) — records `foul_frac` = current playback position / clip duration.
-3. Adjust **half-width** slider (default 0.15 → window spans ±15% of clip, ~2–3s on a 10s clip).
-4. Press **Enter** (Save & next) — writes to `data/processed/landing_foul_clip_anchors.json` atomically.
-5. **Skip (S)** if you can't find a clear contact frame — clip falls back to global window.
-
-**Output format** (read by `resolve_window`):
-
-```json
-{
-  "0021900028_532": {"foul_frac": 0.42, "half_width": 0.15}
-}
-```
-
-Skipped clips tracked in `data/processed/landing_foul_clip_anchors_skipped.json`.
-
-**After all anchors are done:**
-
-1. Rebuild frame cache on Colab (or locally with GPU): `landing_foul_video_finetune.py --build-cache` — cache build uses `resolve_window`, so tightened windows flow through automatically.
-2. Re-run fine-tuning: `make video-finetune` (Colab notebook or local GPU).
+1. Rebuild frame cache: `--build-cache --anchor-half-width 0.10`
+2. Re-run fine-tuning with same flag
 3. Check `landing_foul_video_metrics.json` gate — target P≥0.85, R≥0.70.
 
 #### Fine-tuning reference (already built — re-run after anchors)
@@ -366,7 +388,9 @@ Colab runbook: `documents/development/colab-finetune.ipynb`.
 
 | Lever | What it does | When to try |
 |---|---|---|
-| **Per-clip anchors (manual)** | Mark contact frame; `resolve_window` crops to ±half_width | **START HERE** — required after Colab degenerate run |
+| **Per-clip anchors (manual)** | Mark contact frame; `resolve_window` crops to ±half_width | **Complete** — 284/284 |
+| **Anchor half-width override** | `--anchor-half-width 0.10` tightens crop without re-annotating | **Run 4** — targets contest FPs |
+| **YES class weight** | `--yes-weight 0.7` penalizes false positives | **Run 4** — recall already ≥70% |
 | **Temporal cropping** | Trim clips to the 2-3s around the foul before frame sampling | Automatic once anchors exist |
 | **Spatial cropping** | Crop to the relevant court region. Feet are tiny in 960x540 wide-angle broadcast. If the foul location is roughly known (perimeter vs paint), crop before resizing to 224x224. | Second lever if temporal crop doesn't help |
 | **Frame count** | Increase from 16 to 32 frames for higher temporal resolution. Trade-off: more memory, more overfitting risk. | Try alongside temporal cropping |
@@ -382,8 +406,10 @@ make video-train                 # logistic regression on frozen embeddings (bas
 make video-train-mlp             # MLP on frozen embeddings (baseline — degenerate)
 make video-cv FOLDS=5            # k-fold CV on frozen embeddings (baseline — degenerate)
 make video-pipeline              # full frozen baseline pipeline
-make video-annotate              # browser UI for per-clip contact anchors ← START HERE
-make video-finetune              # two-phase VideoMAE fine-tuning (after anchors + cache rebuild)
+make video-annotate              # browser UI for per-clip contact anchors (complete)
+make video-finetune              # two-phase VideoMAE fine-tuning
+make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.7   # Run 4 defaults
+make landing-grade-describe PROVIDER=vertex MODEL=gemini-3.5-flash VAL_SPLIT=1 LOCAL_CLIPS=1
 make video-finetune-evaluate     # evaluate saved checkpoint
 ```
 

@@ -1,6 +1,6 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate landing-grade-observe video-download video-extract video-split video-train video-train-mlp video-cv video-pipeline video-finetune video-finetune-evaluate video-annotate
+.PHONY: venv fetch-pbp fetch-pbp-season fetch-l2m fetch-l2m-season ingest train-nocall predict-nocalls validate-nocall profile analyze model-crew model-crew-temporal landing-manifest landing-manifest-dry landing-classifier landing-merge landing-ground-truth landing-grade landing-grade-validate landing-grade-observe landing-grade-describe video-download video-extract video-split video-train video-train-mlp video-cv video-pipeline video-finetune video-finetune-evaluate video-annotate
 
 venv:
 	python3 -m venv .venv
@@ -146,6 +146,15 @@ landing-grade-observe:
 		--provider $(PROVIDER) --model $(MODEL) --prompt-mode observe --validate-only \
 		$(if $(EXTENDED),--extended) $(if $(LIMIT),--limit $(LIMIT))
 
+# --- Step 10 describe: Layer 1 describe + Layer 2 rule classify ---
+#   make landing-grade-describe PROVIDER=vertex MODEL=gemini-3.5-flash VAL_SPLIT=1 LOCAL_CLIPS=1
+
+landing-grade-describe:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_llm_grader.py \
+		--provider $(PROVIDER) --model $(MODEL) --prompt-mode describe --validate-only \
+		$(if $(VAL_SPLIT),--val-split) $(if $(LOCAL_CLIPS),--local-clips) \
+		$(if $(EXTENDED),--extended) $(if $(LIMIT),--limit $(LIMIT))
+
 # --- Step 10b: Video classifier (frozen VideoMAE → logistic regression) ---
 #   Full pipeline: make video-pipeline
 #   Individual steps: make video-download && make video-extract && make video-split && make video-train
@@ -193,6 +202,7 @@ video-finetune:
 		--dropout $(or $(DROPOUT),0.4) --weight-decay $(or $(WEIGHT_DECAY),0.01) \
 		--yes-weight $(or $(YES_WEIGHT),1.0) --patience $(or $(PATIENCE),6) --seed $(or $(SEED),42) \
 		--device $(or $(DEVICE),auto) \
+		$(if $(ANCHOR_HALF_WIDTH),--anchor-half-width $(ANCHOR_HALF_WIDTH)) \
 		$(if $(SMOKE),--head-epochs 1 --finetune-epochs 1 --batch-size 2 --patience 0)
 
 video-finetune-evaluate:

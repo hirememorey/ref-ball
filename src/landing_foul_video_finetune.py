@@ -155,12 +155,16 @@ def resolve_window(
     key: tuple[str, int],
     anchors: dict[str, dict[str, float]],
     global_window: tuple[float, float],
+    anchor_half_width_override: float | None = None,
 ) -> tuple[float, float]:
     """Per-clip window via anchor sidecar, else global window."""
     anchor = anchors.get(f"{key[0]}_{key[1]}")
     if anchor and "foul_frac" in anchor:
         frac = float(anchor["foul_frac"])
-        hw = float(anchor.get("half_width", 0.15))
+        if anchor_half_width_override is not None:
+            hw = float(anchor_half_width_override)
+        else:
+            hw = float(anchor.get("half_width", 0.15))
         lo = max(0.0, frac - hw)
         hi = min(1.0, frac + hw)
         if hi - lo >= 0.05:
@@ -270,6 +274,7 @@ def build_frame_cache(
     cache_frames: int,
     cache_size: int,
     out_path: Path,
+    anchor_half_width_override: float | None = None,
 ) -> None:
     """Decode every clip once and store `cache_frames` resized frames per clip."""
     import cv2  # noqa: F401  (sample_frames_windowed imports cv2 lazily)
@@ -284,7 +289,10 @@ def build_frame_cache(
             failed.append(f"{gid}_{eid} (missing)")
             continue
         try:
-            win = resolve_window(key, anchors, global_window)
+            win = resolve_window(
+                key, anchors, global_window,
+                anchor_half_width_override=anchor_half_width_override,
+            )
             frames = sample_frames_windowed(
                 vpath, num_frames=cache_frames, start_frac=win[0], end_frac=win[1],
                 jitter_extra=0,
@@ -350,11 +358,13 @@ class LandingFoulDataset:
         seed: int = 42,
         frame_cache: dict[str, np.ndarray] | None = None,
         cache_frames: int = 32,
+        anchor_half_width_override: float | None = None,
     ) -> None:
         self.keys = keys
         self.labels = labels
         self.anchors = anchors
         self.global_window = global_window
+        self.anchor_half_width_override = anchor_half_width_override
         self.augment = augment
         self.num_frames = num_frames
         self.jitter_extra = jitter_extra if augment else 0
@@ -397,7 +407,10 @@ class LandingFoulDataset:
         vpath = clip_path(gid, eid)
         if not vpath.exists():
             raise FileNotFoundError(f"Clip missing: {vpath}")
-        win = resolve_window(key, self.anchors, self.global_window)
+        win = resolve_window(
+            key, self.anchors, self.global_window,
+            anchor_half_width_override=self.anchor_half_width_override,
+        )
         return sample_frames_windowed(
             vpath,
             num_frames=self.num_frames,
@@ -713,14 +726,19 @@ def run_training(args: argparse.Namespace) -> None:
     val_keys = [k for k in val_keys if k in labels]
     anchors = load_anchors()
     window = parse_window(args.temporal_window)
+    hw_override = args.anchor_half_width
 
     # Optional frame cache: build-once, reuse across epochs (eliminates per-epoch decode).
     if args.build_cache:
-        logger.info("Building frame cache -> %s", args.frame_cache)
+        logger.info(
+            "Building frame cache -> %s (anchor_half_width=%s)",
+            args.frame_cache, hw_override if hw_override is not None else "from JSON",
+        )
         build_frame_cache(
             train_keys + val_keys, labels, anchors, window,
             cache_frames=args.cache_frames, cache_size=args.cache_size,
             out_path=Path(args.frame_cache),
+            anchor_half_width_override=hw_override,
         )
         logger.info("Cache built. Re-run without --build-cache to train.")
         return
@@ -732,8 +750,10 @@ def run_training(args: argparse.Namespace) -> None:
         logger.info("Cache loaded: %d clips", len(frame_cache))
 
     logger.info(
-        "Split: train=%d val=%d | window=%s | jitter_extra=%d | augment=%s | cache=%s",
-        len(train_keys), len(val_keys), window, args.jitter if args.augment else 0, args.augment,
+        "Split: train=%d val=%d | window=%s | anchor_half_width=%s | jitter_extra=%d | augment=%s | cache=%s",
+        len(train_keys), len(val_keys), window,
+        hw_override if hw_override is not None else "from JSON",
+        args.jitter if args.augment else 0, args.augment,
         "yes" if frame_cache is not None else "no (live decode)",
     )
 
@@ -743,12 +763,14 @@ def run_training(args: argparse.Namespace) -> None:
         jitter_extra=args.jitter if args.augment else 0,
         model_name=args.model, seed=args.seed,
         frame_cache=frame_cache, cache_frames=args.cache_frames,
+        anchor_half_width_override=hw_override,
     )
     val_ds = LandingFoulDataset(
         val_keys, labels, anchors, window,
         augment=False, num_frames=args.num_frames,
         jitter_extra=0, model_name=args.model, seed=args.seed + 1,
         frame_cache=frame_cache, cache_frames=args.cache_frames,
+        anchor_half_width_override=hw_override,
     )
 
     g = torch.Generator()
@@ -892,6 +914,7 @@ def run_evaluate_only(args: argparse.Namespace) -> None:
     val_keys = [k for k in val_keys if k in labels]
     anchors = load_anchors()
     window = parse_window(args.temporal_window)
+    hw_override = args.anchor_half_width
 
     frame_cache = None
     if Path(args.frame_cache).exists():
@@ -902,6 +925,7 @@ def run_evaluate_only(args: argparse.Namespace) -> None:
         augment=False, num_frames=args.num_frames,
         jitter_extra=0, model_name=args.model, seed=args.seed + 1,
         frame_cache=frame_cache, cache_frames=args.cache_frames,
+        anchor_half_width_override=hw_override,
     )
     val_loader = DataLoader(
         val_ds, batch_size=args.batch_size, shuffle=False, drop_last=False,
@@ -948,6 +972,10 @@ def main() -> None:
     p.add_argument("--batch-size", type=int, default=4)
     p.add_argument("--num-frames", type=int, default=16)
     p.add_argument("--temporal-window", default="0.0,1.0", help="Global window as 'lo,hi' fractions of clip")
+    p.add_argument(
+        "--anchor-half-width", type=float, default=None,
+        help="Override half_width from landing_foul_clip_anchors.json (e.g. 0.10 for tighter crop)",
+    )
     p.add_argument("--jitter", type=int, default=6, help="Oversample frames for random temporal jitter (train only)")
     p.add_argument("--augment", action=argparse.BooleanOptionalAction, default=True, help="Enable/disable augmentation")
     p.add_argument("--dropout", type=float, default=0.4)

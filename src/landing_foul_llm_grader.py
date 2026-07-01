@@ -45,8 +45,9 @@ from tqdm import tqdm
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import config
-from src.nba_client import NBAStatsClient
-from src.foul_type_llm_grader import (
+from landing_foul_video_dataset import clip_path
+from nba_client import NBAStatsClient
+from foul_type_llm_grader import (
     GeminiGrader,
     OpenAIGrader,
     AnthropicGrader,
@@ -130,6 +131,42 @@ Return a raw JSON object (no markdown):
   "defender_feet_at_shooter_landing": "...",
   "contact_timing": "...",
   "narrative": "..."
+}"""
+
+
+# DESCRIBE_LANDING_PROMPT — Layer 1 only. No classification. The model
+# describes contact timing relative to the jump apex and lists contacts in
+# order. Layer 2 (`classify_from_description`) applies landing-foul rules.
+DESCRIBE_LANDING_PROMPT = """You are watching a short video clip of a basketball shooting foul. Describe what you see — do NOT classify whether it is a landing foul or judge the call.
+
+Watch the full clip. Focus on the shooter on a jump shot: identify the apex of their jump (highest point), when the ball is released, and when they land.
+
+For EACH distinct contact between the defender and the shooter (in chronological order), report:
+  - When it occurs relative to the jump: ASCENT (still rising, before apex), AT_APEX, DESCENT (falling after apex, before/at landing), or ON_GROUND
+  - Which DEFENDER body part makes contact (HAND, ARM, TORSO, HIP, LEG, FOOT, etc.)
+  - Which SHOOTER body part is contacted
+  - One short phrase describing the contact
+
+Then identify which contact index (0-based) appears to be the foul that was called — the primary penalized contact. If unclear, use the last significant contact before the whistle or landing.
+
+Also report shot_type: JUMP_SHOT, DRIVE, STEP_BACK, PULL_UP, OTHER, or UNCLEAR.
+
+Do NOT use the phrase "landing foul". Do NOT output YES/NO.
+
+Return a raw JSON object (no markdown):
+{
+  "shot_type": "JUMP_SHOT | DRIVE | STEP_BACK | PULL_UP | OTHER | UNCLEAR",
+  "narrative": "2-4 sentence chronological description of the play",
+  "contacts": [
+    {
+      "order": 1,
+      "shooter_motion": "ASCENT | AT_APEX | DESCENT | ON_GROUND",
+      "defender_body_part": "HAND | ARM | TORSO | HIP | LEG | FOOT | ...",
+      "shooter_body_part": "...",
+      "description": "brief phrase"
+    }
+  ],
+  "primary_foul_contact_index": 0
 }"""
 
 
@@ -313,6 +350,135 @@ def select_landing_few_shot(
 
 GT_PATH = config.DATA_DIR / "landing_foul_ground_truth.csv"
 LANDING_MANIFEST_PATH = config.PROCESSED_DIR / "landing_foul_manifest.json"
+SPLIT_PATH = config.PROCESSED_DIR / "landing_foul_split.json"
+
+# Layer-2 rule helpers (describe → classify)
+_ARM_PARTS = frozenset({
+    "HAND", "ARM", "ARMS", "WRIST", "FOREARM", "FINGERS", "FINGER",
+    "ARM_OR_HAND", "HAND_OR_ARM",
+})
+_ASCENT_PHASES = frozenset({
+    "ASCENT", "RISING", "GOING_UP", "BEFORE_APEX", "BEFORE_RELEASE",
+    "DURING_SHOT_MOTION", "AT_RELEASE",
+})
+_DESCENT_PHASES = frozenset({
+    "DESCENT", "FALLING", "DESCENDING", "LANDING", "AFTER_APEX",
+    "AFTER_RELEASE", "AFTER_RELEASE_DESCENDING", "AT_LANDING",
+})
+_DRIVE_SHOTS = frozenset({"DRIVE", "LAYUP", "FLOATER"})
+
+
+def _norm_token(s: Any) -> str:
+    return str(s or "").strip().upper().replace("-", "_").replace(" ", "_")
+
+
+def _is_arm_contact(part: str) -> bool:
+    p = _norm_token(part)
+    if not p or p == "UNCLEAR":
+        return False
+    if p in _ARM_PARTS:
+        return True
+    return any(p.startswith(x) or x in p for x in ("HAND", "ARM", "WRIST", "FOREARM"))
+
+
+def _primary_contact(obs: Dict[str, Any]) -> Dict[str, Any]:
+    contacts = obs.get("contacts") or []
+    if not isinstance(contacts, list) or not contacts:
+        return {}
+    idx = obs.get("primary_foul_contact_index", 0)
+    try:
+        idx = int(idx)
+    except (TypeError, ValueError):
+        idx = 0
+    if idx < 0 or idx >= len(contacts):
+        idx = len(contacts) - 1
+    c = contacts[idx]
+    return c if isinstance(c, dict) else {}
+
+
+def classify_from_description(obs: Dict[str, Any]) -> Dict[str, Any]:
+    """Layer 2: derive landing_foul YES/NO/UNCLEAR from describe-mode observations.
+
+    Rules (from domain):
+      - Pump-fake jump-into and arm swipes occur on ASCENT → NO
+      - Landing foul requires contact during DESCENT and NOT hand/arm contact
+    """
+    shot = _norm_token(obs.get("shot_type"))
+    primary = _primary_contact(obs)
+    motion = _norm_token(primary.get("shooter_motion"))
+    def_part = _norm_token(primary.get("defender_body_part"))
+
+    reasons: List[str] = []
+
+    if shot in _DRIVE_SHOTS:
+        return {
+            "landing_foul": "NO",
+            "confidence": "HIGH",
+            "reasoning": "Layer 2: drive/layup — not an airborne jump-shot landing foul.",
+            "layer2_rule": "drive",
+        }
+
+    if not primary:
+        return {
+            "landing_foul": "UNCLEAR",
+            "confidence": "LOW",
+            "reasoning": "Layer 2: no contacts described.",
+            "layer2_rule": "no_contacts",
+        }
+
+    if motion in _ASCENT_PHASES or motion == "AT_APEX":
+        reasons.append(f"primary contact during {motion} (ascending/apex)")
+        return {
+            "landing_foul": "NO",
+            "confidence": "HIGH",
+            "reasoning": "Layer 2: " + "; ".join(reasons) + " — not a descent landing contact.",
+            "layer2_rule": "ascent_contact",
+        }
+
+    if _is_arm_contact(def_part):
+        reasons.append(f"defender contact via {def_part}")
+        return {
+            "landing_foul": "NO",
+            "confidence": "HIGH",
+            "reasoning": "Layer 2: " + "; ".join(reasons) + " — arm/hand contact cannot be a landing foul.",
+            "layer2_rule": "arm_contact",
+        }
+
+    if motion in _DESCENT_PHASES:
+        reasons.append(f"primary contact during {motion} via defender {def_part}")
+        return {
+            "landing_foul": "YES",
+            "confidence": "MEDIUM" if motion == "ON_GROUND" else "HIGH",
+            "reasoning": "Layer 2: " + "; ".join(reasons) + " — body contact on descent.",
+            "layer2_rule": "descent_body_contact",
+        }
+
+    if motion == "ON_GROUND":
+        return {
+            "landing_foul": "NO",
+            "confidence": "MEDIUM",
+            "reasoning": "Layer 2: primary contact on ground, not during descent.",
+            "layer2_rule": "on_ground",
+        }
+
+    return {
+        "landing_foul": "UNCLEAR",
+        "confidence": "LOW",
+        "reasoning": f"Layer 2: could not classify (shot={shot}, motion={motion}, def_part={def_part}).",
+        "layer2_rule": "unclear",
+    }
+
+
+def load_val_split_keys() -> List[Tuple[str, int]]:
+    """Return (game_id, event_id) keys from the fixed video train/val split."""
+    if not SPLIT_PATH.exists():
+        raise FileNotFoundError(f"Split not found: {SPLIT_PATH}")
+    with open(SPLIT_PATH) as f:
+        split = json.load(f)
+    return [
+        (str(x["game_id"]).zfill(10), int(x["event_id"]))
+        for x in split["val"]["keys"]
+    ]
 
 
 def load_landing_ground_truth() -> Dict[Tuple[str, int], Dict[str, Any]]:
@@ -367,7 +533,7 @@ def load_clips_by_key(extended: bool = False) -> Dict[Tuple[str, int], Dict[str,
 class _LandingMixin:
     """Shared landing-specific behavior mixed into each provider subclass."""
 
-    prompt_mode: str  # "spatial" | "sequence" | "whistle" | "observe"
+    prompt_mode: str  # "spatial" | "sequence" | "whistle" | "observe" | "describe"
 
     def _landing_system_prompt(self) -> str:
         if self.prompt_mode == "sequence":
@@ -376,16 +542,31 @@ class _LandingMixin:
             return WHISTLE_LANDING_PROMPT
         if self.prompt_mode == "observe":
             return OBSERVE_LANDING_PROMPT
+        if self.prompt_mode == "describe":
+            return DESCRIBE_LANDING_PROMPT
         return SPATIAL_LANDING_PROMPT
 
     def _normalize_landing(self, grade: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize the model's landing response.
 
-        For "observe" mode, derives classification from the feature vector
-        rather than trusting a model-produced label. For other modes, trusts
-        the model's `landing_foul` field; derives it from observations only
-        if missing.
+        For "describe" mode, Layer 1 observations are classified by
+        ``classify_from_description`` (Layer 2 rules). For "observe" mode,
+        derives classification from the feature vector rather than trusting
+        a model-produced label. For other modes, trusts the model's
+        ``landing_foul`` field; derives it from observations only if missing.
         """
+        if self.prompt_mode == "describe":
+            layer2 = classify_from_description(grade)
+            grade["landing_foul"] = layer2["landing_foul"]
+            grade["confidence"] = layer2["confidence"]
+            grade["reasoning"] = layer2["reasoning"]
+            grade["layer2_rule"] = layer2.get("layer2_rule", "")
+            primary = _primary_contact(grade)
+            if primary:
+                grade["primary_shooter_motion"] = primary.get("shooter_motion", "")
+                grade["primary_defender_body_part"] = primary.get("defender_body_part", "")
+            return grade
+
         if self.prompt_mode == "observe":
             label = "UNCLEAR"
             shot = str(grade.get("shot_type", "")).strip().upper()
@@ -512,6 +693,13 @@ class _LandingMixin:
                 "questions based on what you see. Do NOT classify the play. "
                 "Do NOT say whether it is a landing foul. Just describe what "
                 "happened. Return a raw JSON object."
+            )
+        if self.prompt_mode == "describe":
+            return (
+                f"\n\nPlay-by-play description: {description}\n\n"
+                "Watch the full clip above. Describe contacts in chronological "
+                "order relative to the shooter's jump apex. Do NOT classify "
+                "whether this is a landing foul. Return a raw JSON object."
             )
         return (
             f"\n\nPlay-by-play description: {description}\n\n"
@@ -855,10 +1043,17 @@ def print_validation(val_comparisons: List[Dict[str, Any]], prompt_mode: str,
         obs_fields = []
         for k in ("shot_type", "who_initiated_contact", "defender_position_at_landing",
                   "contact_moment", "defender_in_landing_zone", "contact_vs_descent",
-                  "narrative", "whistle_timing", "called_contact"):
-            if k in row and pd.notna(row.get(k)):
-                val = str(row[k])
-                obs_fields.append(f"{k}={val[:80]}")
+                  "narrative", "whistle_timing", "called_contact",
+                  "primary_shooter_motion", "primary_defender_body_part",
+                  "layer2_rule", "contacts"):
+            if k not in row:
+                continue
+            val = row.get(k)
+            if val is None or (isinstance(val, float) and pd.isna(val)):
+                continue
+            if k == "contacts" and isinstance(val, list):
+                val = f"{len(val)} contacts"
+            obs_fields.append(f"{k}={str(val)[:80]}")
         if obs_fields:
             print(f"    Obs:    {' | '.join(obs_fields)}")
         print(f"    Reason: {row.get('reasoning', '')}")
@@ -876,14 +1071,20 @@ def main() -> None:
                         help="LLM provider")
     parser.add_argument("--model", required=True,
                         help="Model name (e.g. gemini-2.5-flash, claude-sonnet-4-6, gpt-5.4-mini)")
-    parser.add_argument("--prompt-mode", default="spatial", choices=["spatial", "sequence", "whistle", "observe"],
+    parser.add_argument("--prompt-mode", default="spatial",
+                        choices=["spatial", "sequence", "whistle", "observe", "describe"],
                         help="Prompt strategy: spatial (default), event-ordering sequence, "
                              "whistle (attribution via the referee's whistle — audio, "
                              "best with gemini/vertex native video), "
                              "observe (structured observation only — no classification, "
-                             "derive post-hoc from feature vector)")
+                             "derive post-hoc from feature vector), "
+                             "describe (Layer 1: apex/contact sequence; Layer 2: rules)")
     parser.add_argument("--validate-only", action="store_true",
                         help="Only grade clips that have manual ground truth")
+    parser.add_argument("--val-split", action="store_true",
+                        help="Grade only the 57-clip video val split (requires --validate-only)")
+    parser.add_argument("--local-clips", action="store_true",
+                        help="Use data/clips/landing_foul/*.mp4 when present (skip CDN download)")
     parser.add_argument("--extended", action="store_true",
                         help="Use the extended ground truth set (includes v3 legacy clips)")
     parser.add_argument("--include-unclear", action="store_true",
@@ -896,6 +1097,10 @@ def main() -> None:
     parser.add_argument("--output", default=None,
                         help="Output JSON path (default: data/processed/landing_foul_llm_results_<model>.json)")
     args = parser.parse_args()
+
+    if args.val_split and not args.validate_only:
+        print("Error: --val-split requires --validate-only.")
+        sys.exit(1)
 
     # API key (vertex uses gcloud ADC — no key needed)
     key_env_map = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "gemini": "GEMINI_API_KEY"}
@@ -941,8 +1146,18 @@ def main() -> None:
             keys = [k for k in keys
                     if str(ground_truth[k].get("source", "")).strip() != "v3_foul_type"]
 
-    # Only keep keys that have a resolvable video URL.
-    keys = [k for k in keys if clips_by_key.get(k) and _clip_video_url(clips_by_key[k])]
+    if args.val_split:
+        val_keys = set(load_val_split_keys())
+        keys = [k for k in keys if k in val_keys]
+        logger.info("Filtered to video val split: %d clips", len(keys))
+
+    def _has_video(k: Tuple[str, int]) -> bool:
+        if args.local_clips and clip_path(k[0], k[1]).exists():
+            return True
+        clip = clips_by_key.get(k)
+        return bool(clip and _clip_video_url(clip))
+
+    keys = [k for k in keys if _has_video(k)]
 
     if args.limit:
         keys = keys[: args.limit]
@@ -979,8 +1194,10 @@ def main() -> None:
     print(f"Provider:    {args.provider.upper()} ({args.model})")
     print(f"Prompt mode: {args.prompt_mode}")
     print(f"Few-shot:    {len(few_shot_examples)} examples" if few_shot_examples else "Few-shot:    off")
-    print(f"Clips:       {len(keys)}{' (validate-only)' if args.validate_only else ' (full manifest)'}")
+    print(f"Clips:       {len(keys)}{' (validate-only)' if args.validate_only else ' (full manifest)'}"
+          f"{' [val split]' if args.val_split else ''}")
     print(f"Extended:    {args.extended}   Include UNCLEAR: {args.include_unclear}")
+    print(f"Local clips: {args.local_clips}")
     print(f"Ground truth matches: {gt_count} / {len(keys)}")
     print("=" * 70 + "\n")
 
@@ -992,23 +1209,30 @@ def main() -> None:
     try:
         for key in tqdm(keys, desc="Grading clips"):
             game_id, event_id = key
-            clip = clips_by_key[key]
-            video_url = _clip_video_url(clip)
-            description = clip.get("description", "")
-            local_video_path = os.path.join(temp_video_dir, f"clip_{game_id}_{event_id}.mp4")
-            try:
-                resp = video_session.get(video_url, timeout=30)
-                if resp.status_code == 200:
-                    with open(local_video_path, "wb") as f:
-                        f.write(resp.content)
-                else:
-                    logger.warning("Failed downloading video %s: HTTP %d", video_url, resp.status_code)
+            clip = clips_by_key.get(key, {})
+            video_url = _clip_video_url(clip) if clip else None
+            description = clip.get("description", "") if clip else ""
+            local_on_disk = clip_path(game_id, event_id)
+            if args.local_clips and local_on_disk.exists():
+                grade_path = str(local_on_disk)
+            else:
+                if not video_url:
+                    logger.warning("No video for %s_%s", game_id, event_id)
                     continue
-            except Exception as exc:
-                logger.warning("Error downloading video %s: %s", video_url, exc)
-                continue
+                grade_path = os.path.join(temp_video_dir, f"clip_{game_id}_{event_id}.mp4")
+                try:
+                    resp = video_session.get(video_url, timeout=30)
+                    if resp.status_code == 200:
+                        with open(grade_path, "wb") as f:
+                            f.write(resp.content)
+                    else:
+                        logger.warning("Failed downloading video %s: HTTP %d", video_url, resp.status_code)
+                        continue
+                except Exception as exc:
+                    logger.warning("Error downloading video %s: %s", video_url, exc)
+                    continue
 
-            grade = grader.grade_clip(local_video_path, description)
+            grade = grader.grade_clip(grade_path, description)
 
             res_entry: Dict[str, Any] = {
                 "game_id": game_id,
@@ -1017,11 +1241,13 @@ def main() -> None:
                 "predicted_landing_foul": grade.get("landing_foul", "UNCLEAR"),
                 "confidence": grade.get("confidence", "LOW"),
                 "reasoning": grade.get("reasoning", ""),
-                "caller_official_name": clip.get("caller_official_name", ""),
+                "caller_official_name": clip.get("caller_official_name", "") if clip else "",
             }
             for k in ("shot_type", "defender_position_at_landing", "contact_moment",
                       "defender_in_landing_zone", "contact_vs_descent", "narrative",
-                      "whistle_timing", "called_contact", "who_initiated_contact"):
+                      "whistle_timing", "called_contact", "who_initiated_contact",
+                      "contacts", "primary_foul_contact_index",
+                      "primary_shooter_motion", "primary_defender_body_part", "layer2_rule"):
                 if k in grade:
                     res_entry[k] = grade[k]
             results.append(res_entry)
@@ -1040,20 +1266,24 @@ def main() -> None:
                     **{k: grade.get(k) for k in ("shot_type", "defender_position_at_landing",
                        "contact_moment", "defender_in_landing_zone", "contact_vs_descent",
                        "narrative", "whistle_timing", "called_contact",
-                       "who_initiated_contact") if k in grade},
+                       "who_initiated_contact", "contacts", "primary_shooter_motion",
+                       "primary_defender_body_part", "layer2_rule") if k in grade},
                 })
     finally:
         shutil.rmtree(temp_video_dir, ignore_errors=True)
 
     # Save results
     out_path = Path(args.output) if args.output else (
-        config.PROCESSED_DIR / f"landing_foul_llm_results_{args.provider}_{args.model.replace('.', '_')}.json"
+        config.PROCESSED_DIR
+        / f"landing_foul_llm_results_{args.provider}_{args.model.replace('.', '_')}_{args.prompt_mode}.json"
     )
     output_payload = {
         "task": "landing_foul",
         "provider": args.provider,
         "model": args.model,
         "prompt_mode": args.prompt_mode,
+        "val_split": args.val_split,
+        "local_clips": args.local_clips,
         "extended": args.extended,
         "include_unclear": args.include_unclear,
         "few_shot_count": len(few_shot_examples),
