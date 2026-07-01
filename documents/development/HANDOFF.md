@@ -415,7 +415,7 @@ Colab runbook: `documents/development/colab-finetune.ipynb`.
 | **Spatial cropping** | Crop to the relevant court region. Feet are tiny in 960x540 wide-angle broadcast. If the foul location is roughly known (perimeter vs paint), crop before resizing to 224x224. | Second lever if temporal crop doesn't help |
 | **Frame count** | Increase from 16 to 32 frames for higher temporal resolution. Trade-off: more memory, more overfitting risk. | Try alongside temporal cropping |
 | **Different backbone** | SlowFast (dual-pathway: slow for spatial, fast for motion) or X3D (lightweight). | If VideoMAE fine-tuning hits <70% after all preprocessing levers |
-| **Pose estimation** | MediaPipe/OpenPose to extract skeleton keypoints, then classify on foot/body positions directly. Bypasses the "feet are tiny in the frame" problem entirely. | Nuclear option if all video models fail |
+| **Pose estimation** | ViTPose/MediaPipe to extract skeleton keypoints, then classify on foot/body positions directly. Bypasses the "feet are tiny in the frame" problem entirely. **Full plan: [POSE-ESTIMATION-PLAN.md](POSE-ESTIMATION-PLAN.md).** | Parallel track alongside VideoMAE; ensemble if neither clears gate alone |
 
 **Makefile targets:**
 ```bash
@@ -459,11 +459,15 @@ Fine-tuned model val precision ≥ 85%?
 │         Build landing_foul_video_predict.py for batch inference
 │         Run classifier at scale → per-official landing foul rates
 │         → Step 12: ANOVA + correlation with suppressor/amplifier profiles
-├── 75–84% → Try preprocessing levers (temporal crop, spatial crop, frame count)
-│            → If still <85%: try SlowFast or hybrid (LLM pre-filter → human review)
-├── 55–74% → Hybrid pipeline: LLM pre-filter (98% recall) → fine-tuned model on YES-predicted
-│            → Manual review remaining borderline cases
-└── < 55%  → Pose estimation (MediaPipe) or scale manual classification
+├── 75–84% → Step 10e: Pose estimation (parallel track)
+│            Extract keypoints → geometric features → rule-based or XGBoost classifier
+│            → Step 10f: Ensemble (VideoMAE + pose) — intersection for precision
+│            → If ensemble ≥85% P / ≥70% R: proceed to Step 11
+│            → If still <85%: try SlowFast backbone or hybrid (LLM pre-filter → human review)
+├── 55–74% → Step 10e: Pose estimation (see POSE-ESTIMATION-PLAN.md)
+│            → Pose standalone or ensemble with VideoMAE
+│            → Hybrid fallback: ensemble pre-filter → manual review borderline cases
+└── < 55%  → Pose estimation standalone or scale manual classification
              → HTML tool with keyboard shortcuts (~50 min per 100 clips)
 ```
 
@@ -635,6 +639,35 @@ make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash LIMIT=3
 # Extended set (128 clips incl v3 legacy):
 make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash EXTENDED=1
 ```
+
+### Step 10e: Pose estimation — PLANNED
+
+**Goal:** Extract skeleton keypoints from broadcast video and classify landing fouls based on geometric relationships (defender feet under shooter's landing zone). Addresses the core limitation of both LLM and VideoMAE approaches: feet are tiny in 960×540 broadcast footage.
+
+**Full implementation plan:** [POSE-ESTIMATION-PLAN.md](POSE-ESTIMATION-PLAN.md)
+
+**Summary:** Five phases — (0) validate keypoint quality on 10 clips, (1) extract poses for all 284 clips, (2) engineer geometric features from keypoint trajectories, (3) train rule-based or XGBoost classifier, (4) ensemble with VideoMAE. Estimated timeline: ~2 weeks.
+
+**Key insight:** Landing fouls are defined by a geometric relationship (defender's feet inside shooter's landing zone). Pose estimation makes this relationship explicit and computable, rather than asking a video model to learn it implicitly from pixels.
+
+**When to start:** Run in parallel with VideoMAE Run 5+. If Run 5 clears the gate (≥ 85% P / ≥ 70% R), pose estimation becomes optional (but still valuable for Paper 2 interpretability). If Run 5 falls short, pose estimation is the primary path forward — either standalone or as an ensemble component.
+
+**New scripts:**
+- `src/landing_foul_pose_extract.py` — keypoint extraction (Phase 1)
+- `src/landing_foul_pose_features.py` — geometric feature engineering (Phase 2)
+- `src/landing_foul_pose_classify.py` — classifier (Phase 3)
+- `src/landing_foul_ensemble.py` — VideoMAE + pose ensemble (Phase 4)
+
+**New Makefile targets:**
+```bash
+make pose-extract                    # extract keypoints for all 284 clips
+make pose-features                   # compute geometric features
+make pose-classify MODE=rules        # rule-based classifier
+make pose-classify MODE=xgboost      # gradient-boosted trees
+make pose-ensemble                   # ensemble with VideoMAE
+```
+
+---
 
 ### Step 11: Scale to per-official measurement — PENDING (blocked on Step 10b)
 
