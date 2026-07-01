@@ -459,7 +459,25 @@ PAGE_HTML = r"""<!doctype html>
   .clip-head .desc { font-size:15px; font-weight:500; }
   .clip-head .meta { color:var(--muted); font-size:12px; margin-top:4px; }
   .clip-head .note { margin-top:6px; color:#d8b25e; font-size:12px; }
-  video { width:100%; max-height:62vh; background:#000; border-radius:8px; }
+  video { width:100%; max-height:58vh; background:#000; border-radius:8px; }
+  .window-wrap { background:var(--panel); border:1px solid var(--border); border-radius:8px;
+                 padding:10px 14px; display:none; }
+  .window-wrap.visible { display:block; }
+  .window-head { display:flex; align-items:center; gap:12px; margin-bottom:8px; font-size:12px; }
+  .window-head label { display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--muted); }
+  .window-head label.on { color:var(--txt); }
+  .window-track { position:relative; height:28px; background:var(--panel2); border-radius:4px;
+                  cursor:pointer; border:1px solid var(--border); }
+  .window-region { position:absolute; top:0; bottom:0; background:rgba(91,157,255,0.35);
+                   border-left:2px solid var(--accent); border-right:2px solid var(--accent);
+                   pointer-events:none; }
+  .window-foul { position:absolute; top:0; bottom:0; width:2px; background:#f0c674;
+                 transform:translateX(-1px); pointer-events:none; }
+  .window-playhead { position:absolute; top:0; bottom:0; width:2px; background:#fff;
+                     transform:translateX(-1px); pointer-events:none; opacity:0.9; }
+  .window-times { display:flex; justify-content:space-between; margin-top:4px;
+                  font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .window-times .mid { color:#f0c674; }
   .controls { display:flex; flex-wrap:wrap; gap:10px; align-items:center;
               background:var(--panel); border:1px solid var(--border);
               border-radius:8px; padding:12px 14px; }
@@ -498,6 +516,20 @@ PAGE_HTML = r"""<!doctype html>
         <div id="c-note" class="note" style="display:none"></div>
       </div>
       <video id="v" controls preload="metadata"></video>
+      <div class="window-wrap" id="window-wrap">
+        <div class="window-head">
+          <label id="loop-label" class="on"><input type="checkbox" id="loop-toggle" checked> Loop in/out window (L)</label>
+          <button class="act secondary" id="btn-window-play" type="button" style="padding:4px 10px;font-size:12px">Play window</button>
+        </div>
+        <div class="window-track" id="window-track" title="Click to seek · shaded region = training window">
+          <div class="window-region" id="window-region"></div>
+          <div class="window-foul" id="window-foul"></div>
+          <div class="window-playhead" id="window-playhead"></div>
+        </div>
+        <div class="window-times" id="window-times">
+          <span id="wt-in">in —</span><span class="mid" id="wt-foul">foul —</span><span id="wt-out">out —</span>
+        </div>
+      </div>
       <div class="controls">
         <button class="act" id="btn-mark">Mark foul here (M)</button>
         <div class="hw-wrap">
@@ -510,7 +542,7 @@ PAGE_HTML = r"""<!doctype html>
         <button class="act secondary" id="btn-next">Next (N)</button>
         <div class="anchor-info" id="anchor-info"></div>
       </div>
-      <div class="kbd">Shortcuts: Space play/pause · M mark · Enter save&amp;next · S skip · N/P next/prev · ,/. seek 2s · [/] half-width · F filter</div>
+      <div class="kbd">Shortcuts: Space play/pause · M mark · L loop window · W play window · Enter save&amp;next · S skip · N/P next/prev · ,/. seek 2s · [/] half-width · F filter</div>
     </div>
   </main>
 </div>
@@ -523,6 +555,76 @@ let idx = 0;
 let filter = 'all';
 let pendingFrac = null;   // mark set by user, not yet saved
 let defaultHW = 0.15;
+let loopWindow = true;
+
+function activeFrac() {
+  const c = clips[idx];
+  if (pendingFrac !== null) return pendingFrac;
+  if (c && c.anchor) return c.anchor.foul_frac;
+  return null;
+}
+
+function windowBounds() {
+  const frac = activeFrac();
+  if (frac === null || !video.duration || !isFinite(video.duration)) return null;
+  const hw = hwValue();
+  const lo = Math.max(0, frac - hw);
+  const hi = Math.min(1, frac + hw);
+  const dur = video.duration;
+  return { lo, hi, frac, inTime: lo * dur, outTime: hi * dur, foulTime: frac * dur, dur };
+}
+
+function fmtTime(sec) {
+  if (!isFinite(sec)) return '—';
+  const m = Math.floor(sec / 60);
+  const s = (sec % 60).toFixed(2).padStart(m > 0 ? 5 : 2, '0');
+  return m > 0 ? `${m}:${s}` : `${s}s`;
+}
+
+function updateWindowBar() {
+  const wrap = $('#window-wrap');
+  const w = windowBounds();
+  if (!w) {
+    wrap.classList.remove('visible');
+    return;
+  }
+  wrap.classList.add('visible');
+  $('#window-region').style.left = (w.lo * 100).toFixed(2) + '%';
+  $('#window-region').style.width = ((w.hi - w.lo) * 100).toFixed(2) + '%';
+  $('#window-foul').style.left = (w.frac * 100).toFixed(2) + '%';
+  const ph = video.currentTime / w.dur;
+  $('#window-playhead').style.left = (Math.max(0, Math.min(1, ph)) * 100).toFixed(2) + '%';
+  $('#wt-in').textContent = 'in ' + fmtTime(w.inTime);
+  $('#wt-foul').textContent = 'foul ' + fmtTime(w.foulTime);
+  $('#wt-out').textContent = 'out ' + fmtTime(w.outTime);
+  $('#loop-label').classList.toggle('on', loopWindow);
+}
+
+function seekToWindowStart() {
+  const w = windowBounds();
+  if (w) video.currentTime = w.inTime;
+}
+
+function playWindow() {
+  const w = windowBounds();
+  if (!w) return;
+  video.currentTime = w.inTime;
+  loopWindow = true;
+  $('#loop-toggle').checked = true;
+  updateWindowBar();
+  video.play().catch(() => {});
+}
+
+function onTimeUpdate() {
+  updateWindowBar();
+  if (!loopWindow || video.paused) return;
+  const w = windowBounds();
+  if (!w) return;
+  // Small epsilon avoids stutter at boundary
+  if (video.currentTime >= w.outTime - 0.04) {
+    video.currentTime = w.inTime;
+  }
+}
 
 async function loadList() {
   const r = await fetch('/api/list');
@@ -613,6 +715,7 @@ function loadClip(i) {
     $('#hw-val').textContent = defaultHW.toFixed(2);
   }
   updateAnchorInfo();
+  updateWindowBar();
   renderSidebar();
   video.focus();
 }
@@ -627,6 +730,9 @@ function markHere() {
   if (f === null) return;
   pendingFrac = f;
   updateAnchorInfo();
+  updateWindowBar();
+  // Snap to window start and loop so you can verify the crop immediately
+  playWindow();
 }
 
 function hwValue() { return parseFloat($('#hw').value); }
@@ -641,9 +747,12 @@ function updateAnchorInfo() {
   }
   const lo = Math.max(0, frac - hw), hi = Math.min(1, frac + hw);
   const tag = pendingFrac !== null ? ' <i>(unsaved)</i>' : '';
+  const loopTag = loopWindow && wBoundsOk() ? ' · <b>looping</b>' : '';
   $('#anchor-info').innerHTML =
-    `foul_frac <b>${frac.toFixed(3)}</b> · half_width <b>${hw.toFixed(2)}</b> → window <b>${lo.toFixed(3)}–${hi.toFixed(3)}</b>${tag}`;
+    `foul_frac <b>${frac.toFixed(3)}</b> · half_width <b>${hw.toFixed(2)}</b> → window <b>${lo.toFixed(3)}–${hi.toFixed(3)}</b>${loopTag}${tag}`;
 }
+
+function wBoundsOk() { return windowBounds() !== null; }
 
 async function saveAndNext() {
   const c = clips[idx];
@@ -695,6 +804,16 @@ function adjustHW(delta) {
   el.value = Math.max(0.05, Math.min(0.40, parseFloat(el.value) + delta)).toFixed(2);
   $('#hw-val').textContent = parseFloat(el.value).toFixed(2);
   updateAnchorInfo();
+  updateWindowBar();
+}
+
+function seekOnTrack(evt) {
+  if (!video.duration) return;
+  const track = $('#window-track');
+  const rect = track.getBoundingClientRect();
+  const frac = Math.max(0, Math.min(1, (evt.clientX - rect.left) / rect.width));
+  video.currentTime = frac * video.duration;
+  updateWindowBar();
 }
 
 document.addEventListener('keydown', e => {
@@ -702,7 +821,22 @@ document.addEventListener('keydown', e => {
   const tag = e.target.tagName;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   switch (e.key) {
-    case ' ': e.preventDefault(); video.paused ? video.play() : video.pause(); break;
+    case ' ': e.preventDefault();
+      if (video.paused) {
+        const w = windowBounds();
+        if (loopWindow && w && video.currentTime >= w.outTime - 0.1) {
+          video.currentTime = w.inTime;
+        }
+        video.play();
+      } else video.pause();
+      break;
+    case 'l': case 'L':
+      loopWindow = !loopWindow;
+      $('#loop-toggle').checked = loopWindow;
+      updateAnchorInfo();
+      updateWindowBar();
+      break;
+    case 'w': case 'W': playWindow(); break;
     case 'm': case 'M': markHere(); break;
     case 'Enter': e.preventDefault(); saveAndNext(); break;
     case 's': case 'S': skip(); break;
@@ -737,9 +871,26 @@ $('#btn-save').onclick = saveAndNext;
 $('#btn-skip').onclick = skip;
 $('#btn-prev').onclick = () => recountAndAdvance(-1);
 $('#btn-next').onclick = () => recountAndAdvance(1);
-$('#hw').oninput = () => { $('#hw-val').textContent = parseFloat($('#hw').value).toFixed(2); updateAnchorInfo(); };
+$('#hw').oninput = () => {
+  $('#hw-val').textContent = parseFloat($('#hw').value).toFixed(2);
+  updateAnchorInfo();
+  updateWindowBar();
+};
+$('#loop-toggle').onchange = () => {
+  loopWindow = $('#loop-toggle').checked;
+  updateAnchorInfo();
+  updateWindowBar();
+};
+$('#btn-window-play').onclick = playWindow;
+$('#window-track').onclick = seekOnTrack;
 
-video.addEventListener('loadedmetadata', updateAnchorInfo);
+video.addEventListener('loadedmetadata', () => {
+  updateAnchorInfo();
+  updateWindowBar();
+  if (windowBounds()) seekToWindowStart();
+});
+video.addEventListener('timeupdate', onTimeUpdate);
+video.addEventListener('seeked', updateWindowBar);
 
 loadList();
 </script>
