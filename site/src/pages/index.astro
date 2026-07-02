@@ -7,19 +7,21 @@ import { getMeta, getOfficialsIndex } from '../utils/data';
 
 const meta = getMeta();
 const officials = getOfficialsIndex();
-const headline = 'Watching the Refs Ref';
+const headline = 'The refs have a fingerprint';
 ---
 
 <Base
   title="ref-ball"
-  description="We watch the refs ref. Research on how NBA officials influence free throws, missed calls, and playoff scoring."
+  description="Individual NBA referees have systematically different effects on free throw rates. Open data, open code."
 >
   <section class="section">
     <div class="container">
-      <p class="small muted">Harris Gordon</p>
       <h1 class="display">{headline}</h1>
+      <p class="small byline">by Harris Gordon</p>
       <p class="lead">
-        How refs shape the game — who gets whistles, who doesn't, and how individual officials call it differently.
+        Every NBA referee calls shooting fouls at a different rate — and it shows up in player stats. I parsed the
+        official's name out of a text field that nobody was reading, built per-official profiles for 101 refs, and
+        proved the variance is real (ANOVA p&nbsp;=&nbsp;0.000003). The data was hiding in plain sight.
       </p>
     </div>
   </section>
@@ -31,29 +33,24 @@ const headline = 'Watching the Refs Ref';
         <WindowChrome title="ref-ball.exe" showStatus status={`${meta.counts.officials} officials`}>
           <article class="win95-card-inner">
             <div class="eyebrow">ref-ball</div>
-            <h3>Do refs call shooting fouls the same way?</h3>
+            <h3>Refs don't call shooting fouls the same way</h3>
             <p class="study-block">
-              <strong>Question.</strong> Do different NBA refs call shooting fouls at a similar rate — or does each
-              referee have their own judgment for what counts as a foul?
+              Some officials suppress free throws for 84% of high-FTA players. Others amplify them. The 80th-percentile
+              spread is 0.86 FTA/36 — about a free throw per game for a starter. I built suppressor/amplifier profiles
+              for every official and defense-adjusted FTA deltas for 40 players across 3,846 pairs.
             </p>
-            <p class="study-block">
-              <strong>Finding.</strong> They don't call it the same way. Some refs whistle more free throws; some
-              whistle fewer. The difference shows up in player stats, and you can see it official by official.
-            </p>
-            <p><a class="btn-retro" href="/data/officials">See the list →</a></p>
+            <p><a class="btn-retro" href="/data/officials">See the profiles →</a></p>
           </article>
         </WindowChrome>
         <WindowChrome title="l2m_report.exe" showStatus status="51,130 events">
           <article class="win95-card-inner">
             <div class="eyebrow">missed calls</div>
-            <h3>What types of calls do refs miss?</h3>
+            <h3>Refs don't miss calls at random</h3>
             <p class="study-block">
-              <strong>Question.</strong> What types of calls do refs miss, according to the NBA's Last Two Minute
-              report data?
-            </p>
-            <p class="study-block">
-              <strong>Finding.</strong> Not all missed calls are equal. Errors cluster in high-attention situations —
-              traveling, defensive three-seconds, off-ball fouls — not uniformly across call types.
+              Across 51,130 Last Two Minute events, errors cluster in high-attention situations — traveling,
+              defensive three-seconds, off-ball monitoring — at up to {meta.headlines.attention_load_lift}× the
+              baseline rate. Ordinary contact fouls are missed least often. The hardest situations to officiate
+              produce the most mistakes.
             </p>
             <p><a class="btn-retro" href="/the-attention-load">Read the findings →</a></p>
           </article>
@@ -61,15 +58,13 @@ const headline = 'Watching the Refs Ref';
         <WindowChrome title="does_harden_choke.exe" showStatus status="31 players">
           <article class="win95-card-inner">
             <div class="eyebrow">does-harden-choke</div>
-            <h3>Why do stars flop in the playoffs?</h3>
+            <h3>When the whistle dries up, scoring floors drop</h3>
             <p class="study-block">
-              <strong>Question.</strong> Does anything explain why some players have terrible games in the playoffs
-              than other similar superstars?
-            </p>
-            <p class="study-block">
-              <strong>Finding.</strong> We didn't find a single trigger that explains everyone — except James Harden,
-              who's a separate case. But players who lose free throws from the regular season to the postseason are
-              more likely to have terrible games. Jimmy Butler is a clear exception.
+              I studied 31 players looking for a common trigger for terrible playoff games. I didn't find one —
+              except that players who lose free throws from the regular season to the postseason floor more often
+              (r&nbsp;=&nbsp;{meta.headlines.harden_fta_correlation}, p&nbsp;=&nbsp;0.002). Harden is a separate
+              case. Jimmy Butler doesn't follow the pattern. The "playoff whistle" isn't league-wide — 15 of 31
+              players actually <em>increase</em> FTA rate.
             </p>
             <p><a class="btn-retro" href="/does-harden-choke">Read the findings →</a></p>
           </article>
@@ -94,7 +89,7 @@ const headline = 'Watching the Refs Ref';
   <section class="section section--alt">
     <div class="container">
       <p class="small muted">
-        <a href="/papers/ssac27">SSAC27 paper</a> — downstream from the dataset.
+        <a href="/papers/ssac27">SSAC27 abstract</a> — the paper version of what's on this site.
       </p>
     </div>
   </section>

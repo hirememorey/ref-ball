@@ -4,17 +4,19 @@ import { getMeta } from '../utils/data';
 const meta = getMeta();
 ---
 
-<Base title="Methodology" description="How ref-ball attributes shooting fouls to individual officials.">
+<Base title="Methodology" description="How I attribute shooting fouls to individual NBA officials — and what the ANOVA says.">
   <section class="section">
     <div class="container prose">
-      <h1 class="display">Attribution methodology</h1>
-      <p class="lead">Shooting-foul calls are attributed by parsing the referee name from the unstructured <code>description</code> field in NBA play-by-play data.</p>
+      <h1 class="display">How this works</h1>
+      <p class="lead">The NBA's play-by-play API includes the calling official's name in the <code>description</code> field of every foul. It's an unstructured text string — <code>(R.Garretson)</code> at the end of the play description. Nobody was parsing it. I did.</p>
       <h2>Layer 1 — published</h2>
-      <p>Per-official shooting-foul rates and player×official interaction profiles. Player-pair ANOVA across officials: p = 0.000003.</p>
+      <p>Per-official shooting-foul rates and player×official interaction profiles across 13,278 games. The player-pair ANOVA comes back at p&nbsp;=&nbsp;0.000003 — individual officials produce significantly different FTA outcomes for the same players.</p>
       <h2>Defense adjustment</h2>
-      <p>Raw FTA deltas confound opponent defensive quality. Defense-adjusted FTA/36 deltas control for opponent DefRtg in games with vs without each official.</p>
-      <h2>Layer 2 &amp; 3 — research frontier</h2>
-      <p>Contact-type classification and no-call detection are in progress. They appear in prose on companion pages, not as browseable data here.</p>
+      <p>Raw FTA deltas confound opponent defensive quality. If Harden plays the Grizzlies (elite defense) when Ransom is on the crew, is the FTA drop Ransom or Jaren Jackson Jr.? Defense-adjusted FTA/36 deltas control for opponent DefRtg in games with vs. without each official. The adjustment barely moves the results (r&nbsp;=&nbsp;0.98 raw vs. adjusted) — but I apply it anyway because it's the right thing to do.</p>
+      <h2>Foul-type specificity</h2>
+      <p>Shooting foul heterogeneity is independent of non-shooting foul heterogeneity. Per-official SF rate and NSF rate are uncorrelated (r&nbsp;=&nbsp;0.152, p&nbsp;=&nbsp;0.15). After residualizing SF rate on NSF rate, 100% of the shooting foul ANOVA effect survives (η²: 0.032 vs 0.031 raw). The effect is foul-type-specific, not a volume artifact. Personal fouls show the largest effect (η²&nbsp;=&nbsp;0.064); Personal Take and Offensive Charge show no significant variance.</p>
+      <h2>Layer 2 — research frontier</h2>
+      <p>I graded 300 shooting foul clips by hand trying to build a landing-foul classifier. LLM grading topped out at 55% precision. Fine-tuned VideoMAE got to 75% precision / 83% recall — not enough to clear the gate. When the classifier works, it unlocks per-official landing foul rates, which is the "why" behind the suppressor/amplifier profiles. That's Paper 2.</p>
     </div>
   </section>
 </Base>

@@ -9,8 +9,28 @@ const meta = getMeta();
     <div class="container prose">
       <h1 class="display">About</h1>
       <p class="lead">
-        Independent basketball analytics by <strong>{meta.author}</strong>. Three research projects on how NBA
-        officiating shapes player outcomes — with open data.
+        I'm Harris. I'm a Sixers fan and <a href="https://www.linkedin.com/in/harris-gordon-2a867263">tech person</a>.
+      </p>
+      <h2>Why this exists</h2>
+      <p>
+        The NBA's play-by-play API embeds the calling official's name in the <code>description</code> field of
+        every foul — an unstructured string that programmatic consumers skip entirely. I parsed it for 13,278
+        games. The resulting dataset is the first whistle-by-whistle attribution of shooting fouls to individual
+        NBA officials across full games. It was hiding in plain sight.
+      </p>
+      <h2>What I've done so far</h2>
+      <ul>
+        <li>Per-official suppressor/amplifier profiles for 101 officials (ANOVA p&nbsp;=&nbsp;0.000003)</li>
+        <li>Defense-adjusted FTA/36 deltas for 40 high-FTA players across 3,846 player-official pairs</li>
+        <li>Predictive crew models that forecast individual FTA deviation from crew assignment (Spearman r&nbsp;=&nbsp;0.406)</li>
+        <li>Attention Load model on 51,130 L2M events — errors cluster by situation, not by referee</li>
+        <li>300 shooting foul clips graded by hand (LLMs couldn't do it — topped out at 55% precision)</li>
+      </ul>
+      <h2>What I killed</h2>
+      <p>
+        The trigger taxonomy doesn't replicate. The box-score architecture model failed (R²&nbsp;=&nbsp;0.128).
+        The timing axis for foul classification was killed by the Giannis counterexample. I report negative
+        results — they're part of the answer.
       </p>
       <h2>Open data</h2>
       <p>

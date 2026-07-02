@@ -11,30 +11,25 @@ const categories = [
 ---
 
 <Base
-  title="What types of calls do refs miss?"
+  title="Refs don't miss calls at random"
   current="attention-load"
-  description="What types of calls do NBA refs miss, according to the Last Two Minute report data?"
+  description="Using the NBA's Last Two Minute reports to show that officiating errors cluster by situation, not by referee."
 >
   <section class="section">
     <div class="container prose">
-      <h1 class="display">What types of calls do refs miss?</h1>
+      <h1 class="display">Refs don't miss calls at random</h1>
       <p class="lead">
-        Using the NBA's Last Two Minute report — the league's public accounting of missed and incorrect calls in
-        clutch time.
+        The NBA's Last Two Minute report is the league's own accounting of what they got wrong in clutch time.
+        51,130 events across four seasons of holdout data. I used it to figure out which situations break
+        officiating — and which ones don't.
       </p>
 
-      <h2>The question</h2>
+      <h2>What I found</h2>
       <p>
-        What types of calls do refs miss? Are errors spread evenly across call types, or do certain situations
-        produce more mistakes?
-      </p>
-
-      <h2>What we found</h2>
-      <p>
-        Errors are not uniform. Across 51,130 Last Two Minute events, miss rates vary sharply by call category.
-        Ordinary contact fouls are missed least often. Traveling, out-of-bounds, defensive three-seconds, and
-        off-ball monitoring situations are missed far more often — up to roughly <strong>{meta.headlines.attention_load_lift}×</strong> the
-        baseline error rate in the highest-risk contexts.
+        Errors are not spread evenly. Ordinary contact fouls — the thing everyone argues about — are missed least
+        often. The situations that produce the most errors are the ones with the most moving parts: traveling,
+        out-of-bounds, defensive three-seconds, off-ball monitoring. These hit roughly <strong>{meta.headlines.attention_load_lift}×</strong> the
+        baseline miss rate in the highest-risk contexts.
       </p>
 
       <div class="chart-bars">
@@ -48,6 +43,7 @@ const categories = [
       </div>
 
       <h2>Holdout seasons</h2>
+      <p class="small muted">The lift holds across all four seasons — it's structural, not a single-year artifact.</p>
       <table>
         <thead><tr><th>Season</th><th>Baseline error rate</th><th>Top 10% risk contexts</th></tr></thead>
         <tbody>
@@ -60,10 +56,10 @@ const categories = [
 
       <h2>What this means</h2>
       <p>
-        Refs don't miss calls at random. The hardest situations to officiate — multiple moving parts, off-ball
-        action, judgment calls on traveling and defensive positioning — are where errors concentrate. That's
-        useful context for replay review, crew training, and understanding why certain late-game calls feel
-        inconsistent.
+        You can predict which games will have more missed calls before tip-off — not because referees are biased,
+        but because certain situations are structurally harder to officiate. Multiple moving parts, off-ball
+        action, judgment calls on traveling and defensive positioning — that's where the errors concentrate. The
+        "refs are inconsistent" feeling late in games isn't a vibe. It's measurable, and it's situation-driven.
       </p>
     </div>
   </section>
