@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getMeta } from '../../utils/data';
+
+const meta = getMeta();
+const citation = `@misc{refball${meta.git_sha},
+  author = {Harris Gordon},
+  title = {ref-ball: Per-official NBA shooting-foul attribution},
+  year = {2026},
+  howpublished = {${meta.github_url}},
+  note = {Dataset built from commit ${meta.git_sha}}
+}`;
+const release = `${meta.github_url}/releases`;
+---
+
+<Base title="Download" current="data" description="Download ref-ball parquet datasets.">
+  <section class="section page-header">
+    <div class="container">
+      <p class="breadcrumb"><a href="/data">Data</a> / Download</p>
+      <h1 class="display">Download</h1>
+      <p class="lead">Parquet artifacts ({meta.license.data}). Hosted via GitHub Releases.</p>
+    </div>
+  </section>
+  <section class="section section--alt" style="padding-top:0">
+    <div class="container table-wrap">
+      <table class="data-table">
+        <thead><tr><th>File</th><th>Description</th><th>Download</th></tr></thead>
+        <tbody>
+          <tr><td><code>official_calling_profiles.parquet</code></td><td>{meta.counts.officials} officials — suppressor scores</td><td><a href={release}>Release</a></td></tr>
+          <tr><td><code>player_official_interactions.parquet</code></td><td>{meta.counts.player_official_pairs_raw.toLocaleString()} raw pairs</td><td><a href={release}>Release</a></td></tr>
+          <tr><td><code>defensive_adjusted_interactions.parquet</code></td><td>{meta.counts.player_official_pairs_adjusted.toLocaleString()} adjusted pairs</td><td><a href={release}>Release</a></td></tr>
+          <tr><td><code>ref_profiles.parquet</code></td><td>Per-official SF rates (RS/PO)</td><td><a href={release}>Release</a></td></tr>
+          <tr><td><code>crew_assignments.parquet</code></td><td>{meta.counts.crew_rows.toLocaleString()} crew rows</td><td><a href={release}>Release</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="container" style="margin-top:2rem">
+      <h2>Citation</h2>
+      <pre class="callout mono small">{citation}</pre>
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,279 @@
+/* 90s browser / Tavus-inspired chrome — pairs with Iverson palette */
+
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+:root {
+  --font-ui: Tahoma, "MS Sans Serif", "Segoe UI", Geneva, sans-serif;
+  --win95-face: var(--color-off-white);
+  --win95-shadow: var(--color-black);
+  --win95-highlight: var(--color-white);
+  --win95-mid: var(--color-muted);
+}
+
+/* Desktop wallpaper */
+.desktop {
+  min-height: 100vh;
+  background-color: var(--color-off-white);
+  background-image:
+    radial-gradient(var(--gold-tint-20) 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+body {
+  background: transparent;
+}
+
+.section--dither {
+  background-color: var(--color-off-white);
+  background-image:
+    linear-gradient(90deg, var(--gold-tint-04) 50%, transparent 50%),
+    linear-gradient(var(--gold-tint-04) 50%, transparent 50%);
+  background-size: 2px 2px;
+}
+
+/* ——— Header ——— */
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.site-header .container {
+  display: block;
+}
+/* ——— Tavus-style retro tags ——— */
+.retro-tag {
+  display: inline-block;
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-black);
+  background: var(--color-gold);
+  padding: 0.25rem 0.55rem;
+  border: 2px solid var(--color-black);
+  box-shadow: 2px 2px 0 var(--color-black);
+  margin-bottom: 0.75rem;
+}
+
+.retro-tag--sm {
+  font-size: 0.58rem;
+  padding: 0.15rem 0.4rem;
+  margin-bottom: 0;
+  box-shadow: 1px 1px 0 var(--color-black);
+}
+
+/* ——— Win95 window chrome ——— */
+.win95 {
+  background: var(--win95-face);
+  border: 2px solid var(--color-black);
+  box-shadow:
+    inset 1px 1px 0 var(--win95-highlight),
+    inset -1px -1px 0 var(--win95-shadow),
+    4px 4px 0 rgba(0, 0, 0, 0.35);
+}
+
+.win95-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.4rem;
+  background: linear-gradient(90deg, var(--color-black), #2a2418);
+  color: var(--color-gold);
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-bottom: 2px solid var(--color-black);
+  user-select: none;
+}
+
+.win95-titlebar-icon {
+  font-size: 0.65rem;
+  color: var(--color-red);
+}
+
+.win95-titlebar-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.win95-titlebar-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.win95-chrome-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 16px;
+  font-size: 0.7rem;
+  line-height: 1;
+  background: var(--win95-face);
+  border: 2px outset var(--win95-mid);
+  color: var(--color-black);
+  font-family: var(--font-ui);
+}
+
+.win95-chrome-btn--close {
+  font-weight: 700;
+}
+
+.win95-body {
+  padding: 1rem 1.1rem;
+  border: 2px inset var(--win95-mid);
+  background: var(--color-white);
+}
+
+.win95-byline {
+  margin: 0 0 0.5rem;
+}
+
+.win95-card-inner {
+  margin: 0;
+}
+
+.win95-card-inner h3 {
+  margin-top: 0.25rem;
+}
+
+.win95-card-inner .study-block {
+  margin: 0.75rem 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.win95-card-inner .study-block strong {
+  color: var(--color-red);
+}
+
+.win95-statusbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  padding: 0.2rem 0.5rem;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  background: var(--win95-face);
+  border-top: 2px inset var(--win95-mid);
+  color: var(--color-black);
+}
+
+.win95-statusbar--footer {
+  border: 2px inset var(--win95-mid);
+  background: var(--color-off-white);
+  color: var(--color-black);
+  margin-top: 0;
+}
+
+.win95-statusbar--footer span {
+  padding-right: 1rem;
+  border-right: 1px solid var(--color-muted);
+}
+
+.win95-statusbar--footer span:last-child {
+  border-right: none;
+}
+
+/* ——— Retro buttons ——— */
+.btn-retro {
+  display: inline-block;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--color-black) !important;
+  background: var(--win95-face);
+  border: 2px outset var(--color-muted);
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+}
+
+.btn-retro:hover {
+  color: var(--color-red) !important;
+  border-style: inset;
+}
+
+.btn-retro:active {
+  border-style: inset;
+  transform: translate(1px, 1px);
+}
+
+/* ——— Data tables in retro frame ——— */
+.table-wrap {
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.win95 .table-wrap {
+  border: 2px inset var(--color-muted);
+  margin-top: 0.5rem;
+}
+
+.win95 .data-table th {
+  font-family: var(--font-ui);
+}
+
+/* ——— Cards become flat inside windows ——— */
+.win95 .card,
+.card-grid .win95 {
+  box-shadow: none;
+}
+
+.card-grid .win95 {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-grid .win95 .win95-body {
+  flex: 1;
+}
+
+/* Pullquote inside notepad window */
+.win95 .pullquote {
+  margin: 0;
+  border-left-width: 3px;
+  font-size: 1.2rem;
+}
+
+/* Footer */
+.site-footer {
+  background: var(--color-black);
+  border-top: 3px solid var(--color-red);
+  padding: 1rem 0 1.5rem;
+}
+
+.site-footer .container p {
+  margin: 0;
+}
+
+/* Subtle scanlines overlay on hero windows only */
+.win95:first-of-type .win95-body {
+  position: relative;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .header-inner {
+    flex-wrap: wrap;
+  }
+
+  .site-nav {
+    top: 100%;
+  }
+
+  .win95-statusbar--footer span {
+    border-right: none;
+    width: 100%;
+  }
+}

@@ -1,0 +1,94 @@
+---
+import type { OfficialIndexRow } from '../utils/data';
+import { formatSigned, valence, valenceLabel } from '../utils/data';
+
+interface Props {
+  officials: OfficialIndexRow[];
+  inputId?: string;
+}
+
+const { officials, inputId = 'official-search' } = Astro.props;
+---
+
+<div class="search-wrap" data-official-search>
+  <input
+    class="search-input"
+    id={inputId}
+    type="search"
+    placeholder="Search an official — e.g., 'Foster', 'Tiven', 'Brothers'"
+    autocomplete="off"
+    aria-label="Search officials"
+    data-search-input
+  />
+  <div class="search-results" data-search-results role="listbox"></div>
+</div>
+
+<script define:vars={{ officials }}>
+  document.querySelectorAll('[data-official-search]').forEach((root) => {
+    const input = root.querySelector('[data-search-input]');
+    const results = root.querySelector('[data-search-results]');
+    if (!input || !results) return;
+
+    let timer;
+    const pillClass = (delta) => {
+      if (delta === null || delta === undefined) return 'pill--neutral';
+      if (delta <= -0.5) return 'pill--suppressor';
+      if (delta >= 0.5) return 'pill--amplifier';
+      return 'pill--neutral';
+    };
+    const pillLabel = (delta) => {
+      if (delta === null || delta === undefined) return 'Neutral';
+      if (delta <= -0.5) return 'Suppressor';
+      if (delta >= 0.5) return 'Amplifier';
+      return 'Neutral';
+    };
+
+    const render = (query) => {
+      results.innerHTML = '';
+      const q = query.trim().toLowerCase();
+      if (!q) { results.classList.remove('open'); return; }
+
+      const matches = officials
+        .filter((o) => [o.official_name, o.pbp_name].some((f) => String(f).toLowerCase().includes(q)))
+        .slice(0, 12);
+
+      if (!matches.length) { results.classList.remove('open'); return; }
+
+      matches.forEach((o) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const name = document.createElement('span');
+        name.textContent = `${o.official_name} (${o.pbp_name})`;
+        const pill = document.createElement('span');
+        pill.className = `search-pill ${pillClass(o.mean_adj_fta36_delta)}`;
+        pill.textContent = pillLabel(o.mean_adj_fta36_delta);
+        btn.append(name, pill);
+        btn.addEventListener('click', () => {
+          window.location.href = `/data/officials/${o.official_id}`;
+        });
+        results.appendChild(btn);
+      });
+      results.classList.add('open');
+    };
+
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => render(input.value), 60);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const q = input.value.trim().toLowerCase();
+        const hit = officials.find((o) =>
+          [o.official_name, o.pbp_name].some((f) => String(f).toLowerCase().includes(q))
+        );
+        if (hit) window.location.href = `/data/officials/${hit.official_id}`;
+      }
+      if (e.key === 'Escape') results.classList.remove('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!root.contains(e.target)) results.classList.remove('open');
+    });
+  });
+</script>

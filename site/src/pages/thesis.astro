@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+import { getMeta } from '../utils/data';
+const meta = getMeta();
+---
+
+<Base title="Methodology" description="How ref-ball attributes shooting fouls to individual officials.">
+  <section class="section">
+    <div class="container prose">
+      <h1 class="display">Attribution methodology</h1>
+      <p class="lead">Shooting-foul calls are attributed by parsing the referee name from the unstructured <code>description</code> field in NBA play-by-play data.</p>
+      <h2>Layer 1 — published</h2>
+      <p>Per-official shooting-foul rates and player×official interaction profiles. Player-pair ANOVA across officials: p = 0.000003.</p>
+      <h2>Defense adjustment</h2>
+      <p>Raw FTA deltas confound opponent defensive quality. Defense-adjusted FTA/36 deltas control for opponent DefRtg in games with vs without each official.</p>
+      <h2>Layer 2 &amp; 3 — research frontier</h2>
+      <p>Contact-type classification and no-call detection are in progress. They appear in prose on companion pages, not as browseable data here.</p>
+    </div>
+  </section>
+</Base>

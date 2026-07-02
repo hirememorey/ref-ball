@@ -1,0 +1,11 @@
+---
+interface Props {
+  state: 'live' | 'frozen';
+  label?: string;
+}
+
+const { state, label } = Astro.props;
+const text = label ?? (state === 'live' ? 'Live' : 'Frozen archive');
+---
+
+<span class={`pill pill--${state}`}>{text}</span>

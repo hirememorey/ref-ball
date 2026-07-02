@@ -1,0 +1,21 @@
+---
+import type { Valence } from '../utils/data';
+import { valence, valenceLabel } from '../utils/data';
+
+interface Props {
+  meanAdjDelta: number | null;
+  suppressorScore?: number | null;
+  nPlayers?: number | null;
+  large?: boolean;
+}
+
+const { meanAdjDelta, suppressorScore = null, nPlayers = null, large = false } = Astro.props;
+const v: Valence = valence(meanAdjDelta);
+const label = valenceLabel(v);
+---
+
+<span class={`pill pill--${v} ${large ? 'pill--lg' : ''}`}>
+  {label}
+  {suppressorScore !== null && ` · ${suppressorScore.toFixed(2)}`}
+  {nPlayers !== null && ` · ${nPlayers} players`}
+</span>

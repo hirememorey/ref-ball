@@ -1,0 +1,19 @@
+---
+interface Props {
+  label: string;
+  value: string;
+  numeric?: number | null;
+}
+
+const { label, value, numeric = null } = Astro.props;
+let cls = 'neutral';
+if (numeric !== null) {
+  if (numeric < 0) cls = 'negative';
+  else if (numeric > 0) cls = 'positive';
+}
+---
+
+<div class="stat-tile">
+  <div class={`value ${cls}`}>{value}</div>
+  <div class="label">{label}</div>
+</div>

@@ -1,0 +1,101 @@
+---
+import Base from '../layouts/Base.astro';
+import SearchInput from '../components/SearchInput.astro';
+import WindowChrome from '../components/WindowChrome.astro';
+import RetroTag from '../components/RetroTag.astro';
+import { getMeta, getOfficialsIndex } from '../utils/data';
+
+const meta = getMeta();
+const officials = getOfficialsIndex();
+const headline = 'Watching the Refs Ref';
+---
+
+<Base
+  title="ref-ball"
+  description="We watch the refs ref. Research on how NBA officials influence free throws, missed calls, and playoff scoring."
+>
+  <section class="section">
+    <div class="container">
+      <p class="small muted">Harris Gordon</p>
+      <h1 class="display">{headline}</h1>
+      <p class="lead">
+        How refs shape the game — who gets whistles, who doesn't, and how individual officials call it differently.
+      </p>
+    </div>
+  </section>
+
+  <section class="section section--alt section--dither">
+    <div class="container">
+      <RetroTag label="RESEARCH" />
+      <div class="card-grid">
+        <WindowChrome title="ref-ball.exe" showStatus status={`${meta.counts.officials} officials`}>
+          <article class="win95-card-inner">
+            <div class="eyebrow">ref-ball</div>
+            <h3>Do refs call shooting fouls the same way?</h3>
+            <p class="study-block">
+              <strong>Question.</strong> Do different NBA refs call shooting fouls at a similar rate — or does each
+              referee have their own judgment for what counts as a foul?
+            </p>
+            <p class="study-block">
+              <strong>Finding.</strong> They don't call it the same way. Some refs whistle more free throws; some
+              whistle fewer. The difference shows up in player stats, and you can see it official by official.
+            </p>
+            <p><a class="btn-retro" href="/data/officials">See the list →</a></p>
+          </article>
+        </WindowChrome>
+        <WindowChrome title="l2m_report.exe" showStatus status="51,130 events">
+          <article class="win95-card-inner">
+            <div class="eyebrow">missed calls</div>
+            <h3>What types of calls do refs miss?</h3>
+            <p class="study-block">
+              <strong>Question.</strong> What types of calls do refs miss, according to the NBA's Last Two Minute
+              report data?
+            </p>
+            <p class="study-block">
+              <strong>Finding.</strong> Not all missed calls are equal. Errors cluster in high-attention situations —
+              traveling, defensive three-seconds, off-ball fouls — not uniformly across call types.
+            </p>
+            <p><a class="btn-retro" href="/the-attention-load">Read the findings →</a></p>
+          </article>
+        </WindowChrome>
+        <WindowChrome title="does_harden_choke.exe" showStatus status="31 players">
+          <article class="win95-card-inner">
+            <div class="eyebrow">does-harden-choke</div>
+            <h3>Why do stars flop in the playoffs?</h3>
+            <p class="study-block">
+              <strong>Question.</strong> Does anything explain why some players have terrible games in the playoffs
+              than other similar superstars?
+            </p>
+            <p class="study-block">
+              <strong>Finding.</strong> We didn't find a single trigger that explains everyone — except James Harden,
+              who's a separate case. But players who lose free throws from the regular season to the postseason are
+              more likely to have terrible games. Jimmy Butler is a clear exception.
+            </p>
+            <p><a class="btn-retro" href="/does-harden-choke">Read the findings →</a></p>
+          </article>
+        </WindowChrome>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <RetroTag label="DATASET" />
+      <WindowChrome title="official_lookup.exe" showStatus status={`${meta.counts.officials} officials indexed`}>
+        <p class="muted small">Look up a ref by name.</p>
+        <SearchInput officials={officials} />
+        <p class="small" style="margin-top:1rem">
+          <a class="btn-retro" href="/data/officials">Browse all {meta.counts.officials} officials →</a>
+        </p>
+      </WindowChrome>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <p class="small muted">
+        <a href="/papers/ssac27">SSAC27 paper</a> — downstream from the dataset.
+      </p>
+    </div>
+  </section>
+</Base>

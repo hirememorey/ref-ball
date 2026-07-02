@@ -1,0 +1,35 @@
+---
+interface Props {
+  title: string;
+  showStatus?: boolean;
+  status?: string;
+  class?: string;
+}
+
+const {
+  title,
+  showStatus = false,
+  status = 'Ready',
+  class: className = '',
+} = Astro.props;
+---
+
+<div class={`win95 ${className}`}>
+  <div class="win95-titlebar">
+    <span class="win95-titlebar-icon" aria-hidden="true">◆</span>
+    <span class="win95-titlebar-text">{title}</span>
+    <div class="win95-titlebar-controls" aria-hidden="true">
+      <span class="win95-chrome-btn">_</span>
+      <span class="win95-chrome-btn">□</span>
+      <span class="win95-chrome-btn win95-chrome-btn--close">×</span>
+    </div>
+  </div>
+  <div class="win95-body">
+    <slot />
+  </div>
+  {showStatus && (
+    <div class="win95-statusbar">
+      <span class="win95-statusbar-text">{status}</span>
+    </div>
+  )}
+</div>

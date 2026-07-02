@@ -1,0 +1,150 @@
+---
+import Base from '../../../layouts/Base.astro';
+import SuppressorPill from '../../../components/SuppressorPill.astro';
+import StatTile from '../../../components/StatTile.astro';
+import WindowChrome from '../../../components/WindowChrome.astro';
+import RetroTag from '../../../components/RetroTag.astro';
+import {
+  deltaClass,
+  formatNum,
+  formatSigned,
+  getOfficial,
+  getOfficialIds,
+  roleLabel,
+} from '../../../utils/data';
+
+export function getStaticPaths() {
+  return getOfficialIds().map((id) => ({ params: { id } }));
+}
+
+const { id } = Astro.params;
+const official = getOfficial(id!);
+const h = official.headline;
+const prevId = official.navigation.prev_by_suppressor;
+const nextId = official.navigation.next_by_suppressor;
+const prevName = prevId ? getOfficial(prevId).official_name : null;
+const nextName = nextId ? getOfficial(nextId).official_name : null;
+const meanAdj = h.mean_adj_fta36_delta as number | null;
+const windowTitle = `${official.pbp_name} — profile.dat`;
+---
+
+<Base
+  title={`${official.official_name} — suppressor profile`}
+  current="data"
+  description={`${official.official_name} (${official.pbp_name}) — defense-adjusted FTA/36 profile.`}
+>
+  <section class="section page-header page-header--workspace">
+    <div class="container">
+      <p class="breadcrumb"><a href="/data/officials">Officials</a> / {official.official_name}</p>
+      <RetroTag label="OFFICIAL PROFILE" />
+      <WindowChrome title={windowTitle} showStatus status={`${h.n_players ?? 0} player pairs`}>
+        <h1 class="display" style="margin-top:0">{official.official_name}</h1>
+        <p class="lead">
+          {official.pbp_name}
+          {official.context.crew_role && ` · ${roleLabel(official.context.crew_role)}`}
+          {h.total_games !== null && ` · ${h.total_games} games`}
+          {h.total_sf !== null && ` · ${h.total_sf} shooting fouls attributed`}
+        </p>
+        <SuppressorPill
+          meanAdjDelta={meanAdj}
+          suppressorScore={h.suppressor_score as number | null}
+          nPlayers={h.n_players as number | null}
+          large={true}
+        />
+        <div class="stat-row">
+          <StatTile label="Adj FTA/36 Δ (mean)" value={formatSigned(meanAdj)} numeric={meanAdj} />
+          <StatTile
+            label="SF/game RS vs PO"
+            value={`${formatNum(h.sf_per_game_RS as number | null)} / ${formatNum(h.sf_per_game_PO as number | null)}`}
+          />
+          <StatTile
+            label="SF share of fouls"
+            value={h.sf_pct_of_fouls !== null ? `${((h.sf_pct_of_fouls as number) * 100).toFixed(1)}%` : '—'}
+          />
+          <StatTile label="RS/PO adj Δ" value={formatSigned(official.context.rs_po_delta as number | null)} numeric={official.context.rs_po_delta as number | null} />
+        </div>
+      </WindowChrome>
+    </div>
+  </section>
+
+  <section class="section section--alt section--dither" style="padding-top:0">
+    <div class="container">
+      <WindowChrome title="player_deltas.csv" showStatus status="Click headers to sort">
+        <h2 style="margin-top:0">Per-player deltas</h2>
+        <p class="small muted">Defense-adjusted FTA/36 delta vs baseline.</p>
+        <div class="table-wrap" style="margin-top:1rem">
+          <table class="data-table" id="player-deltas-table">
+            <thead>
+              <tr>
+                <th data-sort="player_name">Player</th>
+                <th data-sort="n_games_with" class="num">Games</th>
+                <th data-sort="fta36_with" class="num">FTA/36 with</th>
+                <th data-sort="fta36_without" class="num">FTA/36 without</th>
+                <th data-sort="defense_adjusted_fta36_delta" class="num">Adj Δ</th>
+                <th data-sort="defrtg_delta" class="num">DefRtg Δ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {official.player_deltas.map((p) => {
+                const adj = p.defense_adjusted_fta36_delta as number | null;
+                return (
+                  <tr>
+                    <td data-key="player_name" data-value={p.player_name}>
+                      <a href={`/data/players/${p.player_slug}`}>{p.player_name}</a>
+                    </td>
+                    <td class="num" data-key="n_games_with" data-value={p.n_games_with ?? ''}>{p.n_games_with ?? '—'}</td>
+                    <td class="num mono" data-key="fta36_with" data-value={p.fta36_with ?? ''}>{formatNum(p.fta36_with as number | null)}</td>
+                    <td class="num mono" data-key="fta36_without" data-value={p.fta36_without ?? ''}>{formatNum(p.fta36_without as number | null)}</td>
+                    <td class={`num ${deltaClass(adj)}`} data-key="defense_adjusted_fta36_delta" data-value={adj ?? ''}>{formatSigned(adj)}</td>
+                    <td class={`num ${deltaClass(p.defrtg_delta as number | null)}`} data-key="defrtg_delta" data-value={p.defrtg_delta ?? ''}>{formatSigned(p.defrtg_delta as number | null)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin-top:1rem">
+          Adj delta = defense-adjusted FTA/36 delta. <a href="/thesis">Methodology →</a>
+        </p>
+        <div class="nav-row">
+          <div>{prevId && prevName && <a class="btn-retro" href={`/data/officials/${prevId}`}>← {prevName}</a>}</div>
+          <div>{nextId && nextName && <a class="btn-retro" href={`/data/officials/${nextId}`}>{nextName} →</a>}</div>
+        </div>
+      </WindowChrome>
+    </div>
+  </section>
+</Base>
+
+<script is:inline>
+  (() => {
+    const table = document.getElementById('player-deltas-table');
+    if (!table) return;
+    const tbody = table.querySelector('tbody');
+    const headers = [...table.querySelectorAll('th[data-sort]')];
+    let sortKey = 'defense_adjusted_fta36_delta';
+    let sortDir = 'asc';
+    const cellVal = (row, key) => {
+      const c = row.querySelector(`[data-key="${key}"]`);
+      if (!c) return '';
+      const raw = c.getAttribute('data-value');
+      if (raw) { const n = Number(raw); return Number.isNaN(n) ? raw.toLowerCase() : n; }
+      return c.textContent.trim().toLowerCase();
+    };
+    const sort = () => {
+      [...tbody.querySelectorAll('tr')].sort((a, b) => {
+        const av = cellVal(a, sortKey), bv = cellVal(b, sortKey);
+        if (av < bv) return sortDir === 'asc' ? -1 : 1;
+        if (av > bv) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      }).forEach((r) => tbody.appendChild(r));
+    };
+    headers.forEach((h) => h.addEventListener('click', () => {
+      const k = h.getAttribute('data-sort');
+      if (!k) return;
+      if (sortKey === k) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      else { sortKey = k; sortDir = k === 'player_name' ? 'asc' : 'desc'; }
+      sort();
+    }));
+    sort();
+  })();
+</script>

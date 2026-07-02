@@ -1,0 +1,110 @@
+---
+import Base from '../../../layouts/Base.astro';
+import SearchInput from '../../../components/SearchInput.astro';
+import WindowChrome from '../../../components/WindowChrome.astro';
+import RetroTag from '../../../components/RetroTag.astro';
+import {
+  barFillClass,
+  deltaClass,
+  formatNum,
+  formatSigned,
+  getOfficialsIndex,
+} from '../../../utils/data';
+
+const officials = getOfficialsIndex();
+const sorted = [...officials].sort((a, b) => (a.mean_adj_fta36_delta ?? 0) - (b.mean_adj_fta36_delta ?? 0));
+const rows = sorted.map((o) => ({
+  ...o,
+  barClass: barFillClass(o.mean_adj_fta36_delta),
+  barWidth: Math.round((o.suppressor_score ?? 0) * 100),
+  deltaCls: deltaClass(o.mean_adj_fta36_delta),
+}));
+---
+
+<Base title="Officials" current="data" description="Browse named NBA officials — suppressor/amplifier profiles.">
+  <section class="section page-header page-header--workspace">
+    <div class="container">
+      <p class="breadcrumb"><a href="/data">Data</a> / Officials</p>
+      <RetroTag label="DATABASE" />
+      <h1 class="display">Officials</h1>
+      <p class="lead">{officials.length} officials with player-pair profiles. Default sort: most suppressing first.</p>
+    </div>
+  </section>
+
+  <section class="section section--alt section--dither" style="padding-top:0">
+    <div class="container">
+      <WindowChrome title="official_index.db" showStatus status={`${officials.length} rows · sortable`}>
+        <SearchInput officials={officials} inputId="officials-index-search" />
+        <div class="table-wrap" style="margin-top:1rem">
+          <table class="data-table" id="officials-table">
+            <thead>
+              <tr>
+                <th data-sort="official_name">Official</th>
+                <th data-sort="pbp_name">PBP</th>
+                <th data-sort="suppressor_score" class="num">Score</th>
+                <th>Distribution</th>
+                <th data-sort="mean_adj_fta36_delta" class="num">Adj FTA/36 Δ</th>
+                <th data-sort="n_pairs" class="num">Pairs</th>
+                <th data-sort="total_games" class="num">Games</th>
+                <th data-sort="sf_per_game" class="num">SF/g</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((o) => (
+                <tr>
+                  <td data-key="official_name" data-value={o.official_name}>
+                    <a href={`/data/officials/${o.official_id}`}>{o.official_name}</a>
+                  </td>
+                  <td data-key="pbp_name" data-value={o.pbp_name}>{o.pbp_name}</td>
+                  <td class="num mono" data-key="suppressor_score" data-value={o.suppressor_score ?? ''}>{formatNum(o.suppressor_score, 2)}</td>
+                  <td>
+                    <div class="bar-cell">
+                      <div class="bar-track"><div class={`bar-fill ${o.barClass}`} style={`width:${o.barWidth}%`}></div></div>
+                    </div>
+                  </td>
+                  <td class={`num ${o.deltaCls}`} data-key="mean_adj_fta36_delta" data-value={o.mean_adj_fta36_delta ?? ''}>{formatSigned(o.mean_adj_fta36_delta)}</td>
+                  <td class="num" data-key="n_pairs" data-value={o.n_pairs ?? ''}>{o.n_pairs ?? '—'}</td>
+                  <td class="num" data-key="total_games" data-value={o.total_games ?? ''}>{o.total_games ?? '—'}</td>
+                  <td class="num mono" data-key="sf_per_game" data-value={o.sf_per_game ?? ''}>{formatNum(o.sf_per_game)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </WindowChrome>
+    </div>
+  </section>
+</Base>
+
+<script is:inline>
+  (() => {
+    const table = document.getElementById('officials-table');
+    if (!table) return;
+    const tbody = table.querySelector('tbody');
+    const headers = [...table.querySelectorAll('th[data-sort]')];
+    let sortKey = 'mean_adj_fta36_delta';
+    let sortDir = 'asc';
+    const cellVal = (row, key) => {
+      const c = row.querySelector(`[data-key="${key}"]`);
+      if (!c) return '';
+      const raw = c.getAttribute('data-value');
+      if (raw) { const n = Number(raw); return Number.isNaN(n) ? raw.toLowerCase() : n; }
+      return c.textContent.trim().toLowerCase();
+    };
+    const sort = () => {
+      [...tbody.querySelectorAll('tr')].sort((a, b) => {
+        const av = cellVal(a, sortKey), bv = cellVal(b, sortKey);
+        if (av < bv) return sortDir === 'asc' ? -1 : 1;
+        if (av > bv) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      }).forEach((r) => tbody.appendChild(r));
+    };
+    headers.forEach((h) => h.addEventListener('click', () => {
+      const k = h.getAttribute('data-sort');
+      if (!k) return;
+      if (sortKey === k) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      else { sortKey = k; sortDir = ['official_name','pbp_name'].includes(k) ? 'asc' : 'desc'; }
+      sort();
+    }));
+  })();
+</script>

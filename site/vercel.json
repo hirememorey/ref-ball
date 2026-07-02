@@ -1,0 +1,5 @@
+{
+  "buildCommand": "python scripts/build_site_data.py && npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install"
+}

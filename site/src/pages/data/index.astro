@@ -1,0 +1,56 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getMeta } from '../../utils/data';
+
+const meta = getMeta();
+---
+
+<Base title="Dataset" current="data" description="Per-official NBA shooting-foul attribution dataset.">
+  <section class="section page-header">
+    <div class="container">
+      <h1 class="display">Dataset</h1>
+      <p class="lead">
+        {meta.counts.officials} named officials, {meta.counts.players} players, and defense-adjusted FTA/36
+        deltas built from play-by-play attribution. All officials are named by design — that is the dataset's
+        value, not something we hide.
+      </p>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container card-grid">
+      <article class="card">
+        <h3>Official profiles</h3>
+        <p class="small muted">Suppressor/amplifier scores and per-player defense-adjusted deltas.</p>
+        <p><a href="/data/officials">Browse officials →</a></p>
+      </article>
+      <article class="card">
+        <h3>Player profiles</h3>
+        <p class="small muted">FTA rates across the officials each player shared games with.</p>
+        <p><a href="/data/players">Browse players →</a></p>
+      </article>
+      <article class="card">
+        <h3>Downloads</h3>
+        <p class="small muted">Parquet exports, schema, citation ({meta.license.data}).</p>
+        <p><a href="/data/download">Download artifacts →</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container prose">
+      <h2>Methodology</h2>
+      <p>
+        Shooting-foul calls are attributed to individual officials by parsing the referee name from the
+        unstructured <code>description</code> field in NBA play-by-play data. Layer 1 is the published,
+        browseable layer. Contact-type classification (Layer 2) and no-call detection (Layer 3) are
+        research frontiers — they appear in prose, not as browseable data here.
+      </p>
+      <p><a href="/thesis">Attribution methodology and ANOVA results →</a></p>
+      <p>
+        Data: <strong>{meta.license.data}</strong> · Code: <strong>{meta.license.code}</strong> ·
+        Author: <strong>{meta.author}</strong>
+      </p>
+    </div>
+  </section>
+</Base>

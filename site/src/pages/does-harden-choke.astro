@@ -1,0 +1,60 @@
+---
+import Base from '../layouts/Base.astro';
+import { getMeta } from '../utils/data';
+const meta = getMeta();
+---
+
+<Base
+  title="Does Harden Choke?"
+  current="dhc"
+  description="Does anything explain why some NBA stars have terrible playoff games more than others?"
+>
+  <section class="section">
+    <div class="container prose">
+      <h1 class="display">Does Harden Choke?</h1>
+      <p class="lead">
+        A 31-player study of why superstar scorers sometimes have terrible games in the playoffs.
+      </p>
+
+      <h2>The question</h2>
+      <p>
+        Does anything explain why some players have terrible games in the playoffs than other similar superstars?
+        Is there a common trigger — pressure, elimination games, tough defenses — or is each player's playoff
+        struggle its own story?
+      </p>
+
+      <h2>What we found</h2>
+      <p>
+        We didn't find a single trigger or pattern that explains the whole cohort. James Harden is a separate
+        case — his playoff floor collapses have a specific structure that doesn't generalize to the other 30
+        players we studied.
+      </p>
+      <p>
+        What <em>does</em> generalize: players who lose free throws from the regular season to the postseason are
+        more likely to have terrible games. When the whistle dries up, scoring floors drop. The relationship is
+        strong across the cohort (r = {meta.headlines.harden_fta_correlation}, p = 0.002), though it's not
+        universal — Jimmy Butler is a clear exception.
+      </p>
+
+      <h2>More detail</h2>
+      <ul>
+        <li>
+          Harden's elimination-game floor rate (14.6%) is actually <em>lower</em> than his non-elimination playoff
+          rate (23.2%) — the "choker in big moments" framing doesn't hold for him on that axis.
+        </li>
+        <li>
+          The "playoff whistle" isn't league-wide: the cohort's mean FTA shift from regular season to playoffs is
+          −0.05 FTA/36 — essentially noise on average.
+        </li>
+        <li>
+          Harden floors at high rates against both elite and weak defenses. Most stars in the cohort show a clear
+          opponent-quality gradient; Harden doesn't.
+        </li>
+      </ul>
+
+      <p>
+        Full write-up in the <a href="https://github.com/hirememorey/does-harden-choke">does-harden-choke repo</a>.
+      </p>
+    </div>
+  </section>
+</Base>

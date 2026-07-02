@@ -48,3 +48,9 @@ data/clips/
 # Pose / video model weights (downloaded automatically, large)
 *.pt
 landing_foul_clips.zip
+
+# Site build artifacts
+site/node_modules/
+site/dist/
+site/.astro/
+site/src/data/

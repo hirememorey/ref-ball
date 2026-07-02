@@ -1,0 +1,38 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getMeta } from '../../utils/data';
+const meta = getMeta();
+---
+
+<Base title="SSAC27" current="papers" description="Paper 1 — per-official foul attribution.">
+  <section class="section">
+    <div class="container prose">
+      <h1 class="display">SSAC27 — Paper 1</h1>
+      <p class="lead">Individual NBA Referees Have Systematically Different Effects on Free Throw Rates</p>
+
+      <div class="callout">
+        <p><strong>Timeline</strong></p>
+        <ul>
+          <li>Abstract deadline: October 1, 2026</li>
+          <li>Full paper deadline: December 4, 2026</li>
+        </ul>
+      </div>
+
+      <h2>Abstract</h2>
+      <p>NBA officiating is analyzed almost exclusively at the crew level. We parse the calling official from the <code>description</code> field of play-by-play data for 13,278 games (2014–25), construct per-official shooting foul profiles for 101 officials, and measure defense-adjusted FTA/36 deltas for 40 high-FTA players across 3,846 player-official pairs.</p>
+      <p>Individual officials produce significant heterogeneity (ANOVA p = {meta.headlines.anova_p.toExponential(0)}). Player-specific crew suppression scores predict playoff FTA deviation (Spearman r = {meta.headlines.crew_prediction_r}, p &lt; 0.001). Dataset published open regardless of conference outcome.</p>
+
+      <h2>Figures</h2>
+      <figure>
+        <img src="/figures/table_a_suppressor_amplifier.png" alt="Top suppressor and amplifier officials" width="900" />
+        <figcaption class="small muted">Table 1 — Top suppressor and amplifier officials</figcaption>
+      </figure>
+      <figure style="margin-top:2rem">
+        <img src="/figures/figure_b_crew_prediction_scatter.png" alt="Crew prediction scatter" width="900" />
+        <figcaption class="small muted">Figure 1 — Predicted crew suppression vs actual playoff FTA deviation (r = {meta.headlines.crew_prediction_r})</figcaption>
+      </figure>
+
+      <p><a href="/data">Browse the dataset →</a></p>
+    </div>
+  </section>
+</Base>

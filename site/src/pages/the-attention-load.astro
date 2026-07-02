@@ -1,0 +1,70 @@
+---
+import Base from '../layouts/Base.astro';
+import { getMeta } from '../utils/data';
+const meta = getMeta();
+const categories = [
+  { label: 'Ordinary contact fouls', rate: 4 },
+  { label: 'Off-ball monitoring', rate: 10 },
+  { label: 'Traveling & out-of-bounds', rate: 16 },
+  { label: 'Defensive 3s & shot clock', rate: 20 },
+];
+---
+
+<Base
+  title="What types of calls do refs miss?"
+  current="attention-load"
+  description="What types of calls do NBA refs miss, according to the Last Two Minute report data?"
+>
+  <section class="section">
+    <div class="container prose">
+      <h1 class="display">What types of calls do refs miss?</h1>
+      <p class="lead">
+        Using the NBA's Last Two Minute report — the league's public accounting of missed and incorrect calls in
+        clutch time.
+      </p>
+
+      <h2>The question</h2>
+      <p>
+        What types of calls do refs miss? Are errors spread evenly across call types, or do certain situations
+        produce more mistakes?
+      </p>
+
+      <h2>What we found</h2>
+      <p>
+        Errors are not uniform. Across 51,130 Last Two Minute events, miss rates vary sharply by call category.
+        Ordinary contact fouls are missed least often. Traveling, out-of-bounds, defensive three-seconds, and
+        off-ball monitoring situations are missed far more often — up to roughly <strong>{meta.headlines.attention_load_lift}×</strong> the
+        baseline error rate in the highest-risk contexts.
+      </p>
+
+      <div class="chart-bars">
+        {categories.map((c) => (
+          <div class="chart-bar-row">
+            <span>{c.label}</span>
+            <div class="chart-bar-track"><div class="chart-bar-fill" style={`width:${c.rate * 5}%`}></div></div>
+            <span class="mono">~{c.rate}%</span>
+          </div>
+        ))}
+      </div>
+
+      <h2>Holdout seasons</h2>
+      <table>
+        <thead><tr><th>Season</th><th>Baseline error rate</th><th>Top 10% risk contexts</th></tr></thead>
+        <tbody>
+          <tr><td>2021-22</td><td>7.7%</td><td>3.45× baseline</td></tr>
+          <tr><td>2022-23</td><td>6.2%</td><td>3.93× baseline</td></tr>
+          <tr><td>2023-24</td><td>6.0%</td><td>3.92× baseline</td></tr>
+          <tr><td>2024-25</td><td>4.5%</td><td>4.00× baseline</td></tr>
+        </tbody>
+      </table>
+
+      <h2>What this means</h2>
+      <p>
+        Refs don't miss calls at random. The hardest situations to officiate — multiple moving parts, off-ball
+        action, judgment calls on traveling and defensive positioning — are where errors concentrate. That's
+        useful context for replay review, crew training, and understanding why certain late-game calls feel
+        inconsistent.
+      </p>
+    </div>
+  </section>
+</Base>
