@@ -1,4 +1,4 @@
-# Development Handoff (July 1, 2026)
+# Development Handoff (July 2, 2026)
 
 Operational snapshot for a new developer or LLM picking up this codebase. For project goals, literature positioning, and long-term paper sequence, see the root [README.md](../../README.md).
 
@@ -12,13 +12,15 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 
 1. **SSAC27 Submission (Paper 1).** Abstract draft complete (~460 words, v2). Two publication-quality figures generated (Table 1: suppressor/amplifier profiles with named officials; Figure 1: crew prediction vs actual FTA deviation scatter, r=0.406). **Abstract deadline: October 1, 2026.** Full paper due December 4, 2026 if selected. Open-source decision resolved: publishing all data, named officials, no anonymization. See `documents/ssac27-abstract-draft.md` and `output/figures/`.
 
-2. **Step 10b — fine-tuned video classifier (Paper 2).** Manual ground truth **complete** (300/300 clips). LLM grader **exhausted** as sole classifier (~55% precision, 98% recall). **Frozen VideoMAE:** zero signal. **Colab fine-tune runs (2026-07-01):**
+2. **Step 10b — fine-tuned video classifier (Paper 2).** Manual ground truth **complete** (300/300 clips). LLM grader **exhausted** as sole classifier (~55% precision, 98% recall). **Frozen VideoMAE:** zero signal. **Colab fine-tune runs (2026-07-01–02):**
    - Run 1 (full clip): degenerate constant predictor (51% P, 100% R).
    - Run 2 (real clips, full window): ultra-conservative (80% P, 14% R).
    - Run 3 (anchors ±0.15): **69% P, 76% R** — best recall; gate MARGINAL.
-   - Run 4 (anchors ±0.10, `yes_weight=0.7`): **81% P, 59% R** — best precision; 4 FPs (down from 10); recall fails gate.
+   - Run 4 (anchors ±0.10, `yes_weight=0.7`): **81% P, 59% R** — best precision; 4 FPs; recall fails gate.
+   - Run 5 (±0.10, `yes_weight=0.85`, finetune=5): **75% P, 83% R** — best balance; 8 FPs / 5 FNs; precision fails gate.
+   - Post-Run 5 (2026-07-02): ensemble (VideoMAE + pose) **69% P / 93% R**; temporal window sweep (15 configs) best **77% P** — none clear gate.
    - LLM describe → rules (57-val): 50% P, 93% R.
-   - **START HERE:** Colab **Run 5** — blend Run 3/4: `yes_weight=0.85`, shorter finetune. See [Step 10b](#step-10b-fine-tuned-video-classifier--colab-run-5).
+   - **START HERE:** Colab **Run 6** — increase `unfreeze_layers` to 6–8. See [Step 10b](#step-10b-fine-tuned-video-classifier--colab-run-6).
 
 **Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 1-7), L2M validation, does-harden-choke merge, SSAC27 abstract draft + figures. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
 
@@ -49,9 +51,12 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | Downloaded video clips | `data/clips/landing_foul/{game_id}_{event_id}.mp4` | 284 clips (YES/NO only) | **Complete** — 960x540, ~8-12s each, gitignored |
 | Frozen VideoMAE embeddings | `data/processed/landing_foul_embeddings.npz` | 284 clips × 768-dim | **Complete** — CLS token from `videomae-base-finetuned-kinetics`; zero signal for landing fouls |
 | Train/val split | `data/processed/landing_foul_split.json` | 227 train / 57 val | **Complete** — stratified 80/20, seed=42, YES/NO only |
-| Fine-tune checkpoint | `data/processed/landing_foul_video_best.pt` | Run 4 (2026-07-01) | **81% P / 59% R** — best precision; gitignored |
-| Fine-tune metrics | `data/processed/landing_foul_video_metrics.json` | Run 4 (2026-07-01) | PROMISING — 4 FPs, 12 FNs; gitignored |
-| Run 3 checkpoint (reference) | Drive / local backup | Run 3 (2026-07-01) | **69% P / 76% R** — keep for ensemble |
+| Fine-tune checkpoint | `data/processed/landing_foul_video_best.pt` | Run 5 (2026-07-02) | **75% P / 83% R** — best balance; gitignored |
+| Fine-tune metrics | `data/processed/landing_foul_video_metrics.json` | Run 5 (2026-07-02) | PROMISING — 8 FPs, 5 FNs; gitignored |
+| Run 4 checkpoint (reference) | Drive / local backup | Run 4 (2026-07-01) | **81% P / 59% R** — best precision; keep for ensemble |
+| Run 3 checkpoint (reference) | Drive / local backup | Run 3 (2026-07-01) | **69% P / 76% R** — best recall; keep for ensemble |
+| Ensemble metrics | `data/processed/landing_foul_ensemble_metrics.json` | Run 5 + pose (2026-07-02) | Best **69% P / 93% R** @ w=0.95, t=0.45; gate not cleared; gitignored |
+| Temporal window sweep | `data/processed/landing_foul_temporal_window_sweep.json` | Run 5 ckpt (2026-07-02) | 15 configs; best **77% P** (live hw=0.05); gate not cleared; gitignored |
 | Clip anchors | `data/processed/landing_foul_clip_anchors.json` | **284 / 284** | **Complete** — committed; foul_frac per clip |
 | LLM describe val | `data/processed/landing_foul_llm_results_describe_val57.json` | 57-val | 50% P / 93% R — gitignored |
 | Pose keypoints | `data/processed/landing_foul_poses.json` | 284 clips × 60 frames | **Complete** — YOLOv8-Pose; 219 MB; gitignored |
@@ -106,6 +111,8 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | `src/landing_foul_pose_extract.py` | **Step 10e:** YOLOv8-Pose + BoT-SORT keypoint extraction (`extract`/`validate`/`visualize`) | `make pose-extract` / `make pose-validate` / `make pose-visualize` |
 | `src/landing_foul_pose_features.py` | **Step 10e:** closest-pair role assignment + 22 geometric features | `make pose-features` |
 | `src/landing_foul_pose_classify.py` | **Step 10e:** rules / XGBoost / CV classifier + threshold sweep | `make pose-classify MODE=xgboost` |
+| `src/landing_foul_ensemble.py` | **Step 10f:** VideoMAE + pose weighted ensemble + threshold sweep | `make ensemble` |
+| `src/landing_foul_temporal_sweep.py` | **Step 10c:** eval-only temporal window sweep on saved checkpoint | `PYTHONPATH=. python src/landing_foul_temporal_sweep.py` |
 | `src/generate_abstract_figures.py` | **SSAC27:** Table 1 (suppressor/amplifier profiles) + Figure 1 (crew prediction scatter) | `PYTHONPATH=. .venv/bin/python src/generate_abstract_figures.py` |
 
 All commands require `PYTHONPATH=.` from the project root (or use `make` targets).
@@ -273,7 +280,7 @@ Full run details, provider setup, and confusion matrices remain in the sections 
 
 ---
 
-### Step 10b: Fine-tuned video classifier — Colab Run 5
+### Step 10b: Fine-tuned video classifier — Colab Run 6
 
 **Goal:** Train a supervised video classifier on the 284 labeled manifest clips (YES/NO only, UNCLEAR excluded). Same quality gate as the LLM: **precision ≥ 85% on YES**, **recall ≥ 70% on YES** on a held-out validation set. Do **not** proceed to Steps 11–12 until the gate clears.
 
@@ -286,50 +293,59 @@ Full run details, provider setup, and confusion matrices remain in the sections 
 | 3 | 2026-07-01 | Anchors ±0.15, `yes_weight=1.0` | 0.688 | 0.759 | 22/10/7/18 | 7 finetune | MARGINAL — best recall |
 | 4 | 2026-07-01 | Anchors ±0.10, `yes_weight=0.7` | **0.810** | 0.586 | 17/4/12/24 | 5 head | PROMISING — best precision |
 | — | 2026-07-01 | LLM describe → rules | 0.500 | 0.931 | 27/27/2/1 | — | Rules too permissive |
-| **5** | **next** | **±0.10, `yes_weight=0.85`, finetune=5** | ? | ? | — | — | **START HERE** |
+| 5 | 2026-07-02 | ±0.10, `yes_weight=0.85`, finetune=5 | **0.750** | **0.828** | 24/8/5/20 | 7 finetune | PROMISING — precision fails gate |
+| **6** | **next** | **±0.10, `unfreeze_layers=6`, same as Run 5** | ? | ? | — | — | **START HERE** |
 
-**Run 4 takeaways:** FP count dropped 10 → 4 (Teague, Murray, Sochan, Osman still slip through). Recall dropped below gate (76% → 59%) because `yes_weight=0.7` was too aggressive. Best checkpoint was **head epoch 5** — finetune epochs degraded val metrics (overfit). No threshold on Run 4 checkpoint clears both gates (t=0.45 → 64% P / 72% R).
+**Run 5 takeaways:** Hit the Pareto middle between Runs 3 and 4 as hypothesized (75% P / 83% R). Recall clears gate; precision stuck at 75% (8 FPs vs Run 4's 4). FPs are borderline probs (0.51–0.71); FNs are low-confidence misses (0.21–0.48). Finetune epoch 7 beat head-only — unlike Run 4.
 
-**Run 5 hypothesis:** Keep Run 4's tight crop (±0.10) and low FP count, but raise `yes_weight` to 0.85 and shorten finetune to limit overfit. Target: ~75% P / ~70% R — the Pareto middle between Runs 3 and 4.
+**Post-Run 5 analysis (2026-07-02):**
 
-#### START HERE: Colab Run 5
-
-Open [`documents/development/colab-finetune.ipynb`](colab-finetune.ipynb) (GPU runtime). Defaults in §5:
-
-| Parameter | Run 3 | Run 4 | **Run 5** |
+| Experiment | Best result | Gate (P≥0.85, R≥0.70) | Notes |
 |---|---|---|---|
-| `anchor_half_width` | 0.15 | 0.10 | **0.10** (same cache as Run 4) |
-| `yes_weight` | 1.0 | 0.7 | **0.85** |
-| `finetune_epochs` | 15 | 15 | **5** |
-| `head_epochs` | 5 | 5 | 5 |
-| `finetune_lr` | 2e-5 | 2e-5 | 2e-5 |
-| Other | — | — | dropout=0.4, patience=6, seed=42 |
+| VideoMAE + Pose ensemble | **69% P / 93% R** @ w=0.95, t=0.45 | ❌ precision | Pose alone 54% P; ensemble boosts recall not precision |
+| Temporal window sweep (15 configs) | **77% P / 35% R** (live hw=0.05) | ❌ both | Cache crops 30–70% → 76% P / 86% R; no config clears gate |
+
+Scripts: `src/landing_foul_ensemble.py` (`make ensemble`), `src/landing_foul_temporal_sweep.py` (eval-only sweep on saved checkpoint).
+
+#### START HERE: Colab Run 6
+
+Open [`documents/development/colab-finetune.ipynb`](colab-finetune.ipynb) (GPU runtime). Change §5 defaults:
+
+| Parameter | Run 5 | **Run 6** |
+|---|---|---|
+| `anchor_half_width` | 0.10 | **0.10** (reuse cache) |
+| `yes_weight` | 0.85 | **0.85** |
+| `finetune_epochs` | 5 | **5** |
+| `unfreeze_layers` | 4 | **6** (try 8 if Run 6 misses) |
+| `head_epochs` | 5 | 5 |
+| `finetune_lr` | 2e-5 | 2e-5 |
+| Other | — | dropout=0.4, patience=6, seed=42 |
 
 **Workflow:**
 
 1. §2 Clone repo (anchors + split come with clone).
 2. §4 Upload `landing_foul_clips.zip` from Drive (`make video-package` locally).
-3. §5 Confirm Run 5 hyperparameters (notebook defaults updated).
-4. **§5b Frame cache** — **skip rebuild if you still have Run 4's cache** (`anchor_half_width=0.10`). Rebuild only if cache is missing or you changed half_width.
+3. §5 Set `unfreeze_layers = 6` (Run 6 hyperparameters).
+4. **§5b Frame cache** — **skip rebuild** (Run 4/5 cache at `anchor_half_width=0.10` is reusable).
 5. §6 Fine-tune → §7 Save checkpoint + metrics to Drive.
 
 Local equivalent:
 
 ```bash
-# Cache only if missing (Run 4 cache at half_width=0.10 is reusable):
+# Cache only if missing (Run 4/5 cache at half_width=0.10 is reusable):
 PYTHONPATH=. python src/landing_foul_video_finetune.py --build-cache --anchor-half-width 0.10
 
-make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 FINETUNE_EPOCHS=5
+make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 FINETUNE_EPOCHS=5 UNFREEZE_LAYERS=6
 ```
 
-**If Run 5 still misses the gate:**
+**If Run 6 still misses the gate:**
 
 | Next lever | Rationale |
 |---|---|
-| `yes_weight=0.9` | Nudge recall up if Run 5 precision ≥80% but recall <70% |
-| `phase=head` only | Run 4's best was head epoch 5; skip finetune entirely |
-| Ensemble Run 3 + Run 4 | Union for recall, intersection for precision; manual review on disagreement |
-| LLM Layer 2 on describe JSON | Text classifier on top of Gemini observations |
+| `unfreeze_layers=8` | More backbone capacity — HANDOFF decision tree for 75–84% P band |
+| `phase=head` only | Run 4's best was head epoch 5; finetune may overfit |
+| Hybrid LLM pre-filter | 98% recall → manual review of predicted-YES only (~7–8 hrs at scale) |
+| Scale manual classification | HTML tool with keyboard shortcuts (~50 min per 100 clips) |
 
 #### What's been built and tested
 
@@ -438,8 +454,8 @@ make video-cv FOLDS=5            # k-fold CV on frozen embeddings (baseline — 
 make video-pipeline              # full frozen baseline pipeline
 make video-annotate              # browser UI for per-clip contact anchors (complete)
 make video-finetune              # two-phase VideoMAE fine-tuning
-make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 FINETUNE_EPOCHS=5   # Run 5 defaults
-make landing-grade-describe PROVIDER=vertex MODEL=gemini-3.5-flash VAL_SPLIT=1 LOCAL_CLIPS=1
+make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 FINETUNE_EPOCHS=5 UNFREEZE_LAYERS=6   # Run 6 defaults
+make ensemble                    # VideoMAE + pose weighted ensemble
 make video-finetune-evaluate     # evaluate saved checkpoint
 ```
 
@@ -666,7 +682,7 @@ make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash EXTENDED=1
 | 1 — Extraction (all 284 clips) | **DONE** | 0 failures; 0 clips with no persons; 219 MB `landing_foul_poses.json` (gitignored). |
 | 2 — Geometric features (22) | **DONE** | Closest-pair-at-contact role assignment + nearest-neighbor trajectories (robust to ~24 BoT-SORT track IDs/clip from fragmentation). Core signal in correct direction: `defender_ankle_in_zone_frac` YES 0.113 vs NO 0.039. |
 | 3 — Classifier (rules + XGBoost) | **DONE** | Rules val 52% P / 100% R (YES-biased). XGBoost val **54% P / 52% R** (train OOF F1 0.61). Does not clear gate standalone. Top features: `defender_ankle_in_zone_frac`, `shooter_peak_height`, `defender_stance_width`, `contact_height` — all basketball-meaningful (Paper 2 interpretability). |
-| 4 — Ensemble with VideoMAE | **BLOCKED** | Needs Run 5 VideoMAE val predictions. Pose OOF/val probabilities saved in `landing_foul_pose_model.json` for ensembling. |
+| 4 — Ensemble with VideoMAE | **DONE** | Best **69% P / 93% R** @ w=0.95, t=0.45. Gate not cleared — ensemble boosts recall, not precision. See `landing_foul_ensemble_metrics.json`. |
 
 **Key engineering notes:**
 - Frame-by-frame inference (`persist=True`) instead of batched — avoids ultralytics' 5s batched-NMS timeout silently dropping whole frames.
@@ -679,7 +695,8 @@ make landing-grade-validate PROVIDER=vertex MODEL=gemini-3.5-flash EXTENDED=1
 - `src/landing_foul_pose_extract.py` — `extract` / `validate` / `visualize` subcommands
 - `src/landing_foul_pose_features.py` — role assignment + 22 geometric features → `landing_foul_pose_features.npz`
 - `src/landing_foul_pose_classify.py` — `rules` / `xgboost` / `cv` / `--evaluate-only`
-- `src/landing_foul_ensemble.py` — Phase 4 (not yet built)
+- `src/landing_foul_ensemble.py` — Phase 4 weighted ensemble (`make ensemble`)
+- `src/landing_foul_temporal_sweep.py` — eval-only temporal window sweep on saved checkpoint
 
 **Makefile targets:**
 ```bash
@@ -692,6 +709,7 @@ make pose-classify MODE=xgboost         # XGBoost + 5-fold CV + val threshold sw
 make pose-classify MODE=rules           # rule-based
 make pose-classify MODE=cv              # train-only CV estimate (no val peeking)
 make pose-evaluate                      # evaluate saved xgboost model
+make ensemble                           # VideoMAE + pose weighted ensemble
 ```
 
 **New deps (added to `requirements-ml.txt`):** `ultralytics>=8.2.0`, `xgboost>=2.1.0`. (`lap` is auto-installed by ultralytics for the tracker.)

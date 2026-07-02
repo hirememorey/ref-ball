@@ -267,3 +267,13 @@ pose-classify:
 pose-evaluate:
 	PYTHONPATH=. $(PYTHON) src/landing_foul_pose_classify.py --evaluate-only \
 		--threshold $(or $(THRESHOLD),0.5)
+
+# --- Step 10f: VideoMAE + Pose ensemble ---
+#   make ensemble
+#   make ensemble DEVICE=cpu
+
+ensemble:
+	PYTHONPATH=. $(PYTHON) src/landing_foul_ensemble.py \
+		--video-checkpoint $(or $(CHECKPOINT),data/processed/landing_foul_video_best.pt) \
+		--anchor-half-width $(or $(ANCHOR_HALF_WIDTH),0.10) \
+		--device $(or $(DEVICE),auto)

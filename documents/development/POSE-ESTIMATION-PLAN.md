@@ -1,6 +1,6 @@
 # Pose Estimation for Landing Foul Detection
 
-> **Status (2026-07-01): Phases 0–3 COMPLETE; Phase 4 BLOCKED on VideoMAE Run 5.**
+> **Status (2026-07-02): Phases 0–4 COMPLETE. Ensemble gate not cleared.**
 >
 | Phase | Status | Result |
 |---|---|---|
@@ -8,9 +8,9 @@
 | 1 — Extraction | **DONE** | 284/284 clips, 0 failures, 219 MB `landing_foul_poses.json`. |
 | 2 — Geometric features | **DONE** | 22 features. Closest-pair-at-contact role assignment + NN trajectories (robust to BoT-SORT fragmentation). Core signal correct direction. |
 | 3 — Classifier | **DONE** | XGBoost val **54% P / 52% R** (train OOF F1 0.61); rules 52% P / 100% R. Gate not cleared standalone. Top features: `defender_ankle_in_zone_frac`, `shooter_peak_height`, `contact_height`. |
-| 4 — Ensemble | **BLOCKED** | Needs VideoMAE Run 5 val predictions. Pose probabilities saved for ensembling. |
+| 4 — Ensemble | **DONE** | VideoMAE Run 5 + pose: best **69% P / 93% R** @ w=0.95, t=0.45. Gate not cleared — ensemble boosts recall, not precision. See `landing_foul_ensemble_metrics.json`. |
 >
-> **Decision-tree placement:** P < 75% and R < 65% → ensemble with VideoMAE (Phase 4).
+> **Decision-tree placement:** Ensemble complete; precision still below 85% gate. Next: Colab Run 6 (`unfreeze_layers=6`) or hybrid LLM pre-filter pipeline.
 > **Backend change vs. plan below:** ViTPose-Base/mmpose was replaced by YOLOv8-Pose/ultralytics (easier install on this machine, multi-person + tracker included). The phase structure, feature definitions, and classifier design below are implemented as written; the role-assignment heuristic was upgraded to closest-pair-at-contact + nearest-neighbor trajectories to handle BoT-SORT track fragmentation on crowded broadcast frames.
 
 Implementation plan for skeleton-based landing foul classification. This approach extracts human body keypoints from broadcast video and classifies fouls based on geometric relationships between shooter and defender body positions — bypassing the "feet are tiny in the frame" problem that limits both LLM grading and end-to-end video model approaches.
