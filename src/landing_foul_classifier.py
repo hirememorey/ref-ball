@@ -101,6 +101,13 @@ video { width: 100%; height: 100%; object-fit: contain; cursor: pointer; display
 }
 .ctx-bar strong { color: #fff; font-weight: 600; }
 .ctx-bar .desc { color: #aab; }
+.review-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  margin-right: 8px; vertical-align: middle;
+}
+.review-tag.fp { background: #4a1a2a; color: #ff8fa3; }
+.review-tag.fn { background: #1a3a4a; color: #7fd4ff; }
 .rubric {
   background: #0f1a30; border: 1px solid #1a3050; border-radius: 6px;
   padding: 10px 12px; margin-bottom: 14px; font-size: 12px; line-height: 1.45; color: #9ab;
@@ -166,6 +173,27 @@ video { width: 100%; height: 100%; object-fit: contain; cursor: pointer; display
   35%  { background: #1c3d2a; }
   100% { background: #16213e; }
 }
+.scrub-row {
+  flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  margin: 2px 0 6px;
+}
+.scrub-row input[type=range] {
+  flex: 1; height: 28px; accent-color: #e94560;
+}
+.time-label {
+  font-size: 11px; color: #8899aa; min-width: 78px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 700px), (pointer: coarse) {
+  :root { --page-width-pct: 100% !important; }
+  .resize-v { display: none; }
+  .resize-h { height: 20px; }
+  .vid-btn { padding: 10px 14px; font-size: 14px; }
+  .tag-btn { padding: 16px 18px; font-size: 16px; flex: 1 1 auto; }
+  .nav-btn { padding: 11px 16px; font-size: 14px; }
+  .app-shell { padding: 8px; }
+  .scrub-row input[type=range] { height: 32px; }
+}
 </style>
 </head>
 <body>
@@ -178,6 +206,12 @@ video { width: 100%; height: 100%; object-fit: contain; cursor: pointer; display
   <div class="video-wrap">
     <video id="player" autoplay loop playsinline></video>
   </div>
+  <div class="scrub-row">
+    <button class="vid-btn" id="btnStepBack" title="Previous frame">\u25c0|</button>
+    <input type="range" id="scrubBar" min="0" max="1000" value="0" step="1">
+    <button class="vid-btn" id="btnStepFwd" title="Next frame">|\u25b6</button>
+    <span class="time-label" id="timeLabel">0:00 / 0:00</span>
+  </div>
   <div class="video-toolbar">
     <button class="vid-btn" id="btnPlayPause">\u23f8 Pause</button>
     <button class="vid-btn speed-btn" data-rate="0.25">0.25\u00d7</button>
@@ -186,6 +220,7 @@ video { width: 100%; height: 100%; object-fit: contain; cursor: pointer; display
     <button class="vid-btn" id="btnReplay">\u21ba Replay</button>
   </div>
   <div class="ctx-bar" id="ctxBar">
+    <span id="ctxReviewTag"></span>
     <strong id="ctxPlayer">\u2014</strong>
     &middot; <span id="ctxGame">\u2014</span>
     &middot; <span id="ctxClock">\u2014</span>
@@ -281,30 +316,45 @@ function applyLayout() {
   document.documentElement.style.setProperty('--page-width-pct', layout.pageWidthPct + '%');
 }
 
+function pointOf(e) {
+  if (e.touches && e.touches.length) return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+  if (e.changedTouches && e.changedTouches.length) return { clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY };
+  return { clientX: e.clientX, clientY: e.clientY };
+}
+
 function setupResize(handle, onDrag) {
-  handle.addEventListener('mousedown', function(e) {
+  function onStart(e) {
     e.preventDefault();
     handle.classList.add('dragging');
-    function onMove(ev) { onDrag(ev); }
-    function onUp() {
+    function onMove(ev) {
+      if (ev.cancelable) ev.preventDefault();
+      onDrag(pointOf(ev));
+    }
+    function onEnd() {
       handle.classList.remove('dragging');
       document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
       saveState();
     }
     document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  });
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+  }
+  handle.addEventListener('mousedown', onStart);
+  handle.addEventListener('touchstart', onStart, { passive: false });
 }
 
-setupResize(document.getElementById('handleH'), function(e) {
+setupResize(document.getElementById('handleH'), function(pt) {
   var rect = document.getElementById('splitCol').getBoundingClientRect();
-  layout.videoRatio = Math.min(0.85, Math.max(0.15, (e.clientY - rect.top) / rect.height));
+  layout.videoRatio = Math.min(0.85, Math.max(0.15, (pt.clientY - rect.top) / rect.height));
   applyLayout();
 });
 
-setupResize(document.getElementById('handleV'), function(e) {
-  layout.pageWidthPct = Math.min(100, Math.max(50, (e.clientX / window.innerWidth) * 100));
+setupResize(document.getElementById('handleV'), function(pt) {
+  layout.pageWidthPct = Math.min(100, Math.max(50, (pt.clientX / window.innerWidth) * 100));
   applyLayout();
 });
 
@@ -354,6 +404,53 @@ document.getElementById('btnReplay').addEventListener('click', function(e) {
   replay();
 });
 
+var FRAME_DURATION = 1 / 30;
+var scrubBar   = document.getElementById('scrubBar');
+var timeLabel  = document.getElementById('timeLabel');
+var scrubbing  = false;
+
+function fmtTime(t) {
+  if (!isFinite(t)) return '0:00';
+  var m = Math.floor(t / 60), s = Math.floor(t % 60);
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+function updateTimeUI() {
+  if (video.duration) scrubBar.value = Math.round((video.currentTime / video.duration) * 1000);
+  timeLabel.textContent = fmtTime(video.currentTime) + ' / ' + fmtTime(video.duration);
+}
+
+function stepFrame(delta) {
+  video.pause();
+  var t = video.currentTime + delta;
+  video.currentTime = Math.max(0, Math.min(video.duration || t, t));
+}
+
+video.addEventListener('timeupdate', function() { if (!scrubbing) updateTimeUI(); });
+video.addEventListener('loadedmetadata', updateTimeUI);
+video.addEventListener('seeked', updateTimeUI);
+
+scrubBar.addEventListener('input', function() {
+  scrubbing = true;
+  if (video.duration) video.currentTime = (scrubBar.value / 1000) * video.duration;
+  timeLabel.textContent = fmtTime(video.currentTime) + ' / ' + fmtTime(video.duration);
+});
+['mousedown', 'touchstart'].forEach(function(ev) {
+  scrubBar.addEventListener(ev, function() { video.pause(); scrubbing = true; });
+});
+['mouseup', 'touchend', 'change'].forEach(function(ev) {
+  scrubBar.addEventListener(ev, function() { scrubbing = false; });
+});
+
+document.getElementById('btnStepBack').addEventListener('click', function(e) {
+  e.stopPropagation();
+  stepFrame(-FRAME_DURATION);
+});
+document.getElementById('btnStepFwd').addEventListener('click', function(e) {
+  e.stopPropagation();
+  stepFrame(FRAME_DURATION);
+});
+
 document.addEventListener('keydown', function(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.code === 'Space') {
@@ -373,6 +470,12 @@ document.addEventListener('keydown', function(e) {
   } else if (e.key === ']') {
     var j = SPEEDS.indexOf(playbackRate);
     if (j < SPEEDS.length - 1) setPlaybackRate(SPEEDS[j + 1]);
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    stepFrame(-FRAME_DURATION);
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    stepFrame(FRAME_DURATION);
   }
 });
 
@@ -436,6 +539,15 @@ function loadClip(idx) {
 
   var player = c.fouled_player_name || '\u2014';
   var matchup = (c.fouled_team_tricode || '?') + ' vs ' + (c.opponent || c.committing_team_tricode || '?');
+  var tagEl = document.getElementById('ctxReviewTag');
+  if (c.review_tag) {
+    var cls = c.review_tag.indexOf('FP') === 0 ? 'fp' : 'fn';
+    tagEl.textContent = c.review_tag;
+    tagEl.className = 'review-tag ' + cls;
+  } else {
+    tagEl.textContent = '';
+    tagEl.className = '';
+  }
   document.getElementById('ctxPlayer').textContent = player;
   document.getElementById('ctxGame').textContent = matchup + ' (' + c.game_id + ')';
   var p   = c.period || '?';
