@@ -1,0 +1,32 @@
+#!/usr/bin/expect -f
+# Run a remote command on RunPod via ssh.runpod.io proxy (requires PTY).
+# RunPod ignores remote commands passed as ssh args; we must type into the shell.
+# Usage: runpod-ssh.exp <pod_host_id> <remote_command> [timeout_seconds]
+set timeout [expr {[lindex $argv 2] eq "" ? 600 : [lindex $argv 2]}]
+set pod_host_id [lindex $argv 0]
+set cmd [lindex $argv 1]
+if {$pod_host_id eq "" || $cmd eq ""} {
+    puts stderr "usage: runpod-ssh.exp <pod_id-hostid> <command> \[timeout_seconds\]"
+    exit 1
+}
+set key "$env(HOME)/.ssh/id_ed25519"
+spawn ssh -tt -o StrictHostKeyChecking=no -i $key ${pod_host_id}@ssh.runpod.io
+expect {
+    -re "Error: Your SSH client doesn't support PTY" { puts stderr "PTY error"; exit 1 }
+    -re "Permission denied" { puts stderr "auth failed"; exit 1 }
+    -re {root@[^:]+:[^#]*# } {}
+    -re {# $} {}
+    timeout { puts stderr "timeout waiting for shell prompt"; exit 1 }
+}
+send "$cmd\r"
+expect {
+    -re {root@[^:]+:[^#]*# } {}
+    -re {# $} {}
+    timeout { puts stderr "timeout waiting for command to finish"; exit 1 }
+}
+send "exit\r"
+expect eof
+catch wait result
+set exitcode [lindex $result 3]
+if {$exitcode eq ""} { set exitcode 0 }
+exit $exitcode
