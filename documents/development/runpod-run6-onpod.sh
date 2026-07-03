@@ -35,6 +35,11 @@ elif [[ "$n_clips" -lt 280 ]] || [[ ! -f "$frames_path" ]]; then
 fi
 
 if [[ "$need_fetch" == true ]]; then
+  if [[ -z "${GDRIVE_CLIPS_URL:-}" ]]; then
+    echo "ERROR: clips/cache missing and GDRIVE_CLIPS_URL is unset."
+    echo "  Export FETCH_FROM_DRIVE=1 and GDRIVE_CLIPS_URL, or use: bash runpod-run6.sh --drive --run"
+    exit 1
+  fi
   if [[ ! -f "$DRIVE_FETCH_SCRIPT" ]]; then
     echo "ERROR: $DRIVE_FETCH_SCRIPT not found (git pull or push latest scripts)."
     exit 1

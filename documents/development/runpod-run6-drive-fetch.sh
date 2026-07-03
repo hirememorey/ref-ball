@@ -24,6 +24,11 @@ BUILD_FRAME_CACHE="${BUILD_FRAME_CACHE:-auto}"  # auto | always | never
 
 mkdir -p data/clips data/processed
 
+if ! command -v unzip &>/dev/null; then
+  echo "Installing unzip..."
+  apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq unzip
+fi
+
 pip install -q gdown
 
 drive_download() {

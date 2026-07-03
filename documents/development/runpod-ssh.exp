@@ -1,6 +1,9 @@
 #!/usr/bin/expect -f
 # Run a remote command on RunPod via ssh.runpod.io proxy (requires PTY).
 # RunPod ignores remote commands passed as ssh args; we must type into the shell.
+# Waits for sentinel __RUNPOD_DONE__<exitcode> instead of matching shell prompts
+# (progress bars and pip output can contain '#' and confuse prompt matching).
+#
 # Usage: runpod-ssh.exp <pod_host_id> <remote_command> [timeout_seconds]
 set timeout [expr {[lindex $argv 2] eq "" ? 600 : [lindex $argv 2]}]
 set pod_host_id [lindex $argv 0]
@@ -10,6 +13,7 @@ if {$pod_host_id eq "" || $cmd eq ""} {
     exit 1
 }
 set key "$env(HOME)/.ssh/id_ed25519"
+set wrapped "( $cmd ); echo __RUNPOD_DONE__\$?"
 spawn ssh -tt -o StrictHostKeyChecking=no -i $key ${pod_host_id}@ssh.runpod.io
 expect {
     -re "Error: Your SSH client doesn't support PTY" { puts stderr "PTY error"; exit 1 }
@@ -18,15 +22,14 @@ expect {
     -re {# $} {}
     timeout { puts stderr "timeout waiting for shell prompt"; exit 1 }
 }
-send "$cmd\r"
+send "$wrapped\r"
 expect {
-    -re {root@[^:]+:[^#]*# } {}
-    -re {# $} {}
-    timeout { puts stderr "timeout waiting for command to finish"; exit 1 }
+    -re {__RUNPOD_DONE__(\d+)} {
+        set exitcode $expect_out(1,string)
+    }
+    timeout { puts stderr "timeout waiting for command (sentinel)"; exit 1 }
 }
 send "exit\r"
 expect eof
-catch wait result
-set exitcode [lindex $result 3]
 if {$exitcode eq ""} { set exitcode 0 }
 exit $exitcode
