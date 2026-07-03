@@ -20,10 +20,10 @@ The dataset has three layers, each with a different novelty moat:
 |---|---|---|---|
 | **Layer 1: Per-official attribution** | Official name parsed from PBP `description` field | Weak (anyone can parse it) | **Complete** — 13,278 games ingested, 13,464 with crew |
 | **Player x official profiles** | FTA/36 deltas per player under each official, defense-adjusted | Medium (requires crew + game logs) | **Built (40 players)** — full crew, 3,846 pairs, ANOVA p=0.000003 |
-| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Active** — Run 5: **75% P / 83% R**; Run 4: **81% P / 59% R**; ensemble **69% P / 93% R**; **Colab Run 6** (`unfreeze_layers=6`); pose **54% P standalone** |
+| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Active** — Run 5: **75% P / 83% R**; Run 4: **81% P / 59% R**; Run 6: **75% P / 62% R**; ensemble **69% P / 93% R**; **Run 7** (`phase=head`); pose **54% P standalone** |
 | **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
 
-**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (300/300 clips, merged to 335 rows). Step 10 LLM grader is **exhausted** (best: 55% precision, 98% recall). Step 10b frozen VideoMAE baseline tested — **zero signal**. Step 10c Colab: Run 5 **75% P / 83% R** (best balance), Run 4 **81% P / 59% R** (best precision). Post-Run 5: ensemble **69% P / 93% R**, temporal window sweep best **77% P** — gate not cleared. **Active frontier: Colab Run 6** — `unfreeze_layers=6`, same Run 5 config. Step 10e Pose Phases 0–4 **complete** (ensemble done, gate not cleared). See [HANDOFF.md](documents/development/HANDOFF.md) Step 10b.
+**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (300/300 clips, merged to 335 rows). Step 10 LLM grader is **exhausted** (best: 55% precision, 98% recall). Step 10b frozen VideoMAE baseline tested — **zero signal**. Step 10c Colab/RunPod: Run 5 **75% P / 83% R** (best balance), Run 4 **81% P / 59% R** (best precision), Run 6 **75% P / 62% R** (`unfreeze_layers=6`, gate not cleared). Post-Run 5: ensemble **69% P / 93% R**, temporal window sweep best **77% P** — gate not cleared. **Active frontier: Run 7** — `phase=head` only (Run 4 path) or hybrid LLM pre-filter. Step 10e Pose Phases 0–4 **complete** (ensemble done, gate not cleared). See [HANDOFF.md](documents/development/HANDOFF.md) Step 10b.
 
 ## The Paper Sequence
 
@@ -147,7 +147,7 @@ LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 9-12 — ACTIVE)
 14. Variance analysis       →  (TBD)                             →  ANOVA on per-official rates
 ```
 
-Steps 1-11 (data + labels) are **complete**. Step 12b frozen baseline is **complete** (zero signal). Step 12c fine-tuning: Run 5 **75% P / 83% R**, Run 4 **81% P / 59% R**. Step 12d anchors **complete** (284/284). Step 12f ensemble + temporal sweep **complete** (gate not cleared). **Active frontier:** Colab Run 6 (`unfreeze_layers=6`). See [HANDOFF.md](documents/development/HANDOFF.md).
+Steps 1-11 (data + labels) are **complete**. Step 12b frozen baseline is **complete** (zero signal). Step 12c fine-tuning: Run 5 **75% P / 83% R**, Run 4 **81% P / 59% R**, Run 6 **75% P / 62% R**. Step 12d anchors **complete** (284/284). Step 12f ensemble + temporal sweep **complete** (gate not cleared). **Active frontier:** Run 7 (`phase=head` only) or hybrid LLM pre-filter. See [HANDOFF.md](documents/development/HANDOFF.md).
 
 ### 1. Ingest (Layer 1 — built)
 
@@ -338,7 +338,7 @@ Landing fouls are the ideal starting category because:
 
 1. **Ground truth (manual, 300 clips) — COMPLETE:** 300 clips classified via HTML tool → `data/landing_foul_classifications.csv`. Merged with v3 labels via `make landing-merge` → `data/landing_foul_ground_truth.csv` (335 rows).
 2. **LLM grader (Step 10) — EXHAUSTED:** Best result 55% precision / 98% recall. Do not iterate further.
-3. **Fine-tuned video classifier (Step 10b/c) — ACTIVE:** Frozen VideoMAE baseline tested (zero signal). End-to-end fine-tuning: Run 5 **75% P / 83% R** (best balance), Run 4 **81% P / 59% R** (best precision). Post-Run 5 ensemble **69% P / 93% R** and temporal sweep (best **77% P**) did not clear gate. **Colab Run 6 next** (`unfreeze_layers=6`). See [HANDOFF.md Step 10b](documents/development/HANDOFF.md#step-10b-fine-tuned-video-classifier--colab-run-6).
+3. **Fine-tuned video classifier (Step 10b/c) — ACTIVE:** Frozen VideoMAE baseline tested (zero signal). End-to-end fine-tuning: Run 5 **75% P / 83% R** (best balance), Run 4 **81% P / 59% R** (best precision), Run 6 **75% P / 62% R** (unfreeze_layers=6, gate not cleared). Post-Run 5 ensemble **69% P / 93% R** and temporal sweep (best **77% P**) did not clear gate. **Run 7 next:** `phase=head` only or hybrid LLM pre-filter. See [HANDOFF.md Step 10b](documents/development/HANDOFF.md#step-10b-fine-tuned-video-classifier--colab-run-6).
 4. **Pose estimation (Step 10e) — Phases 0–4 COMPLETE:** YOLOv8-Pose + BoT-SORT keypoints extracted for all 284 clips. XGBoost val **54% P / 52% R** standalone. Ensemble with VideoMAE **69% P / 93% R** — gate not cleared. See [POSE-ESTIMATION-PLAN.md](documents/development/POSE-ESTIMATION-PLAN.md).
 5. **Scale (Step 11):** ~100-150 shooting foul clips per official across 10-15 officials spanning suppressor/amplifier spectrum.
 6. **Analysis (Step 12):** ANOVA on per-official landing foul rates. Correlation with suppressor/amplifier profiles.

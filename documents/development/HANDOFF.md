@@ -18,9 +18,10 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
    - Run 3 (anchors ±0.15): **69% P, 76% R** — best recall; gate MARGINAL.
    - Run 4 (anchors ±0.10, `yes_weight=0.7`): **81% P, 59% R** — best precision; 4 FPs; recall fails gate.
    - Run 5 (±0.10, `yes_weight=0.85`, finetune=5): **75% P, 83% R** — best balance; 8 FPs / 5 FNs; precision fails gate.
+   - Run 6 (2026-07-03, RunPod RTX 3090, `unfreeze_layers=6`): **75% P, 62% R** — same precision as Run 5, worse recall (6 FPs / 11 FNs); gate not cleared.
    - Post-Run 5 (2026-07-02): ensemble (VideoMAE + pose) **69% P / 93% R**; temporal window sweep (15 configs) best **77% P** — none clear gate.
    - LLM describe → rules (57-val): 50% P, 93% R.
-   - **START HERE:** Colab **Run 6** — increase `unfreeze_layers` to 6–8. See [Step 10b](#step-10b-fine-tuned-video-classifier--colab-run-6).
+   - **START HERE:** **Run 7** — `phase=head` only (Run 4 hit **81% P** at head epoch 5) or hybrid LLM pre-filter. See [Step 10b](#step-10b-fine-tuned-video-classifier--colab-run-6).
 
 **Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 1-7), L2M validation, does-harden-choke merge, SSAC27 abstract draft + figures. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
 
@@ -51,8 +52,9 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
 | Downloaded video clips | `data/clips/landing_foul/{game_id}_{event_id}.mp4` | 284 clips (YES/NO only) | **Complete** — 960x540, ~8-12s each, gitignored |
 | Frozen VideoMAE embeddings | `data/processed/landing_foul_embeddings.npz` | 284 clips × 768-dim | **Complete** — CLS token from `videomae-base-finetuned-kinetics`; zero signal for landing fouls |
 | Train/val split | `data/processed/landing_foul_split.json` | 227 train / 57 val | **Complete** — stratified 80/20, seed=42, YES/NO only |
-| Fine-tune checkpoint | `data/processed/landing_foul_video_best.pt` | Run 5 (2026-07-02) | **75% P / 83% R** — best balance; gitignored |
-| Fine-tune metrics | `data/processed/landing_foul_video_metrics.json` | Run 5 (2026-07-02) | PROMISING — 8 FPs, 5 FNs; gitignored |
+| Fine-tune checkpoint | `data/processed/landing_foul_video_best.pt` | Run 6 (2026-07-03) | **75% P / 62% R** — RunPod; gate not cleared; gitignored |
+| Fine-tune metrics | `data/processed/landing_foul_video_metrics.json` | Run 6 (2026-07-03) | PROMISING — 6 FPs, 11 FNs; gitignored |
+| Run 5 checkpoint (reference) | Drive / local backup | Run 5 (2026-07-02) | **75% P / 83% R** — best balance; keep for comparison |
 | Run 4 checkpoint (reference) | Drive / local backup | Run 4 (2026-07-01) | **81% P / 59% R** — best precision; keep for ensemble |
 | Run 3 checkpoint (reference) | Drive / local backup | Run 3 (2026-07-01) | **69% P / 76% R** — best recall; keep for ensemble |
 | Ensemble metrics | `data/processed/landing_foul_ensemble_metrics.json` | Run 5 + pose (2026-07-02) | Best **69% P / 93% R** @ w=0.95, t=0.45; gate not cleared; gitignored |
@@ -294,7 +296,10 @@ Full run details, provider setup, and confusion matrices remain in the sections 
 | 4 | 2026-07-01 | Anchors ±0.10, `yes_weight=0.7` | **0.810** | 0.586 | 17/4/12/24 | 5 head | PROMISING — best precision |
 | — | 2026-07-01 | LLM describe → rules | 0.500 | 0.931 | 27/27/2/1 | — | Rules too permissive |
 | 5 | 2026-07-02 | ±0.10, `yes_weight=0.85`, finetune=5 | **0.750** | **0.828** | 24/8/5/20 | 7 finetune | PROMISING — precision fails gate |
-| **6** | **next** | **±0.10, `unfreeze_layers=6`, same as Run 5** | ? | ? | — | — | **START HERE** |
+| **6** | 2026-07-03 | ±0.10, `unfreeze_layers=6`, RunPod | **0.750** | 0.621 | 18/6/11/22 | 10 finetune | PROMISING — recall fails gate |
+| **7** | **next** | **`phase=head` only** (Run 4 path) or hybrid LLM | ? | ? | — | — | **START HERE** |
+
+**Run 6 takeaways (2026-07-03, RunPod RTX 3090):** Increasing `unfreeze_layers` from 4→6 did **not** beat Run 5. Precision tied at **75%** (6 FPs vs Run 5's 8); recall dropped to **62%** (11 FNs vs 5). Finetune epoch 6 was YES-biased (57% P / 97% R, 21 FPs). Best epoch 10 (finetune). Threshold sweep: no operating point clears both gates (best tradeoff t=0.45: 75% P / 72% R). **Conclusion:** more backbone unfreezing hurts recall; Run 4's head-only path (81% P) is the next lever.
 
 **Run 5 takeaways:** Hit the Pareto middle between Runs 3 and 4 as hypothesized (75% P / 83% R). Recall clears gate; precision stuck at 75% (8 FPs vs Run 4's 4). FPs are borderline probs (0.51–0.71); FNs are low-confidence misses (0.21–0.48). Finetune epoch 7 beat head-only — unlike Run 4.
 
@@ -307,46 +312,36 @@ Full run details, provider setup, and confusion matrices remain in the sections 
 
 Scripts: `src/landing_foul_ensemble.py` (`make ensemble`), `src/landing_foul_temporal_sweep.py` (eval-only sweep on saved checkpoint).
 
-#### START HERE: Colab Run 6 (or RunPod if GPU quota blocked)
+#### START HERE: Run 7 (head-only) or hybrid fallback
 
-**Colab:** Open [`documents/development/colab-finetune.ipynb`](colab-finetune.ipynb) (GPU runtime). §5 defaults are pre-set for Run 6 (`unfreeze_layers=6`).
+**Run 6 complete (2026-07-03).** Trained on RunPod RTX 3090 via Google Drive → pod pipeline. Results: **75% P / 62% R** — gate not cleared. Artifacts saved locally: `data/processed/landing_foul_video_best.pt`, `landing_foul_video_metrics.json`.
 
-**RunPod (Colab quota blocked):** `bash documents/development/runpod-run6.sh` — creates pod, prints upload/SSH steps; on-pod training via `runpod-run6-onpod.sh`. RTX A5000 ~$0.27/hr, expect ~$0.50 total.
+**Recommended next experiment — Run 7 (`phase=head` only):**
 
-| Parameter | Run 5 | **Run 6** |
-|---|---|---|
-| `anchor_half_width` | 0.10 | **0.10** (reuse cache) |
-| `yes_weight` | 0.85 | **0.85** |
-| `finetune_epochs` | 5 | **5** |
-| `unfreeze_layers` | 4 | **6** (try 8 if Run 6 misses) |
-| `head_epochs` | 5 | 5 |
-| `finetune_lr` | 2e-5 | 2e-5 |
-| Other | — | dropout=0.4, patience=6, seed=42 |
-
-**Workflow:**
-
-1. §2 Clone repo (anchors + split come with clone).
-2. §4 Upload `landing_foul_clips.zip` from Drive (`make video-package` locally).
-3. §5 Run config cell (defaults: `unfreeze_layers=6`).
-4. **§5b Frame cache** — **skip rebuild** (Run 4/5 cache at `anchor_half_width=0.10` is reusable).
-5. §6 Fine-tune → §7 Save checkpoint + metrics to Drive.
-
-Local equivalent:
+Run 4 achieved **81% P / 59% R** with head-only training (best precision, 4 FPs). Run 5/6 finetune phases hurt recall. Try head-only with Run 5's `yes_weight=0.85`:
 
 ```bash
-# Cache only if missing (Run 4/5 cache at half_width=0.10 is reusable):
-PYTHONPATH=. python src/landing_foul_video_finetune.py --build-cache --anchor-half-width 0.10
-
-make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 FINETUNE_EPOCHS=5 UNFREEZE_LAYERS=6
+make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 PHASE=head HEAD_EPOCHS=10
 ```
 
-**If Run 6 still misses the gate:**
+**RunPod (if Colab GPU blocked):**
+
+```bash
+cp documents/development/runpod-drive.env.example documents/development/runpod-drive.env
+# paste GDRIVE_CLIPS_URL, then:
+bash documents/development/runpod-run6.sh --drive --run
+```
+
+Uses `runpod-run6-drive-fetch.sh` (Drive download + on-pod frame cache). RTX 3090 ~$0.22/hr.
+
+**Colab:** [`documents/development/colab-finetune.ipynb`](colab-finetune.ipynb) — set `phase='head'`, `unfreeze_layers=0`.
+
+**If Run 7 still misses the gate:**
 
 | Next lever | Rationale |
 |---|---|
-| `unfreeze_layers=8` | More backbone capacity — HANDOFF decision tree for 75–84% P band |
-| `phase=head` only | Run 4's best was head epoch 5; finetune may overfit |
 | Hybrid LLM pre-filter | 98% recall → manual review of predicted-YES only (~7–8 hrs at scale) |
+| Ensemble Run 4 + Run 5 checkpoints | Different precision/recall tradeoffs |
 | Scale manual classification | HTML tool with keyboard shortcuts (~50 min per 100 clips) |
 
 #### What's been built and tested
@@ -458,7 +453,7 @@ make video-cv FOLDS=5            # k-fold CV on frozen embeddings (baseline — 
 make video-pipeline              # full frozen baseline pipeline
 make video-annotate              # browser UI for per-clip contact anchors (complete)
 make video-finetune              # two-phase VideoMAE fine-tuning
-make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 FINETUNE_EPOCHS=5 UNFREEZE_LAYERS=6   # Run 6 defaults
+make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 PHASE=head HEAD_EPOCHS=10   # Run 7 defaults
 make ensemble                    # VideoMAE + pose weighted ensemble
 make video-finetune-evaluate     # evaluate saved checkpoint
 ```

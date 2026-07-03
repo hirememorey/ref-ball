@@ -46,30 +46,20 @@ pod_status() {
   }'
 }
 
+runpod_api_key() {
+  grep '^apikey' "$HOME/.runpod/config.toml" | sed 's/.*= "\(.*\)"/\1/'
+}
+
 pod_ssh_host() {
   local pod_id="$1"
-  local attempt host
+  local attempt host apikey
+  apikey="$(runpod_api_key)"
   for attempt in 1 2 3 4 5 6 7 8 9 10; do
-    host="$(python3 - <<PY
-import json, os, sys, time
-pod_id = "$pod_id"
-apikey = open(os.path.expanduser("~/.runpod/config.toml")).read().split('apikey = "')[1].split('"')[0]
-q = '''query { pod(input: {podId: "%s"}) { machine { podHostId } desiredStatus } }''' % pod_id
-import urllib.request
-req = urllib.request.Request(
-    "https://api.runpod.io/graphql",
-    data=json.dumps({"query": q}).encode(),
-    headers={"Content-Type": "application/json", "Authorization": "Bearer " + apikey},
-)
-try:
-    resp = json.load(urllib.request.urlopen(req))
-except Exception as e:
-    print("", end="")
-    sys.exit(0)
-host = resp.get("data", {}).get("pod", {}).get("machine", {}).get("podHostId") or ""
-print(host)
-PY
-)"
+    host="$(curl -sf -X POST https://api.runpod.io/graphql \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $apikey" \
+      -d "{\"query\":\"query { pod(input: {podId: \\\"$pod_id\\\"}) { machine { podHostId } } }\"}" \
+      | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('data',{}).get('pod',{}).get('machine',{}).get('podHostId',''))" 2>/dev/null || true)"
     if [[ -n "$host" ]]; then
       echo "$host"
       return 0
@@ -223,11 +213,17 @@ if [[ "$DRIVE_MODE" == 1 ]]; then
   if [[ -n "${UNFREEZE_LAYERS:-}" ]]; then
     REMOTE_ENV="$REMOTE_ENV UNFREEZE_LAYERS=$(printf '%q' "$UNFREEZE_LAYERS")"
   fi
+  if [[ -n "${PHASE:-}" ]]; then
+    REMOTE_ENV="$REMOTE_ENV PHASE=$(printf '%q' "$PHASE")"
+  fi
+  if [[ -n "${HEAD_EPOCHS:-}" ]]; then
+    REMOTE_ENV="$REMOTE_ENV HEAD_EPOCHS=$(printf '%q' "$HEAD_EPOCHS")"
+  fi
 
   REMOTE_CMD="cd /workspace/ref-ball && $REMOTE_ENV bash documents/development/runpod-run6-onpod.sh"
 
   echo ""
-  echo "=== Step 3: Drive fetch + Run 6 training on pod ==="
+  echo "=== Step 3: Drive fetch + training on pod ==="
   if [[ "$AUTO_RUN" == 1 ]]; then
     "$SSH_EXP" "$POD_HOST" "$REMOTE_CMD" 14400
     echo ""

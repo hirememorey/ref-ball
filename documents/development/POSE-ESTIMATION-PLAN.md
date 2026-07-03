@@ -10,7 +10,7 @@
 | 3 — Classifier | **DONE** | XGBoost val **54% P / 52% R** (train OOF F1 0.61); rules 52% P / 100% R. Gate not cleared standalone. Top features: `defender_ankle_in_zone_frac`, `shooter_peak_height`, `contact_height`. |
 | 4 — Ensemble | **DONE** | VideoMAE Run 5 + pose: best **69% P / 93% R** @ w=0.95, t=0.45. Gate not cleared — ensemble boosts recall, not precision. See `landing_foul_ensemble_metrics.json`. |
 >
-> **Decision-tree placement:** Ensemble complete; precision still below 85% gate. Next: Colab Run 6 (`unfreeze_layers=6`) or hybrid LLM pre-filter pipeline.
+> **Decision-tree placement:** Ensemble complete; precision still below 85% gate. Run 6 (`unfreeze_layers=6`) tied Run 5 precision (75%) but hurt recall (62%). Next: **Run 7 `phase=head` only** (Run 4: 81% P) or hybrid LLM pre-filter.
 > **Backend change vs. plan below:** ViTPose-Base/mmpose was replaced by YOLOv8-Pose/ultralytics (easier install on this machine, multi-person + tracker included). The phase structure, feature definitions, and classifier design below are implemented as written; the role-assignment heuristic was upgraded to closest-pair-at-contact + nearest-neighbor trajectories to handle BoT-SORT track fragmentation on crowded broadcast frames.
 
 Implementation plan for skeleton-based landing foul classification. This approach extracts human body keypoints from broadcast video and classifies fouls based on geometric relationships between shooter and defender body positions — bypassing the "feet are tiny in the frame" problem that limits both LLM grading and end-to-end video model approaches.

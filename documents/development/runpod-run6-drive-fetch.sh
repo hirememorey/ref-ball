@@ -98,7 +98,7 @@ fi
 if [[ "$need_build" == true ]]; then
   echo ""
   echo "=== Building frame cache (anchor_half_width=$ANCHOR_HALF_WIDTH) ==="
-  pip install -q transformers opencv-python-headless tqdm scikit-learn
+  pip install -q pandas transformers opencv-python-headless tqdm scikit-learn
   python3 src/landing_foul_video_finetune.py --build-cache \
     --temporal-window "$TEMPORAL_WINDOW" \
     --anchor-half-width "$ANCHOR_HALF_WIDTH" \

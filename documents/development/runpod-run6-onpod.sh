@@ -48,7 +48,7 @@ if [[ "$need_fetch" == true ]]; then
   bash "$DRIVE_FETCH_SCRIPT"
 fi
 
-echo "=== Run 6 on-pod setup ==="
+echo "=== Run on-pod setup ==="
 echo "cwd: $(pwd)"
 echo "GPU:"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader || true
@@ -83,20 +83,21 @@ if [[ "$need_ok" != true ]]; then
 fi
 
 # --- deps (torch usually pre-installed on RunPod PyTorch images) ---
-pip install -q -U transformers opencv-python-headless tqdm scikit-learn
+pip install -q -U pandas transformers opencv-python-headless tqdm scikit-learn
 
-# --- Run 6 hyperparameters (HANDOFF.md Step 10b) ---
+# --- Run hyperparameters (HANDOFF.md Step 10b) ---
+PHASE="${PHASE:-head}"  # Run 7 default: head-only (Run 4 path)
 UNFREEZE_LAYERS="${UNFREEZE_LAYERS:-6}"
 ANCHOR_HALF_WIDTH="${ANCHOR_HALF_WIDTH:-0.10}"
 YES_WEIGHT="${YES_WEIGHT:-0.85}"
 FINETUNE_EPOCHS="${FINETUNE_EPOCHS:-5}"
-HEAD_EPOCHS="${HEAD_EPOCHS:-5}"
+HEAD_EPOCHS="${HEAD_EPOCHS:-10}"
 SEED="${SEED:-42}"
 
 echo ""
-echo "=== Run 6 fine-tune | unfreeze_layers=$UNFREEZE_LAYERS ==="
+echo "=== fine-tune | phase=$PHASE | unfreeze_layers=$UNFREEZE_LAYERS | head_epochs=$HEAD_EPOCHS ==="
 python3 src/landing_foul_video_finetune.py \
-  --phase two-phase \
+  --phase "$PHASE" \
   --head-epochs "$HEAD_EPOCHS" \
   --finetune-epochs "$FINETUNE_EPOCHS" \
   --head-lr 1e-3 \
