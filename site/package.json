@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "build:full": "npm run data && astro build",
     "preview": "astro preview",
     "data": "python scripts/build_site_data.py"
   },

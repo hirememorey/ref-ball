@@ -1,0 +1,136 @@
+{
+  "official_id": "1168",
+  "pbp_name": "D.Jones",
+  "official_name": "David Jones",
+  "headline": {
+    "suppressor_score": 0.5,
+    "mean_adj_fta36_delta": -1.513,
+    "mean_raw_fta36_delta": -2.317,
+    "n_players": 2,
+    "n_pairs": 2,
+    "total_games": 115.0,
+    "total_sf": 255.0,
+    "sf_per_game": 2.217,
+    "sf_per_game_RS": 2.217,
+    "sf_per_game_PO": 0.0,
+    "sf_pct_of_fouls": 0.445
+  },
+  "player_deltas": [
+    {
+      "player_name": "Giannis Antetokounmpo",
+      "player_slug": "giannis_antetokounmpo",
+      "n_games_with": 10,
+      "n_games_without": 792,
+      "fta36_with": 4.759,
+      "fta36_without": 9.55,
+      "raw_fta36_delta": -4.791,
+      "defense_adjusted_fta36_delta": -3.84,
+      "defrtg_with": 103.656,
+      "defrtg_without": 109.992,
+      "defrtg_delta": -6.337,
+      "adjustment_magnitude": 0.95
+    },
+    {
+      "player_name": "Jimmy Butler",
+      "player_slug": "jimmy_butler",
+      "n_games_with": 9,
+      "n_games_without": 694,
+      "fta36_with": 4.505,
+      "fta36_without": 7.95,
+      "raw_fta36_delta": -3.446,
+      "defense_adjusted_fta36_delta": -2.602,
+      "defrtg_with": 104.512,
+      "defrtg_without": 110.135,
+      "defrtg_delta": -5.622,
+      "adjustment_magnitude": 0.843
+    },
+    {
+      "player_name": "Damian Lillard",
+      "player_slug": "damian_lillard",
+      "n_games_with": 7,
+      "n_games_without": 742,
+      "fta36_with": 4.92,
+      "fta36_without": 6.937,
+      "raw_fta36_delta": -2.017,
+      "defense_adjusted_fta36_delta": -1.355,
+      "defrtg_with": 105.443,
+      "defrtg_without": 109.853,
+      "defrtg_delta": -4.41,
+      "adjustment_magnitude": 0.661
+    },
+    {
+      "player_name": "Chris Paul",
+      "player_slug": "chris_paul",
+      "n_games_with": 6,
+      "n_games_without": 761,
+      "fta36_with": 1.744,
+      "fta36_without": 3.597,
+      "raw_fta36_delta": -1.853,
+      "defense_adjusted_fta36_delta": -0.98,
+      "defrtg_with": 104.183,
+      "defrtg_without": 110.005,
+      "defrtg_delta": -5.822,
+      "adjustment_magnitude": 0.873
+    },
+    {
+      "player_name": "James Harden",
+      "player_slug": "james_harden",
+      "n_games_with": 10,
+      "n_games_without": 815,
+      "fta36_with": 9.014,
+      "fta36_without": 8.858,
+      "raw_fta36_delta": 0.156,
+      "defense_adjusted_fta36_delta": 0.814,
+      "defrtg_with": 105.5,
+      "defrtg_without": 109.886,
+      "defrtg_delta": -4.386,
+      "adjustment_magnitude": 0.658
+    },
+    {
+      "player_name": "LeBron James",
+      "player_slug": "lebron_james",
+      "n_games_with": 9,
+      "n_games_without": 725,
+      "fta36_with": 7.888,
+      "fta36_without": 6.315,
+      "raw_fta36_delta": 1.574,
+      "defense_adjusted_fta36_delta": 2.299,
+      "defrtg_with": 105.189,
+      "defrtg_without": 110.025,
+      "defrtg_delta": -4.836,
+      "adjustment_magnitude": 0.725
+    },
+    {
+      "player_name": "Russell Westbrook",
+      "player_slug": "russell_westbrook",
+      "n_games_with": 9,
+      "n_games_without": 825,
+      "fta36_with": 11.232,
+      "fta36_without": 6.742,
+      "raw_fta36_delta": 4.49,
+      "defense_adjusted_fta36_delta": 5.313,
+      "defrtg_with": 104.544,
+      "defrtg_without": 110.028,
+      "defrtg_delta": -5.483,
+      "adjustment_magnitude": 0.823
+    }
+  ],
+  "foul_type_breakdown": {
+    "sf_per_game_RS": 2.217,
+    "sf_per_game_PO": 0.0,
+    "sf_per_game_delta": -2.217,
+    "n_shooting_fouls_RS": 255.0,
+    "n_shooting_fouls_PO": 0.0,
+    "note": "Foul-type-specific rates from ref_profiles.parquet; full foul-type classification (Layer 2) pending — see /papers/ssac27."
+  },
+  "context": {
+    "rs_po_delta": null,
+    "n_players_rs": null,
+    "n_players_po": null,
+    "crew_role": "official_2"
+  },
+  "navigation": {
+    "prev_by_suppressor": "203591",
+    "next_by_suppressor": "1627541"
+  }
+}

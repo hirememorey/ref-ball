@@ -296,6 +296,33 @@ def write_json(path: Path, payload) -> None:
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+DOWNLOADS = REPO_ROOT / "site" / "public" / "downloads"
+
+
+def export_downloads(frames: dict[str, pd.DataFrame]) -> None:
+    if DOWNLOADS.exists():
+        shutil.rmtree(DOWNLOADS)
+    DOWNLOADS.mkdir(parents=True)
+
+    exports = [
+        ("official_profiles", "official_calling_profiles"),
+        ("defensive_adj", "defensive_adjusted_interactions"),
+        ("player_official", "player_official_interactions"),
+        ("ref_profiles", "ref_profiles"),
+        ("crew", "crew_assignments"),
+    ]
+
+    for frame_key, file_stem in exports:
+        df = frames[frame_key].copy()
+        for col in df.columns:
+            if df[col].dtype == "object":
+                df[col] = df[col].astype(str)
+        df.to_csv(DOWNLOADS / f"{file_stem}.csv", index=False)
+        df.to_json(DOWNLOADS / f"{file_stem}.json", orient="records", indent=2)
+
+    print(f"Exported {len(exports)} datasets → {DOWNLOADS}")
+
+
 def main() -> int:
     frames = load_frames()
     crew_roles = build_crew_roles(frames["crew"])
@@ -357,6 +384,8 @@ def main() -> int:
         "author": "Harris Gordon",
     }
     write_json(SITE_DATA / "meta.json", meta)
+
+    export_downloads(frames)
 
     print(f"Wrote {len(ordered_ids)} officials, {len(player_index)} players → {SITE_DATA}")
     return 0

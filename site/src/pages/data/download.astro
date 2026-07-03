@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import WindowChrome from '../../components/WindowChrome.astro';
 import { getMeta } from '../../utils/data';
 
 const meta = getMeta();
@@ -11,32 +12,75 @@ const citation = `@misc{refball${meta.git_sha},
   note = {Dataset built from commit ${meta.git_sha}}
 }`;
 const release = `${meta.github_url}/releases`;
+
+const datasets = [
+  {
+    stem: 'official_calling_profiles',
+    description: `${meta.counts.officials} officials — suppressor scores`,
+  },
+  {
+    stem: 'player_official_interactions',
+    description: `${meta.counts.player_official_pairs_raw.toLocaleString()} raw pairs`,
+  },
+  {
+    stem: 'defensive_adjusted_interactions',
+    description: `${meta.counts.player_official_pairs_adjusted.toLocaleString()} adjusted pairs`,
+  },
+  {
+    stem: 'ref_profiles',
+    description: 'Per-official SF rates (RS/PO)',
+  },
+  {
+    stem: 'crew_assignments',
+    description: `${meta.counts.crew_rows.toLocaleString()} crew rows`,
+  },
+];
 ---
 
-<Base title="Download" current="data" description="Download ref-ball parquet datasets.">
-  <section class="section page-header">
+<Base title="Download" current="data" description="Download ref-ball datasets as CSV or JSON.">
+  <section class="section page-header page-header--workspace">
     <div class="container">
       <p class="breadcrumb"><a href="/data">Data</a> / Download</p>
       <h1 class="display">Download</h1>
-      <p class="lead">Parquet artifacts ({meta.license.data}). Hosted via GitHub Releases.</p>
+      <p class="lead">
+        CSV and JSON exports ({meta.license.data}). Parquet files are on GitHub Releases.
+      </p>
     </div>
   </section>
-  <section class="section section--alt" style="padding-top:0">
-    <div class="container table-wrap">
-      <table class="data-table">
-        <thead><tr><th>File</th><th>Description</th><th>Download</th></tr></thead>
-        <tbody>
-          <tr><td><code>official_calling_profiles.parquet</code></td><td>{meta.counts.officials} officials — suppressor scores</td><td><a href={release}>Release</a></td></tr>
-          <tr><td><code>player_official_interactions.parquet</code></td><td>{meta.counts.player_official_pairs_raw.toLocaleString()} raw pairs</td><td><a href={release}>Release</a></td></tr>
-          <tr><td><code>defensive_adjusted_interactions.parquet</code></td><td>{meta.counts.player_official_pairs_adjusted.toLocaleString()} adjusted pairs</td><td><a href={release}>Release</a></td></tr>
-          <tr><td><code>ref_profiles.parquet</code></td><td>Per-official SF rates (RS/PO)</td><td><a href={release}>Release</a></td></tr>
-          <tr><td><code>crew_assignments.parquet</code></td><td>{meta.counts.crew_rows.toLocaleString()} crew rows</td><td><a href={release}>Release</a></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="container prose" style="margin-top:2rem">
-      <h2>Citation</h2>
-      <pre class="callout mono small">{citation}</pre>
+  <section class="section section--alt section--dither section--flush-top">
+    <div class="container">
+      <WindowChrome title="downloads.zip" showStatus status={`Code ${meta.license.code} · Data ${meta.license.data}`}>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Dataset</th>
+                <th>Description</th>
+                <th>CSV</th>
+                <th>JSON</th>
+                <th>Parquet</th>
+              </tr>
+            </thead>
+            <tbody>
+              {datasets.map(({ stem, description }) => (
+                <tr>
+                  <td><code>{stem}</code></td>
+                  <td>{description}</td>
+                  <td><a class="btn-retro" href={`/downloads/${stem}.csv`} download>CSV</a></td>
+                  <td><a class="btn-retro" href={`/downloads/${stem}.json`} download>JSON</a></td>
+                  <td><a class="btn-retro" href={release}>Release</a></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin-top:1rem">
+          Files are generated from the same parquet sources as the site at build time. Commit
+          <code>{meta.git_sha}</code>.
+        </p>
+        <h2 style="margin-top:1.5rem">Citation</h2>
+        <pre class="callout mono small">{citation}</pre>
+      </WindowChrome>
     </div>
   </section>
 </Base>

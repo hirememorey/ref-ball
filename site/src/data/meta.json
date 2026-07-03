@@ -1,0 +1,24 @@
+{
+  "built_at": "2026-07-03T13:37:54.817227+00:00",
+  "git_sha": "27bb7a2",
+  "github_url": "https://github.com/hirememorey/ref-ball",
+  "headlines": {
+    "anova_p": 3e-06,
+    "attention_load_lift": 3.5,
+    "harden_fta_correlation": -0.528,
+    "crew_prediction_r": 0.406
+  },
+  "counts": {
+    "officials": 86,
+    "players": 40,
+    "player_official_pairs_raw": 3846,
+    "player_official_pairs_adjusted": 1678,
+    "crew_rows": 40804,
+    "games": 13278
+  },
+  "license": {
+    "data": "CC-BY-4.0",
+    "code": "MIT"
+  },
+  "author": "Harris Gordon"
+}

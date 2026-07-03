@@ -1,0 +1,122 @@
+{
+  "official_id": "1628484",
+  "pbp_name": "D.Mosher",
+  "official_name": "Dannica Mosher",
+  "headline": {
+    "suppressor_score": 1.0,
+    "mean_adj_fta36_delta": -0.039,
+    "mean_raw_fta36_delta": 0.388,
+    "n_players": 1,
+    "n_pairs": 1,
+    "total_games": 102.0,
+    "total_sf": 617.0,
+    "sf_per_game": 6.049,
+    "sf_per_game_RS": 6.049,
+    "sf_per_game_PO": 0.0,
+    "sf_pct_of_fouls": 0.506
+  },
+  "player_deltas": [
+    {
+      "player_name": "Nikola Jokic",
+      "player_slug": "nikola_jokic",
+      "n_games_with": 11,
+      "n_games_without": 768,
+      "fta36_with": 5.809,
+      "fta36_without": 5.421,
+      "raw_fta36_delta": 0.388,
+      "defense_adjusted_fta36_delta": -0.039,
+      "defrtg_with": 113.382,
+      "defrtg_without": 110.538,
+      "defrtg_delta": 2.844,
+      "adjustment_magnitude": 0.427
+    },
+    {
+      "player_name": "DeMar DeRozan",
+      "player_slug": "demar_derozan",
+      "n_games_with": 8,
+      "n_games_without": 800,
+      "fta36_with": 7.807,
+      "fta36_without": 7.313,
+      "raw_fta36_delta": 0.494,
+      "defense_adjusted_fta36_delta": 0.027,
+      "defrtg_with": 113.275,
+      "defrtg_without": 110.163,
+      "defrtg_delta": 3.112,
+      "adjustment_magnitude": 0.467
+    },
+    {
+      "player_name": "Jalen Brunson",
+      "player_slug": "jalen_brunson",
+      "n_games_with": 6,
+      "n_games_without": 507,
+      "fta36_with": 5.25,
+      "fta36_without": 4.97,
+      "raw_fta36_delta": 0.28,
+      "defense_adjusted_fta36_delta": 0.047,
+      "defrtg_with": 113.717,
+      "defrtg_without": 112.163,
+      "defrtg_delta": 1.554,
+      "adjustment_magnitude": 0.233
+    },
+    {
+      "player_name": "Trae Young",
+      "player_slug": "trae_young",
+      "n_games_with": 5,
+      "n_games_without": 489,
+      "fta36_with": 8.254,
+      "fta36_without": 7.981,
+      "raw_fta36_delta": 0.274,
+      "defense_adjusted_fta36_delta": 0.159,
+      "defrtg_with": 112.7,
+      "defrtg_without": 111.937,
+      "defrtg_delta": 0.763,
+      "adjustment_magnitude": 0.114
+    },
+    {
+      "player_name": "Jayson Tatum",
+      "player_slug": "jayson_tatum",
+      "n_games_with": 6,
+      "n_games_without": 612,
+      "fta36_with": 7.24,
+      "fta36_without": 5.693,
+      "raw_fta36_delta": 1.547,
+      "defense_adjusted_fta36_delta": 1.336,
+      "defrtg_with": 113.083,
+      "defrtg_without": 111.674,
+      "defrtg_delta": 1.409,
+      "adjustment_magnitude": 0.211
+    },
+    {
+      "player_name": "Shai Gilgeous-Alexander",
+      "player_slug": "shai_gilgeous_alexander",
+      "n_games_with": 5,
+      "n_games_without": 476,
+      "fta36_with": 12.385,
+      "fta36_without": 7.485,
+      "raw_fta36_delta": 4.9,
+      "defense_adjusted_fta36_delta": 4.621,
+      "defrtg_with": 114.06,
+      "defrtg_without": 112.202,
+      "defrtg_delta": 1.858,
+      "adjustment_magnitude": 0.279
+    }
+  ],
+  "foul_type_breakdown": {
+    "sf_per_game_RS": 6.049,
+    "sf_per_game_PO": 0.0,
+    "sf_per_game_delta": -6.049,
+    "n_shooting_fouls_RS": 617.0,
+    "n_shooting_fouls_PO": 0.0,
+    "note": "Foul-type-specific rates from ref_profiles.parquet; full foul-type classification (Layer 2) pending — see /papers/ssac27."
+  },
+  "context": {
+    "rs_po_delta": null,
+    "n_players_rs": null,
+    "n_players_po": null,
+    "crew_role": "official_3"
+  },
+  "navigation": {
+    "prev_by_suppressor": null,
+    "next_by_suppressor": "1627963"
+  }
+}

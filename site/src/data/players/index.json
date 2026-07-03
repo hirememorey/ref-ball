@@ -1,0 +1,322 @@
+[
+  {
+    "player_name": "Andre Drummond",
+    "slug": "andre_drummond",
+    "n_officials": 102,
+    "total_games_with": 2298,
+    "baseline_fta_per_game": 4.204,
+    "baseline_sf_per_game": 0.723
+  },
+  {
+    "player_name": "Anthony Davis",
+    "slug": "anthony_davis",
+    "n_officials": 98,
+    "total_games_with": 2005,
+    "baseline_fta_per_game": 7.453,
+    "baseline_sf_per_game": 1.654
+  },
+  {
+    "player_name": "Bam Adebayo",
+    "slug": "bam_adebayo",
+    "n_officials": 91,
+    "total_games_with": 1763,
+    "baseline_fta_per_game": 4.563,
+    "baseline_sf_per_game": 0.626
+  },
+  {
+    "player_name": "Blake Griffin",
+    "slug": "blake_griffin",
+    "n_officials": 97,
+    "total_games_with": 1390,
+    "baseline_fta_per_game": 4.861,
+    "baseline_sf_per_game": 0.699
+  },
+  {
+    "player_name": "Brandon Ingram",
+    "slug": "brandon_ingram",
+    "n_officials": 93,
+    "total_games_with": 1496,
+    "baseline_fta_per_game": 4.941,
+    "baseline_sf_per_game": 0.687
+  },
+  {
+    "player_name": "Chris Paul",
+    "slug": "chris_paul",
+    "n_officials": 98,
+    "total_games_with": 2298,
+    "baseline_fta_per_game": 3.155,
+    "baseline_sf_per_game": 0.544
+  },
+  {
+    "player_name": "Collin Sexton",
+    "slug": "collin_sexton",
+    "n_officials": 90,
+    "total_games_with": 1221,
+    "baseline_fta_per_game": 4.334,
+    "baseline_sf_per_game": 0.619
+  },
+  {
+    "player_name": "Damian Lillard",
+    "slug": "damian_lillard",
+    "n_officials": 101,
+    "total_games_with": 2249,
+    "baseline_fta_per_game": 6.936,
+    "baseline_sf_per_game": 0.515
+  },
+  {
+    "player_name": "Danilo Gallinari",
+    "slug": "danilo_gallinari",
+    "n_officials": 100,
+    "total_games_with": 1526,
+    "baseline_fta_per_game": 4.443,
+    "baseline_sf_per_game": 0.465
+  },
+  {
+    "player_name": "De'Aaron Fox",
+    "slug": "deaaron_fox",
+    "n_officials": 94,
+    "total_games_with": 1607,
+    "baseline_fta_per_game": 5.467,
+    "baseline_sf_per_game": 0.695
+  },
+  {
+    "player_name": "DeAndre Jordan",
+    "slug": "deandre_jordan",
+    "n_officials": 97,
+    "total_games_with": 2060,
+    "baseline_fta_per_game": 3.87,
+    "baseline_sf_per_game": 0.699
+  },
+  {
+    "player_name": "DeMar DeRozan",
+    "slug": "demar_derozan",
+    "n_officials": 101,
+    "total_games_with": 2426,
+    "baseline_fta_per_game": 7.141,
+    "baseline_sf_per_game": 0.616
+  },
+  {
+    "player_name": "Devin Booker",
+    "slug": "devin_booker",
+    "n_officials": 97,
+    "total_games_with": 2059,
+    "baseline_fta_per_game": 6.042,
+    "baseline_sf_per_game": 0.889
+  },
+  {
+    "player_name": "Donovan Mitchell",
+    "slug": "donovan_mitchell",
+    "n_officials": 95,
+    "total_games_with": 1674,
+    "baseline_fta_per_game": 5.176,
+    "baseline_sf_per_game": 0.907
+  },
+  {
+    "player_name": "Dwight Howard",
+    "slug": "dwight_howard",
+    "n_officials": 90,
+    "total_games_with": 1458,
+    "baseline_fta_per_game": 5.03,
+    "baseline_sf_per_game": 0.759
+  },
+  {
+    "player_name": "Giannis Antetokounmpo",
+    "slug": "giannis_antetokounmpo",
+    "n_officials": 103,
+    "total_games_with": 2407,
+    "baseline_fta_per_game": 8.936,
+    "baseline_sf_per_game": 0.701
+  },
+  {
+    "player_name": "Hassan Whiteside",
+    "slug": "hassan_whiteside",
+    "n_officials": 95,
+    "total_games_with": 1491,
+    "baseline_fta_per_game": 3.529,
+    "baseline_sf_per_game": 0.73
+  },
+  {
+    "player_name": "Jalen Brunson",
+    "slug": "jalen_brunson",
+    "n_officials": 90,
+    "total_games_with": 1560,
+    "baseline_fta_per_game": 4.202,
+    "baseline_sf_per_game": 0.487
+  },
+  {
+    "player_name": "James Harden",
+    "slug": "james_harden",
+    "n_officials": 103,
+    "total_games_with": 2463,
+    "baseline_fta_per_game": 8.921,
+    "baseline_sf_per_game": 0.58
+  },
+  {
+    "player_name": "Jaren Jackson Jr.",
+    "slug": "jaren_jackson_jr",
+    "n_officials": 90,
+    "total_games_with": 1257,
+    "baseline_fta_per_game": 4.645,
+    "baseline_sf_per_game": 10.929
+  },
+  {
+    "player_name": "Jayson Tatum",
+    "slug": "jayson_tatum",
+    "n_officials": 92,
+    "total_games_with": 1860,
+    "baseline_fta_per_game": 5.627,
+    "baseline_sf_per_game": 0.48
+  },
+  {
+    "player_name": "Jimmy Butler",
+    "slug": "jimmy_butler",
+    "n_officials": 99,
+    "total_games_with": 2114,
+    "baseline_fta_per_game": 7.647,
+    "baseline_sf_per_game": 0.623
+  },
+  {
+    "player_name": "Joel Embiid",
+    "slug": "joel_embiid",
+    "n_officials": 94,
+    "total_games_with": 1435,
+    "baseline_fta_per_game": 9.996,
+    "baseline_sf_per_game": 0.746
+  },
+  {
+    "player_name": "Julius Randle",
+    "slug": "julius_randle",
+    "n_officials": 97,
+    "total_games_with": 2157,
+    "baseline_fta_per_game": 5.369,
+    "baseline_sf_per_game": 0.8
+  },
+  {
+    "player_name": "Jusuf Nurkic",
+    "slug": "jusuf_nurkic",
+    "n_officials": 98,
+    "total_games_with": 1778,
+    "baseline_fta_per_game": 3.518,
+    "baseline_sf_per_game": 0.0
+  },
+  {
+    "player_name": "Karl-Anthony Towns",
+    "slug": "karl_anthony_towns",
+    "n_officials": 99,
+    "total_games_with": 2008,
+    "baseline_fta_per_game": 5.269,
+    "baseline_sf_per_game": 0.757
+  },
+  {
+    "player_name": "Kawhi Leonard",
+    "slug": "kawhi_leonard",
+    "n_officials": 97,
+    "total_games_with": 1719,
+    "baseline_fta_per_game": 5.679,
+    "baseline_sf_per_game": 0.806
+  },
+  {
+    "player_name": "Kevin Durant",
+    "slug": "kevin_durant",
+    "n_officials": 99,
+    "total_games_with": 1832,
+    "baseline_fta_per_game": 6.653,
+    "baseline_sf_per_game": 0.575
+  },
+  {
+    "player_name": "Kristaps Porzingis",
+    "slug": "kristaps_porzingis",
+    "n_officials": 97,
+    "total_games_with": 1521,
+    "baseline_fta_per_game": 4.726,
+    "baseline_sf_per_game": 0.0
+  },
+  {
+    "player_name": "LeBron James",
+    "slug": "lebron_james",
+    "n_officials": 100,
+    "total_games_with": 2207,
+    "baseline_fta_per_game": 6.472,
+    "baseline_sf_per_game": 0.474
+  },
+  {
+    "player_name": "Lou Williams",
+    "slug": "lou_williams",
+    "n_officials": 94,
+    "total_games_with": 1749,
+    "baseline_fta_per_game": 4.821,
+    "baseline_sf_per_game": 4.332
+  },
+  {
+    "player_name": "Luka Doncic",
+    "slug": "luka_doncic",
+    "n_officials": 88,
+    "total_games_with": 1416,
+    "baseline_fta_per_game": 8.224,
+    "baseline_sf_per_game": 0.0
+  },
+  {
+    "player_name": "Montrezl Harrell",
+    "slug": "montrezl_harrell",
+    "n_officials": 93,
+    "total_games_with": 1565,
+    "baseline_fta_per_game": 3.506,
+    "baseline_sf_per_game": 0.634
+  },
+  {
+    "player_name": "Nikola Jokic",
+    "slug": "nikola_jokic",
+    "n_officials": 97,
+    "total_games_with": 2358,
+    "baseline_fta_per_game": 4.894,
+    "baseline_sf_per_game": 0.0
+  },
+  {
+    "player_name": "Paul George",
+    "slug": "paul_george",
+    "n_officials": 97,
+    "total_games_with": 1916,
+    "baseline_fta_per_game": 5.208,
+    "baseline_sf_per_game": 0.796
+  },
+  {
+    "player_name": "Rudy Gobert",
+    "slug": "rudy_gobert",
+    "n_officials": 101,
+    "total_games_with": 2430,
+    "baseline_fta_per_game": 5.197,
+    "baseline_sf_per_game": 0.691
+  },
+  {
+    "player_name": "Russell Westbrook",
+    "slug": "russell_westbrook",
+    "n_officials": 101,
+    "total_games_with": 2485,
+    "baseline_fta_per_game": 6.235,
+    "baseline_sf_per_game": 0.54
+  },
+  {
+    "player_name": "Shai Gilgeous-Alexander",
+    "slug": "shai_gilgeous_alexander",
+    "n_officials": 89,
+    "total_games_with": 1459,
+    "baseline_fta_per_game": 7.055,
+    "baseline_sf_per_game": 0.61
+  },
+  {
+    "player_name": "Stephen Curry",
+    "slug": "stephen_curry",
+    "n_officials": 98,
+    "total_games_with": 2204,
+    "baseline_fta_per_game": 4.893,
+    "baseline_sf_per_game": 0.789
+  },
+  {
+    "player_name": "Trae Young",
+    "slug": "trae_young",
+    "n_officials": 91,
+    "total_games_with": 1483,
+    "baseline_fta_per_game": 7.625,
+    "baseline_sf_per_game": 1.624
+  }
+]
