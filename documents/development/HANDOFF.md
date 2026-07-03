@@ -307,9 +307,11 @@ Full run details, provider setup, and confusion matrices remain in the sections 
 
 Scripts: `src/landing_foul_ensemble.py` (`make ensemble`), `src/landing_foul_temporal_sweep.py` (eval-only sweep on saved checkpoint).
 
-#### START HERE: Colab Run 6
+#### START HERE: Colab Run 6 (or RunPod if GPU quota blocked)
 
-Open [`documents/development/colab-finetune.ipynb`](colab-finetune.ipynb) (GPU runtime). Change §5 defaults:
+**Colab:** Open [`documents/development/colab-finetune.ipynb`](colab-finetune.ipynb) (GPU runtime). §5 defaults are pre-set for Run 6 (`unfreeze_layers=6`).
+
+**RunPod (Colab quota blocked):** `bash documents/development/runpod-run6.sh` — creates pod, prints upload/SSH steps; on-pod training via `runpod-run6-onpod.sh`. RTX A5000 ~$0.27/hr, expect ~$0.50 total.
 
 | Parameter | Run 5 | **Run 6** |
 |---|---|---|
@@ -325,7 +327,7 @@ Open [`documents/development/colab-finetune.ipynb`](colab-finetune.ipynb) (GPU r
 
 1. §2 Clone repo (anchors + split come with clone).
 2. §4 Upload `landing_foul_clips.zip` from Drive (`make video-package` locally).
-3. §5 Set `unfreeze_layers = 6` (Run 6 hyperparameters).
+3. §5 Run config cell (defaults: `unfreeze_layers=6`).
 4. **§5b Frame cache** — **skip rebuild** (Run 4/5 cache at `anchor_half_width=0.10` is reusable).
 5. §6 Fine-tune → §7 Save checkpoint + metrics to Drive.
 
@@ -359,6 +361,8 @@ make video-finetune ANCHOR_HALF_WIDTH=0.10 YES_WEIGHT=0.85 FINETUNE_EPOCHS=5 UNF
 | `src/landing_foul_video_finetune.py` | End-to-end VideoMAE fine-tuning (two-phase, frame cache) | `make video-finetune` / `make video-finetune-evaluate` |
 | `src/landing_foul_annotate_anchors.py` | Browser UI for per-clip contact temporal anchors | `make video-annotate` |
 | `documents/development/colab-finetune.ipynb` | Colab runbook (GPU, frame cache, training) | Open in Google Colab |
+| `documents/development/runpod-run6.sh` | RunPod launcher (pod create, upload, SSH steps) | `bash documents/development/runpod-run6.sh` |
+| `documents/development/runpod-run6-onpod.sh` | Run 6 training script (runs inside pod) | `bash documents/development/runpod-run6-onpod.sh` |
 | `requirements-ml.txt` | ML dependencies (torch, transformers, opencv, scikit-learn) | `.venv/bin/pip install -r requirements-ml.txt` |
 
 **Frozen baseline results (2026-06-30) — zero signal:**
