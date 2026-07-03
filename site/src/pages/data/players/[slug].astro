@@ -1,6 +1,7 @@
 ---
 import Base from '../../../layouts/Base.astro';
 import StatTile from '../../../components/StatTile.astro';
+import WindowChrome from '../../../components/WindowChrome.astro';
 import { deltaClass, formatNum, formatSigned, getPlayer, getPlayerSlugs } from '../../../utils/data';
 
 export function getStaticPaths() {
@@ -25,87 +26,89 @@ const b = player.baseline;
     </div>
   </section>
 
-  <section class="section section--alt">
+  <section class="section section--alt section--dither section--flush-top">
     <div class="container">
-      <div class="toggle-row">
-        <button type="button" class="toggle-btn active" data-view="adj">Defense-adjusted FTA/36</button>
-        <button type="button" class="toggle-btn" data-view="raw">Raw FTA deltas</button>
-      </div>
-      <div class="filter-row">
-        <label for="min-games">Min games with official:</label>
-        <input type="range" id="min-games" min="1" max="20" value="1" />
-        <span id="min-games-val" class="mono">1</span>
-      </div>
+      <WindowChrome title="official_deltas.csv" showStatus status="Click headers to sort">
+        <div class="toggle-row">
+          <button type="button" class="toggle-btn active" data-view="adj">Defense-adjusted FTA/36</button>
+          <button type="button" class="toggle-btn" data-view="raw">Raw FTA deltas</button>
+        </div>
+        <div class="filter-row">
+          <label for="min-games">Min games with official:</label>
+          <input type="range" id="min-games" min="1" max="20" value="1" />
+          <span id="min-games-val" class="mono">1</span>
+        </div>
 
-      <div class="table-wrap" id="table-adj">
-        <table class="data-table" id="adj-table">
-          <thead>
-            <tr>
-              <th>Official</th>
-              <th class="num">Games</th>
-              <th class="num">FTA/36 with</th>
-              <th class="num">FTA/36 without</th>
-              <th class="num">Adj Δ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {player.defense_adjusted.map((row) => {
-              const adj = row.defense_adjusted_fta36_delta as number | null;
-              const ng = row.n_games_with as number | null;
-              return (
-                <tr data-n-games={ng ?? 0}>
-                  <td>
-                    {row.official_id ? (
-                      <a href={`/data/officials/${row.official_id}`}>{row.official_name}</a>
-                    ) : (
-                      row.official_name
-                    )}
-                  </td>
-                  <td class="num">{ng ?? '—'}</td>
-                  <td class="num mono">{formatNum(row.fta36_with as number | null)}</td>
-                  <td class="num mono">{formatNum(row.fta36_without as number | null)}</td>
-                  <td class={`num ${deltaClass(adj)}`}>{formatSigned(adj)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+        <div class="table-wrap" id="table-adj">
+          <table class="data-table" id="adj-table">
+            <thead>
+              <tr>
+                <th>Official</th>
+                <th class="num">Games</th>
+                <th class="num">FTA/36 with</th>
+                <th class="num">FTA/36 without</th>
+                <th class="num">Adj Δ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {player.defense_adjusted.map((row) => {
+                const adj = row.defense_adjusted_fta36_delta as number | null;
+                const ng = row.n_games_with as number | null;
+                return (
+                  <tr data-n-games={ng ?? 0}>
+                    <td>
+                      {row.official_id ? (
+                        <a href={`/data/officials/${row.official_id}`}>{row.official_name}</a>
+                      ) : (
+                        row.official_name
+                      )}
+                    </td>
+                    <td class="num">{ng ?? '—'}</td>
+                    <td class="num mono">{formatNum(row.fta36_with as number | null)}</td>
+                    <td class="num mono">{formatNum(row.fta36_without as number | null)}</td>
+                    <td class={`num ${deltaClass(adj)}`}>{formatSigned(adj)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-      <div class="table-wrap hidden" id="table-raw">
-        <table class="data-table" id="raw-table">
-          <thead>
-            <tr>
-              <th>Official</th>
-              <th class="num">Games</th>
-              <th class="num">FTA/g with</th>
-              <th class="num">FTA/g without</th>
-              <th class="num">Δ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {player.official_deltas.map((row) => {
-              const d = row.fta_delta as number | null;
-              const ng = row.n_games_with as number | null;
-              return (
-                <tr data-n-games={ng ?? 0}>
-                  <td>
-                    {row.official_id ? (
-                      <a href={`/data/officials/${row.official_id}`}>{row.official_name}</a>
-                    ) : (
-                      row.official_name
-                    )}
-                  </td>
-                  <td class="num">{ng ?? '—'}</td>
-                  <td class="num mono">{formatNum(row.fta_per_game_with as number | null)}</td>
-                  <td class="num mono">{formatNum(row.fta_per_game_without as number | null)}</td>
-                  <td class={`num ${deltaClass(d)}`}>{formatSigned(d)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+        <div class="table-wrap hidden" id="table-raw">
+          <table class="data-table" id="raw-table">
+            <thead>
+              <tr>
+                <th>Official</th>
+                <th class="num">Games</th>
+                <th class="num">FTA/g with</th>
+                <th class="num">FTA/g without</th>
+                <th class="num">Δ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {player.official_deltas.map((row) => {
+                const d = row.fta_delta as number | null;
+                const ng = row.n_games_with as number | null;
+                return (
+                  <tr data-n-games={ng ?? 0}>
+                    <td>
+                      {row.official_id ? (
+                        <a href={`/data/officials/${row.official_id}`}>{row.official_name}</a>
+                      ) : (
+                        row.official_name
+                      )}
+                    </td>
+                    <td class="num">{ng ?? '—'}</td>
+                    <td class="num mono">{formatNum(row.fta_per_game_with as number | null)}</td>
+                    <td class="num mono">{formatNum(row.fta_per_game_without as number | null)}</td>
+                    <td class={`num ${deltaClass(d)}`}>{formatSigned(d)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </WindowChrome>
     </div>
   </section>
 </Base>

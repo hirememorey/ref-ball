@@ -14,7 +14,7 @@ const meta = getMeta();
       <h1 class="display">Dataset</h1>
       <p class="lead">
         {meta.counts.officials} named officials, {meta.counts.players} players, and defense-adjusted FTA/36
-        deltas built from play-by-play attribution. All officials are named by design — that's the dataset's
+        deltas built from play-by-play attribution. All officials are named by design. That's the dataset's
         value, not something to hide.
       </p>
     </div>
@@ -51,9 +51,9 @@ const meta = getMeta();
       <h2>Methodology</h2>
       <p>
         I attribute shooting-foul calls to individual officials by parsing the referee name from the
-        unstructured <code>description</code> field in NBA play-by-play data — a text field that
+        unstructured <code>description</code> field in NBA play-by-play data, a text field that
         programmatic consumers skip entirely. Layer 1 is the published, browseable layer. Contact-type
-        classification (Layer 2) is the research frontier — I graded 300 clips by hand and the LLMs
+        classification (Layer 2) is the research frontier. I graded 300 clips by hand and the LLMs
         topped out at 55% precision. When the classifier works, it goes here.
       </p>
       <p><a href="/thesis">Attribution methodology and ANOVA results →</a></p>

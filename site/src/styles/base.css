@@ -12,10 +12,14 @@
   --color-off-white: #F7F4EC;
   --color-muted: #8A8272;
 
-  /* Semantic tokens (mapped to Iverson colors) */
-  --color-blue: var(--color-gold);
-  --color-navy-dark: var(--color-black);
-  --color-silver: var(--color-muted);
+  /*
+   * Color rule (two-accent system — no third color):
+   *   GOLD = structural / brand — chrome, borders, dividers, the "suppressor"
+   *          (negative) data valence, and default/primary accents.
+   *   RED  = signal / emphasis — the "amplifier" (positive) data valence,
+   *          CTAs-as-text, and anything meant to pop against a gold-heavy page.
+   * Keep new UI within this binary rather than introducing a third accent.
+   */
   --color-text: var(--color-black);
 
   --gold-tint-04: rgba(197, 179, 88, 0.08);
@@ -71,6 +75,7 @@ a:hover { color: var(--color-red); }
   background: var(--color-black);
   color: var(--color-white);
   border-bottom: 3px solid var(--color-gold);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
 }
 
 .site-header .container {
@@ -93,8 +98,10 @@ a:hover { color: var(--color-red); }
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .site-nav a {
@@ -117,7 +124,8 @@ a:hover { color: var(--color-red); }
   color: var(--color-white);
   padding: 0.4rem 0.65rem;
   border-radius: 4px;
-  font: inherit;
+  font-family: var(--font-ui);
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -172,6 +180,9 @@ code {
 /* ——— Sections ——— */
 .section { padding: var(--section-pad) 0; }
 .section--alt { background: var(--color-off-white); }
+/* Use instead of an inline style="padding-top:0" when a section follows a
+   page-header (or another section) that already carries bottom spacing. */
+.section--flush-top { padding-top: 0; }
 
 /* ——— Cards ——— */
 .card {
@@ -188,7 +199,7 @@ code {
   gap: 1.25rem;
 }
 
-.card .eyebrow {
+.eyebrow {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -196,7 +207,7 @@ code {
   font-weight: 600;
 }
 
-.card .headline-stat {
+.headline-stat {
   font-size: 1.75rem;
   font-weight: 700;
   margin: 0.5rem 0;
@@ -208,7 +219,8 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.75rem;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -268,18 +280,18 @@ code {
 
 .search-input {
   width: 100%;
-  height: 48px;
-  font: inherit;
-  font-size: 1rem;
-  padding: 0 1rem;
-  border: none;
-  border-bottom: 2px solid var(--color-muted);
-  background: transparent;
+  height: 46px;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  padding: 0 0.85rem;
+  border: 2px inset var(--win95-mid);
+  border-radius: 0;
+  background: var(--color-white);
   outline: none;
 }
 
 .search-input:focus {
-  border-bottom-color: var(--color-gold);
+  border-color: var(--color-gold);
 }
 
 .search-results {
@@ -288,9 +300,9 @@ code {
   left: 0; right: 0;
   top: calc(100% + 0.35rem);
   background: var(--color-white);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 16px var(--gold-tint-12);
-  border: 1px solid var(--gold-tint-20);
+  border-radius: 0;
+  border: 2px outset var(--win95-mid);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
   max-height: 320px;
   overflow: auto;
   z-index: 50;
@@ -308,7 +320,8 @@ code {
   border: none;
   background: none;
   padding: 0.75rem 1rem;
-  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
   cursor: pointer;
   border-bottom: 1px solid var(--color-off-white);
 }
@@ -383,7 +396,7 @@ code {
   overflow: hidden;
 }
 .bar-fill { height: 100%; border-radius: 999px; }
-.bar-fill--blue { background: var(--color-gold); }
+.bar-fill--gold { background: var(--color-gold); }
 .bar-fill--red { background: var(--color-red); }
 
 /* ——— Misc UI ——— */
@@ -421,9 +434,9 @@ code {
 }
 
 .toggle-btn {
-  font: inherit;
+  font-family: var(--font-ui);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   padding: 0.45rem 0.9rem;
   border: 1px solid var(--color-muted);
   background: var(--color-white);
@@ -478,7 +491,7 @@ code {
   padding: 2rem 0;
   font-size: 0.8rem;
   margin-top: var(--section-pad);
-  border-top: 3px solid var(--color-red);
+  border-top: 3px solid var(--color-gold);
 }
 
 .site-footer a { color: var(--color-gold); }
@@ -552,7 +565,8 @@ code {
 .page-header--workspace { padding-bottom: 0.5rem; }
 
 .breadcrumb {
-  font-size: 0.8rem;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
   margin-bottom: 0.75rem;
 }
 .breadcrumb a { color: var(--color-muted); text-decoration: none; }

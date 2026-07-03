@@ -1,5 +1,7 @@
 ---
 import Base from '../../../layouts/Base.astro';
+import WindowChrome from '../../../components/WindowChrome.astro';
+import RetroTag from '../../../components/RetroTag.astro';
 import { formatNum, getPlayersIndex } from '../../../utils/data';
 
 const players = getPlayersIndex();
@@ -9,34 +11,39 @@ const players = getPlayersIndex();
   <section class="section page-header page-header--workspace">
     <div class="container">
       <p class="breadcrumb"><a href="/data">Data</a> / Players</p>
+      <RetroTag label="DATABASE" />
       <h1 class="display">Players</h1>
       <p class="lead">{players.length} players in the cohort.</p>
     </div>
   </section>
-  <section class="section section--alt" style="padding-top:0">
-    <div class="container table-wrap">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th class="num">Officials</th>
-            <th class="num">Games w/ officials</th>
-            <th class="num">Baseline FTA/g</th>
-            <th class="num">Baseline SF/g</th>
-          </tr>
-        </thead>
-        <tbody>
-          {players.map((p) => (
-            <tr>
-              <td><a href={`/data/players/${p.slug}`}>{p.player_name}</a></td>
-              <td class="num">{p.n_officials}</td>
-              <td class="num">{p.total_games_with}</td>
-              <td class="num mono">{formatNum(p.baseline_fta_per_game as number | null)}</td>
-              <td class="num mono">{formatNum(p.baseline_sf_per_game as number | null, 3)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+  <section class="section section--alt section--dither section--flush-top">
+    <div class="container">
+      <WindowChrome title="player_index.db" showStatus status={`${players.length} rows`}>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th class="num">Officials</th>
+                <th class="num">Games w/ officials</th>
+                <th class="num">Baseline FTA/g</th>
+                <th class="num">Baseline SF/g</th>
+              </tr>
+            </thead>
+            <tbody>
+              {players.map((p) => (
+                <tr>
+                  <td><a href={`/data/players/${p.slug}`}>{p.player_name}</a></td>
+                  <td class="num">{p.n_officials}</td>
+                  <td class="num">{p.total_games_with}</td>
+                  <td class="num mono">{formatNum(p.baseline_fta_per_game as number | null)}</td>
+                  <td class="num mono">{formatNum(p.baseline_sf_per_game as number | null, 3)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </WindowChrome>
     </div>
   </section>
 </Base>

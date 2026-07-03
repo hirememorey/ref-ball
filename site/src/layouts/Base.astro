@@ -8,7 +8,7 @@ interface Props {
   current?: string;
 }
 
-const { title = 'ref-ball', description = 'Watching the Refs Ref.', current } = Astro.props;
+const { title = 'ref-ball', description = 'Who blew the whistle, and does it matter?', current } = Astro.props;
 const meta = getMeta();
 const pageTitle = title === 'ref-ball' ? 'ref-ball' : `${title} · ref-ball`;
 const built = new Date(meta.built_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -30,7 +30,7 @@ const built = new Date(meta.built_at).toLocaleDateString('en-US', { year: 'numer
           <button class="nav-toggle" type="button" aria-label="Open menu" data-nav-toggle>Menu</button>
           <nav class="site-nav" data-nav aria-label="Primary">
             <a href="/data" aria-current={current === 'data' ? 'page' : undefined}>Data</a>
-            <a href="/the-attention-load" aria-current={current === 'attention-load' ? 'page' : undefined}>Missed Calls</a>
+            <a href="/the-attention-load" aria-current={current === 'attention-load' ? 'page' : undefined}>The Attention Load</a>
             <a href="/does-harden-choke" aria-current={current === 'dhc' ? 'page' : undefined}>Does Harden Choke?</a>
             <a href="/papers/ssac27" aria-current={current === 'papers' ? 'page' : undefined}>Papers</a>
             <a href="/about" aria-current={current === 'about' ? 'page' : undefined}>About</a>

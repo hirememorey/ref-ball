@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import SearchInput from '../components/SearchInput.astro';
 import WindowChrome from '../components/WindowChrome.astro';
 import RetroTag from '../components/RetroTag.astro';
+import LifecyclePill from '../components/LifecyclePill.astro';
 import { getMeta, getOfficialsIndex } from '../utils/data';
 
 const meta = getMeta();
@@ -12,16 +13,16 @@ const headline = 'The refs have a fingerprint';
 
 <Base
   title="ref-ball"
-  description="Individual NBA referees have systematically different effects on free throw rates. Open data, open code."
+  description="NBA referees have systematically different effects on free throw rates. Open data, open code."
 >
   <section class="section">
     <div class="container">
       <h1 class="display">{headline}</h1>
-      <p class="small byline">by Harris Gordon</p>
+      <p class="small byline">by Harris</p>
       <p class="lead">
-        Every NBA referee calls shooting fouls at a different rate — and it shows up in player stats. I parsed the
-        official's name out of a text field that nobody was reading, built per-official profiles for 101 refs, and
-        proved the variance is real (ANOVA p&nbsp;=&nbsp;0.000003). The data was hiding in plain sight.
+        Every NBA referee calls shooting fouls at a different rate, and it shows up in player stats. I pulled the
+        official's name out of a text field nobody was reading, built profiles for 101 refs, and showed the variance
+        is real (ANOVA p&nbsp;=&nbsp;0.000003). It was hiding in plain sight.
       </p>
     </div>
   </section>
@@ -33,25 +34,27 @@ const headline = 'The refs have a fingerprint';
         <WindowChrome title="ref-ball.exe" showStatus status={`${meta.counts.officials} officials`}>
           <article class="win95-card-inner">
             <div class="eyebrow">ref-ball</div>
-            <h3>Refs don't call shooting fouls the same way</h3>
+            <h3>Some refs kill your free throws. Others hand them out.</h3>
             <p class="study-block">
               Some officials suppress free throws for 84% of high-FTA players. Others amplify them. The 80th-percentile
-              spread is 0.86 FTA/36 — about a free throw per game for a starter. I built suppressor/amplifier profiles
-              for every official and defense-adjusted FTA deltas for 40 players across 3,846 pairs.
+              spread is 0.86 FTA/36, about a free throw per game for a starter. I built suppressor and amplifier
+              profiles for every official and defense-adjusted FTA deltas for 40 players across 3,846 pairs.
             </p>
+            <p><LifecyclePill state="live" /></p>
             <p><a class="btn-retro" href="/data/officials">See the profiles →</a></p>
           </article>
         </WindowChrome>
         <WindowChrome title="l2m_report.exe" showStatus status="51,130 events">
           <article class="win95-card-inner">
-            <div class="eyebrow">missed calls</div>
+            <div class="eyebrow">the attention load</div>
             <h3>Refs don't miss calls at random</h3>
             <p class="study-block">
-              Across 51,130 Last Two Minute events, errors cluster in high-attention situations — traveling,
-              defensive three-seconds, off-ball monitoring — at up to {meta.headlines.attention_load_lift}× the
-              baseline rate. Ordinary contact fouls are missed least often. The hardest situations to officiate
-              produce the most mistakes.
+              Across 51,130 Last Two Minute events, errors cluster in high-attention situations: traveling,
+              defensive three-seconds, off-ball monitoring. They run up to {meta.headlines.attention_load_lift}× the
+              baseline miss rate. Ordinary contact fouls are missed least often. The hardest plays to call
+              are where refs screw up most.
             </p>
+            <p><LifecyclePill state="live" /></p>
             <p><a class="btn-retro" href="/the-attention-load">Read the findings →</a></p>
           </article>
         </WindowChrome>
@@ -60,12 +63,13 @@ const headline = 'The refs have a fingerprint';
             <div class="eyebrow">does-harden-choke</div>
             <h3>When the whistle dries up, scoring floors drop</h3>
             <p class="study-block">
-              I studied 31 players looking for a common trigger for terrible playoff games. I didn't find one —
-              except that players who lose free throws from the regular season to the postseason floor more often
+              I studied 31 players looking for a common trigger for terrible playoff games. I didn't find one.
+              What I found: players who lose free throws from the regular season to the postseason floor more often
               (r&nbsp;=&nbsp;{meta.headlines.harden_fta_correlation}, p&nbsp;=&nbsp;0.002). Harden is a separate
-              case. Jimmy Butler doesn't follow the pattern. The "playoff whistle" isn't league-wide — 15 of 31
+              case. Jimmy Butler doesn't fit the pattern. The playoff whistle isn't league-wide. 15 of 31
               players actually <em>increase</em> FTA rate.
             </p>
+            <p><LifecyclePill state="frozen" /></p>
             <p><a class="btn-retro" href="/does-harden-choke">Read the findings →</a></p>
           </article>
         </WindowChrome>
@@ -89,7 +93,7 @@ const headline = 'The refs have a fingerprint';
   <section class="section section--alt">
     <div class="container">
       <p class="small muted">
-        <a href="/papers/ssac27">SSAC27 abstract</a> — the paper version of what's on this site.
+        <a href="/papers/ssac27">SSAC27 abstract</a>. The paper version of what's on this site.
       </p>
     </div>
   </section>

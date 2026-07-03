@@ -1,5 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
+import WindowChrome from '../components/WindowChrome.astro';
+import RetroTag from '../components/RetroTag.astro';
 import { getMeta } from '../utils/data';
 const meta = getMeta();
 const categories = [
@@ -11,56 +13,65 @@ const categories = [
 ---
 
 <Base
-  title="Refs don't miss calls at random"
+  title="The Attention Load"
   current="attention-load"
   description="Using the NBA's Last Two Minute reports to show that officiating errors cluster by situation, not by referee."
 >
-  <section class="section">
-    <div class="container prose">
-      <h1 class="display">Refs don't miss calls at random</h1>
+  <section class="section page-header page-header--workspace">
+    <div class="container">
+      <RetroTag label="MISSED CALLS" />
+      <h1 class="display">The Attention Load</h1>
       <p class="lead">
-        The NBA's Last Two Minute report is the league's own accounting of what they got wrong in clutch time.
-        51,130 events across four seasons of holdout data. I used it to figure out which situations break
-        officiating — and which ones don't.
+        Refs don't miss calls at random. The NBA's Last Two Minute report is the league's own accounting of what
+        they got wrong in clutch time. 51,130 events across four seasons of holdout data. I used it to figure
+        out which situations break officiating and which ones don't.
       </p>
+    </div>
+  </section>
 
-      <h2>What I found</h2>
-      <p>
-        Errors are not spread evenly. Ordinary contact fouls — the thing everyone argues about — are missed least
-        often. The situations that produce the most errors are the ones with the most moving parts: traveling,
-        out-of-bounds, defensive three-seconds, off-ball monitoring. These hit roughly <strong>{meta.headlines.attention_load_lift}×</strong> the
-        baseline miss rate in the highest-risk contexts.
-      </p>
+  <section class="section section--alt section--dither section--flush-top">
+    <div class="container">
+      <WindowChrome title="l2m_report.exe" showStatus status="51,130 events · 4 seasons">
+        <div class="prose win95-card-inner">
+          <h2>What I found</h2>
+          <p>
+            Errors aren't spread evenly. Ordinary contact fouls, the thing everyone argues about, are missed least
+            often. The situations that produce the most errors are the ones with the most moving parts: traveling,
+            out-of-bounds, defensive three-seconds, off-ball monitoring. In the highest-risk contexts they hit
+            roughly <strong>{meta.headlines.attention_load_lift}×</strong> the baseline miss rate.
+          </p>
 
-      <div class="chart-bars">
-        {categories.map((c) => (
-          <div class="chart-bar-row">
-            <span>{c.label}</span>
-            <div class="chart-bar-track"><div class="chart-bar-fill" style={`width:${c.rate * 5}%`}></div></div>
-            <span class="mono">~{c.rate}%</span>
+          <div class="chart-bars">
+            {categories.map((c) => (
+              <div class="chart-bar-row">
+                <span>{c.label}</span>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style={`width:${c.rate * 5}%`}></div></div>
+                <span class="mono">~{c.rate}%</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <h2>Holdout seasons</h2>
-      <p class="small muted">The lift holds across all four seasons — it's structural, not a single-year artifact.</p>
-      <table>
-        <thead><tr><th>Season</th><th>Baseline error rate</th><th>Top 10% risk contexts</th></tr></thead>
-        <tbody>
-          <tr><td>2021-22</td><td>7.7%</td><td>3.45× baseline</td></tr>
-          <tr><td>2022-23</td><td>6.2%</td><td>3.93× baseline</td></tr>
-          <tr><td>2023-24</td><td>6.0%</td><td>3.92× baseline</td></tr>
-          <tr><td>2024-25</td><td>4.5%</td><td>4.00× baseline</td></tr>
-        </tbody>
-      </table>
+          <h2>Holdout seasons</h2>
+          <p class="small muted">The lift holds across all four seasons. It's structural, not a single-year artifact.</p>
+          <table>
+            <thead><tr><th>Season</th><th>Baseline error rate</th><th>Top 10% risk contexts</th></tr></thead>
+            <tbody>
+              <tr><td>2021-22</td><td>7.7%</td><td>3.45× baseline</td></tr>
+              <tr><td>2022-23</td><td>6.2%</td><td>3.93× baseline</td></tr>
+              <tr><td>2023-24</td><td>6.0%</td><td>3.92× baseline</td></tr>
+              <tr><td>2024-25</td><td>4.5%</td><td>4.00× baseline</td></tr>
+            </tbody>
+          </table>
 
-      <h2>What this means</h2>
-      <p>
-        You can predict which games will have more missed calls before tip-off — not because referees are biased,
-        but because certain situations are structurally harder to officiate. Multiple moving parts, off-ball
-        action, judgment calls on traveling and defensive positioning — that's where the errors concentrate. The
-        "refs are inconsistent" feeling late in games isn't a vibe. It's measurable, and it's situation-driven.
-      </p>
+          <h2>What this means</h2>
+          <p>
+            You can predict which games will have more missed calls before tip-off. Not because refs are biased,
+            but because certain situations are structurally harder to officiate. Multiple moving parts, off-ball
+            action, judgment calls on traveling and defensive positioning. That's where the errors concentrate. The
+            refs-are-inconsistent feeling late in games isn't a vibe. It's measurable, and it's situation-driven.
+          </p>
+        </div>
+      </WindowChrome>
     </div>
   </section>
 </Base>

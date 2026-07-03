@@ -1,5 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
+import WindowChrome from '../components/WindowChrome.astro';
+import RetroTag from '../components/RetroTag.astro';
+import LifecyclePill from '../components/LifecyclePill.astro';
 import { getMeta } from '../utils/data';
 const meta = getMeta();
 ---
@@ -9,72 +12,87 @@ const meta = getMeta();
   current="dhc"
   description="A 31-player study of why superstar scorers sometimes have terrible playoff games — and what free throws have to do with it."
 >
-  <section class="section">
-    <div class="container prose">
+  <section class="section page-header page-header--workspace">
+    <div class="container">
+      <RetroTag label="DOES-HARDEN-CHOKE" />
       <h1 class="display">Does Harden Choke?</h1>
       <p class="lead">
         I studied 31 high-FTA players across ~31,000 games looking for a common trigger behind terrible playoff
         performances. I didn't find one universal mechanism. I found something more specific.
       </p>
-
-      <h2>The strongest finding</h2>
-      <p>
-        Players who lose free throws from the regular season to the postseason are more likely to have terrible
-        games. The relationship is strong (r&nbsp;=&nbsp;{meta.headlines.harden_fta_correlation}, p&nbsp;=&nbsp;0.002).
-        When the whistle dries up, scoring floors drop. FGA and FTA collapse together (r&nbsp;=&nbsp;+0.428,
-        p&nbsp;=&nbsp;0.016) — foul-dependent scoring fails as a single action when rim access is denied.
+      <p class="small muted" style="margin-bottom:1rem">
+        This started with the 2023 Sixers-Celtics series. Harden put together iconic performances in Games 1 and 4,
+        then completely shit the bed in Games 6 and 7. I needed to understand how that happens, whether it's
+        a pattern or just basketball. Turns out it's a pattern, just not the one I expected.
       </p>
+      <p><LifecyclePill state="frozen" label="Frozen: the question that started all of this" /></p>
+    </div>
+  </section>
 
-      <h2>What I didn't find</h2>
-      <p>
-        I built a five-axis foul taxonomy, ran LLM video grading across four prompt modes, tested trigger
-        taxonomies, shot-chart models, and architecture models. Most of it failed honestly:
-      </p>
-      <ul>
-        <li>
-          The trigger taxonomy (pressure, elimination, opponent quality) doesn't replicate — 31% split-sample
-          concordance, which is not a stable trait.
-        </li>
-        <li>
-          The box-score architecture model explains almost nothing (R²&nbsp;=&nbsp;0.128).
-        </li>
-        <li>
-          Shot-chart mode independence is dead (range 0.315–0.340 across splits).
-        </li>
-      </ul>
+  <section class="section section--alt section--dither section--flush-top">
+    <div class="container">
+      <WindowChrome title="does_harden_choke.exe" showStatus status="31 players · frozen archive">
+        <div class="prose win95-card-inner">
+          <h2>The strongest finding</h2>
+          <p>
+            Players who lose free throws from the regular season to the postseason are more likely to have terrible
+            games. The relationship is strong (r&nbsp;=&nbsp;{meta.headlines.harden_fta_correlation}, p&nbsp;=&nbsp;0.002).
+            When the whistle dries up, scoring floors drop. FGA and FTA collapse together (r&nbsp;=&nbsp;+0.428,
+            p&nbsp;=&nbsp;0.016). Foul-dependent scoring fails as a single action when rim access is denied.
+          </p>
 
-      <h2>Harden is a separate case</h2>
-      <ul>
-        <li>
-          His elimination-game floor rate (14.6%) is actually <em>lower</em> than his non-elimination playoff
-          rate (23.2%) — the "choker in big moments" framing doesn't hold on that axis.
-        </li>
-        <li>
-          The "playoff whistle" isn't league-wide: 15 of 31 players <em>increase</em> FTA rate. The cohort mean
-          shift is −0.05 FTA/36 — essentially noise on average.
-        </li>
-        <li>
-          He floors at high rates against both elite and weak defenses. Most stars show a clear opponent-quality
-          gradient; Harden doesn't.
-        </li>
-      </ul>
-      <p>
-        Jimmy Butler is the clearest exception — he loses free throws and <em>doesn't</em> floor. The FTA-floor
-        relationship is real but not universal.
-      </p>
+          <h2>What I didn't find</h2>
+          <p>
+            I built a five-axis foul taxonomy, ran LLM video grading across four prompt modes, tested trigger
+            taxonomies, shot-chart models, and architecture models. Most of it failed honestly:
+          </p>
+          <ul>
+            <li>
+              The trigger taxonomy (pressure, elimination, opponent quality) doesn't replicate. 31% split-sample
+              concordance, which is not a stable trait.
+            </li>
+            <li>
+              The box-score architecture model explains almost nothing (R²&nbsp;=&nbsp;0.128).
+            </li>
+            <li>
+              Shot-chart mode independence is dead (range 0.315–0.340 across splits).
+            </li>
+          </ul>
 
-      <h2>What's next</h2>
-      <p>
-        The FTA-shift finding points to foul type as the missing variable. Rim-finishing contact vs. perimeter
-        foul-drawing — the LLM grader I built got to 71% binary accuracy on the timing axis, but the Giannis
-        counterexample killed timing as a discriminator. I graded 300 shooting foul clips by hand trying to build
-        a video classifier for landing fouls. The models can't get past a coin flip yet. When they do, that's
-        the next paper.
-      </p>
+          <h2>Harden is a separate case</h2>
+          <ul>
+            <li>
+              His elimination-game floor rate (14.6%) is actually <em>lower</em> than his non-elimination playoff
+              rate (23.2%). The choker-in-big-moments framing doesn't hold on that axis.
+            </li>
+            <li>
+              The playoff whistle isn't league-wide: 15 of 31 players <em>increase</em> FTA rate. The cohort mean
+              shift is −0.05 FTA/36, essentially noise on average.
+            </li>
+            <li>
+              He floors at high rates against both elite and weak defenses. Most stars show a clear opponent-quality
+              gradient; Harden doesn't.
+            </li>
+          </ul>
+          <p>
+            Jimmy Butler is the clearest exception. He loses free throws and <em>doesn't</em> floor. The FTA-floor
+            relationship is real but not universal.
+          </p>
 
-      <p>
-        Full write-up in the <a href="https://github.com/hirememorey/does-harden-choke">does-harden-choke repo</a>.
-      </p>
+          <h2>What's next</h2>
+          <p>
+            The FTA-shift finding points to foul type as the missing variable. Rim-finishing contact vs. perimeter
+            foul-drawing. The LLM grader I built got to 71% binary accuracy on the timing axis, but the Giannis
+            counterexample killed timing as a discriminator. I graded 300 shooting foul clips by hand trying to build
+            a video classifier for landing fouls. The models can't get past a coin flip yet. When they do, that's
+            the next paper.
+          </p>
+
+          <p>
+            Full write-up in the <a href="https://github.com/hirememorey/does-harden-choke">does-harden-choke repo</a>.
+          </p>
+        </div>
+      </WindowChrome>
     </div>
   </section>
 </Base>

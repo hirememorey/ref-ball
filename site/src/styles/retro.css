@@ -1,7 +1,5 @@
 /* 90s browser / Tavus-inspired chrome — pairs with Iverson palette */
 
-@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-
 :root {
   --font-ui: Tahoma, "MS Sans Serif", "Segoe UI", Geneva, sans-serif;
   --win95-face: var(--color-off-white);
@@ -249,7 +247,7 @@ body {
 /* Footer */
 .site-footer {
   background: var(--color-black);
-  border-top: 3px solid var(--color-red);
+  border-top: 3px solid var(--color-gold);
   padding: 1rem 0 1.5rem;
 }
 

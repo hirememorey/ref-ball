@@ -120,5 +120,5 @@ export function roleLabel(role: string | number | null): string {
 }
 
 export function barFillClass(meanAdj: number | null): string {
-  return valence(meanAdj) === 'amplifier' ? 'bar-fill--red' : 'bar-fill--blue';
+  return valence(meanAdj) === 'amplifier' ? 'bar-fill--red' : 'bar-fill--gold';
 }
