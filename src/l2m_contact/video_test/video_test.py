@@ -241,7 +241,7 @@ def auc(pos: list[float], neg: list[float]) -> float:
 def score() -> None:
     rs = rows()
     report = {}
-    for model in ("sonnet", "luna", "gemini"):
+    for model in ("sonnet", "luna", "gemini", "gemini_audio"):
         d = OUTS / model
         if not d.exists():
             continue
@@ -255,6 +255,8 @@ def score() -> None:
                 continue
             pos = [x["p_illegal"] for lab, x in res if lab == "illegal"]
             neg = [x["p_illegal"] for lab, x in res if lab == "not_illegal"]
+            if not pos or not neg:  # run in progress: both classes needed for an AUC
+                continue
             seen = [(lab, x) for lab, x in res if x["level"] != "cannot_see"]
             acc = sum((x["level"] == "illegal") == (lab == "illegal") for lab, x in seen) / max(len(seen), 1)
             # permutation p for AUC
@@ -273,15 +275,18 @@ def score() -> None:
     SCORES.write_text(json.dumps(report, indent=2))
     # Tracked per-clip answers (so a fresh clone can compare models without the local outputs).
     with OUTPUTS_CSV.open("w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["clip_id", "test", "label", "model", "level", "p_illegal", "reason"])
+        w = csv.DictWriter(f, fieldnames=["clip_id", "test", "label", "model", "level", "p_illegal", "reason",
+                                          "audio_cue", "audio_suggests_foul", "audio_note"])
         w.writeheader()
-        for model in ("sonnet", "luna", "gemini"):
+        for model in ("sonnet", "luna", "gemini", "gemini_audio"):
             for r in rs:
                 path = OUTS / model / f"{r['clip_id']}.json"
                 if path.exists():
                     x = json.loads(path.read_text())
                     w.writerow({"clip_id": r["clip_id"], "test": r["test"], "label": r["label"], "model": model,
-                                "level": x["level"], "p_illegal": x["p_illegal"], "reason": x.get("reason", "")})
+                                "level": x["level"], "p_illegal": x["p_illegal"], "reason": x.get("reason", ""),
+                                "audio_cue": x.get("audio_cue", ""), "audio_suggests_foul": x.get("audio_suggests_foul", ""),
+                                "audio_note": x.get("audio_note", "")})
     print(json.dumps(report, indent=2))
 
 

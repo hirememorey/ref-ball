@@ -78,5 +78,41 @@
         "marginal": 4
       }
     }
+  },
+  "gemini/uncalled": {
+    "n": 61,
+    "auc": 0.617,
+    "auc_perm_p": 0.06,
+    "accuracy_excl_cannot_see": 0.6,
+    "cannot_see": 1,
+    "levels_by_true_label": {
+      "illegal": {
+        "illegal": 4,
+        "marginal": 23,
+        "cannot_see": 1,
+        "none": 1
+      },
+      "not_illegal": {
+        "marginal": 32
+      }
+    }
+  },
+  "gemini_audio/uncalled": {
+    "n": 61,
+    "auc": 0.625,
+    "auc_perm_p": 0.044,
+    "accuracy_excl_cannot_see": 0.633,
+    "cannot_see": 1,
+    "levels_by_true_label": {
+      "illegal": {
+        "illegal": 6,
+        "marginal": 22,
+        "cannot_see": 1
+      },
+      "not_illegal": {
+        "marginal": 31,
+        "none": 1
+      }
+    }
   }
 }

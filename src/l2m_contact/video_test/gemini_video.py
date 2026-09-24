@@ -1,6 +1,7 @@
 """Gemini native-video run on the video-test sample (REST, no SDK).
 
-Sends each whole L2M clip (about 20 s) inline, sampled at 10 fps with high media resolution.
+Sends each whole L2M clip (about 20 s, audio removed) inline, sampled at 10 fps with high
+media resolution.
 The frame models saw only 5.5-15.0 s; a first Gemini result showed the play can fall outside
 that window, so Gemini gets the full clip. Same blinded rubric as video_test.py: foul type,
 the two players and the game clock, never the league decision or comment. Results go to
@@ -41,7 +42,11 @@ PROVIDER = os.environ.get("GEMINI_PROVIDER", "gemini")
 MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
 WORKERS = int(os.environ.get("GEMINI_WORKERS", "2"))
 FPS = 10
-OUT = v.OUTS / "gemini"
+# GEMINI_AUDIO=1 keeps the broadcast audio and lets the model use crowd, commentator and player
+# reactions as evidence. That is a practical filter for contestable plays in full-game footage,
+# not a clean test of seeing contact (the frame models had no audio), so it writes separately.
+AUDIO = os.environ.get("GEMINI_AUDIO") == "1"
+OUT = v.OUTS / ("gemini_audio" if AUDIO else "gemini")
 
 VIDEO_INTRO = ("The video is an NBA broadcast clip of about 20 seconds around one play. "
                "The broadcast game clock is visible in the score bug.")
@@ -49,6 +54,17 @@ SCHEMA = {"type": "OBJECT", "required": ["level", "p_illegal", "reason"],
           "properties": {"level": {"type": "STRING", "enum": ["none", "marginal", "illegal", "cannot_see"]},
                          "p_illegal": {"type": "INTEGER"},
                          "reason": {"type": "STRING"}}}
+AUDIO_CUES = ["none", "crowd", "commentator", "player_reaction", "multiple"]
+if AUDIO:
+    SCHEMA = {**SCHEMA, "required": SCHEMA["required"] + ["audio_cue", "audio_suggests_foul", "audio_note"],
+              "properties": {**SCHEMA["properties"],
+                             "audio_cue": {"type": "STRING", "enum": AUDIO_CUES},
+                             "audio_suggests_foul": {"type": "STRING", "enum": ["yes", "no", "unclear"]},
+                             "audio_note": {"type": "STRING"}}}
+AUDIO_TEXT = ("\n\nThe clip includes the broadcast audio. You may use crowd, commentator and player "
+              "reactions as evidence about the contact. Also report audio_cue (the strongest reaction "
+              "you hear around that moment), audio_suggests_foul (whether the reaction suggests people "
+              "thought it was a foul), and audio_note (what you heard, briefly).")
 LEVELS = ("none", "marginal", "illegal", "cannot_see")
 
 
@@ -96,8 +112,20 @@ URL, HEADERS = endpoint()
 def prompt_for(r: dict) -> str:
     text = v.prompt_for(r)
     # Same rubric; swap the frame description for a video one.
-    return text.replace("The frames are in time order, about 0.5 seconds apart, from the moments around one play.\n"
+    text = text.replace("The frames are in time order, about 0.5 seconds apart, from the moments around one play.\n"
                         "The broadcast game clock is visible in the score bug.", VIDEO_INTRO)
+    return text + AUDIO_TEXT if AUDIO else text
+
+
+def muted(clip_id: str) -> Path:
+    """Video-only copy of the clip. Commentary and crowd audio could reveal a missed call,
+    and the frame models saw no audio, so Gemini gets none either."""
+    out = v.WORK / "video_test" / "muted" / f"{clip_id}.mp4"
+    if not out.exists():
+        out.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(v.CLIPS / f"{clip_id}.mp4"), "-an", "-c:v", "copy",
+                        str(out)], check=True)
+    return out
 
 
 def run_one(r: dict) -> dict:
@@ -105,7 +133,7 @@ def run_one(r: dict) -> dict:
     path = OUT / f"{r['clip_id']}.json"
     if path.exists():
         return json.loads(path.read_text())
-    video = (v.CLIPS / f"{r['clip_id']}.mp4").read_bytes()
+    video = (v.CLIPS / f"{r['clip_id']}.mp4" if AUDIO else muted(r["clip_id"])).read_bytes()
     body = {
         "contents": [{"role": "user", "parts": [
             {"inlineData": {"mimeType": "video/mp4", "data": base64.b64encode(video).decode()},
@@ -152,7 +180,8 @@ def main() -> None:
             import csv
             scored = {x["clip_id"] for x in csv.DictReader(v.OUTPUTS_CSV.open()) if x["model"] == "sonnet"}
         rows = [r for r in rows if r["test"] == "uncalled" and r["clip_id"] in scored]
-    print(f"{len(rows)} clips -> {PROVIDER}:{MODEL}, {FPS} fps, full clip, high media resolution", flush=True)
+    print(f"{len(rows)} clips -> {PROVIDER}:{MODEL}, {FPS} fps, full clip, high media resolution, "
+          f"{'with audio' if AUDIO else 'muted'}", flush=True)
     done = 0
     with ThreadPoolExecutor(WORKERS) as ex:
         futs = [ex.submit(run_one, r) for r in rows]

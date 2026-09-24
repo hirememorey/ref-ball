@@ -13,9 +13,10 @@ repository, under [`src/l2m_contact/`](../../src/l2m_contact/). Artifacts for se
    they let league-judged illegal contact go.
 3. The landing-foul angle is closed: called landing contact is rare, and the June grader's
    high recall came from a yes-bias.
-4. Frame-based LLM vision models (Sonnet, GPT-6 Luna) do not reliably separate league-judged
-   illegal from marginal contact in broadcast clips. A Gemini native-video test is the one
-   open attempt.
+4. LLM vision models (Sonnet and GPT-6 Luna on frames, Gemini 3.8 Flash on native video) do
+   not reliably separate league-judged illegal from marginal contact in broadcast clips. With
+   audio, Gemini's "reaction suggests a foul" flag is precise (5 of 29 missed calls, 0 of 32
+   marginal no-calls) but low recall and home-biased.
 5. League verdicts exist outside L2M only for called fouls (coach's challenges). Uncalled
    contact outside L2M still requires human grading.
 
@@ -163,9 +164,29 @@ types: uncalled (INC vs marginal CNC) and called (CC vs IC). Models saw 20 frame
 
 Sonnet's uncalled result does not survive correction for four tests (Bonferroni 0.0125); it
 was right 62% of the time on judgeable clips and could not judge about a quarter. Sonnet stopped
-at 107 of 172 clips ($30.64 list). Gemini native video (`gemini_video.py`: whole clip, 10 fps,
-high media resolution) was attempted through the Gemini API but blocked by 503 errors and the
-free tier's 20 requests per day; it has not produced results.
+at 107 of 172 clips ($30.64 list).
+
+**Gemini native video (Sep 24, Vertex).** Gemini 3.8 Flash (`gemini_video.py`) on the same 61
+uncalled clips, whole ~20 s clip at 10 fps and high media resolution (~52K tokens per clip).
+Two arms: audio removed (a clean test of seeing contact; the frame models had no audio) and
+with broadcast audio (a practical filter, since crowd and commentator reactions are evidence
+that a play was contestable).
+
+| Model | Uncalled clips | AUC | p | Right when judged | Cannot see |
+|---|---:|---:|---:|---:|---:|
+| Gemini, muted | 61 | 0.62 | 0.06 | 60% | 1 |
+| Gemini, with audio | 61 | 0.63 | 0.04 | 63% | 1 |
+| Sonnet, 20 frames | 61 | 0.64 | 0.03 | 62% | 14 |
+
+Gemini sees nearly every play but calls almost everything marginal: of 29 missed calls, it said
+illegal on 4 (muted) or 6 (audio). Native video fixed visibility, not discrimination.
+
+The audio arm's own reaction field is more interesting than its score: "audio suggests a foul"
+fired on 5 of 29 missed calls and 0 of 32 marginal no-calls (one-sided Fisher p = 0.02). Precise
+but low recall (17%), and home-biased: all 5 flags were on plays where the fouled team was at
+home (5/17 home vs 0/11 away, p = 0.06). Broadcast audio mostly finds home-team missed calls
+that drew a reaction. Cost: $2.72 muted, $2.68 audio (introductory pricing, $0.75 / $3.75 per
+million input / output tokens).
 
 Likely limits of broadcast video: one camera angle, contact shorter than frame spacing, and the
 play not exactly centered in the clip.

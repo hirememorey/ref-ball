@@ -4,7 +4,7 @@
 
 > **Picking up development?** See [documents/development/HANDOFF.md](documents/development/HANDOFF.md) for current data inventory, findings, and the exact next steps to run.
 >
-> **September 2026 update:** [documents/development/SEPTEMBER-2026-FINDINGS.md](documents/development/SEPTEMBER-2026-FINDINGS.md) supersedes parts of this README. In short: broad referee free-throw effects partly survive controls, but player-specific fingerprints show no reliable out-of-sample predictive value; the landing-foul angle is closed; in L2M windows, crews do not differ in letting league-judged illegal contact go once contact type is held constant ([`src/l2m_contact/`](src/l2m_contact/)); and frame-based LLM vision models cannot reliably see illegal vs marginal contact in broadcast clips.
+> **September 2026 update:** [documents/development/SEPTEMBER-2026-FINDINGS.md](documents/development/SEPTEMBER-2026-FINDINGS.md) supersedes parts of this README. In short: broad referee free-throw effects partly survive controls, but player-specific fingerprints show no reliable out-of-sample predictive value; the landing-foul angle is closed; in L2M windows, crews do not differ in letting league-judged illegal contact go once contact type is held constant ([`src/l2m_contact/`](src/l2m_contact/)); and LLM vision models (frames or Gemini native video) cannot reliably see illegal vs marginal contact in broadcast clips.
 
 ## The Strategy
 
@@ -25,7 +25,7 @@ The dataset has three layers, each with a different novelty moat:
 | **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Paused (Sep 2026)** — best July runs: Run 5 **75% P / 83% R**, Run 4 **81% P / 59% R**; Run 7 never run. Sep 23 side check: only ~10% of called NO clips contain landing contact, so the landing angle is closed |
 | **Layer 3: No-call detection** | Uncalled contact and who let it go | Strong (requires labeled uncalled contact) | **Tested in L2M (Sep 2026)** — 57K L2M foul reviews tagged by an LLM hybrid; crew test null; broadcast-video detection not reliable. Full-game uncalled contact still needs human grading |
 
-**Current build order (Sep 24, 2026):** Steps 1-9 **complete**. Layer 2 landing-foul classification **paused**: the July video runs never cleared the 85% precision gate, Run 7 was not run, and the September side check closed the landing angle. The September work built the **L2M contact pipeline** ([`src/l2m_contact/`](src/l2m_contact/)): all 3,132 L2M reports (2018-19 to 2025-26), league referee clips, LLM contact tags for 57,209 foul reviews, a crew test (null), coach's-challenge verdicts on called fouls, and a video test (not reliable). **Next:** a Gemini native-video run on the video-test sample, and human grading of the 65 remaining tag-audit rows. See [HANDOFF.md](documents/development/HANDOFF.md) and [SEPTEMBER-2026-FINDINGS.md](documents/development/SEPTEMBER-2026-FINDINGS.md).
+**Current build order (Sep 24, 2026):** Steps 1-9 **complete**. Layer 2 landing-foul classification **paused**: the July video runs never cleared the 85% precision gate, Run 7 was not run, and the September side check closed the landing angle. The September work built the **L2M contact pipeline** ([`src/l2m_contact/`](src/l2m_contact/)): all 3,132 L2M reports (2018-19 to 2025-26), league referee clips, LLM contact tags for 57,209 foul reviews, a crew test (null), coach's-challenge verdicts on called fouls, and a video test (not reliable, including Gemini native video). **Next:** human grading of the 65 remaining tag-audit rows; for full-game uncalled contact, human grading of candidate plays, optionally pre-filtered by broadcast-audio reactions. See [HANDOFF.md](documents/development/HANDOFF.md) and [SEPTEMBER-2026-FINDINGS.md](documents/development/SEPTEMBER-2026-FINDINGS.md).
 
 ## The Paper Sequence
 
@@ -155,7 +155,7 @@ L2M CONTACT (Sep 2026 — see src/l2m_contact/README.md)
                             →  data/l2m_contact/contact_tags.csv (57,209 foul reviews) ✓
 17. Crew test              →  src/l2m_contact/analyze_crews.py, heldout_null.py  →  null ✓
 18. Coach's challenges     →  src/l2m_contact/coach_challenges.py  →  data/l2m_contact/coach_challenges.csv ✓
-19. Video test             →  src/l2m_contact/video_test/  →  frame-based LLMs not reliable; Gemini video pending
+19. Video test             →  src/l2m_contact/video_test/  →  Sonnet, Luna, Gemini native video: not reliable ✓
 ```
 
 Steps 1-11 (data + labels) are **complete**. Step 12b frozen baseline is **complete** (zero signal). Step 12c fine-tuning: Run 5 **75% P / 83% R**, Run 4 **81% P / 59% R**, Run 6 **75% P / 62% R**. Step 12d anchors **complete** (284/284). Step 12f ensemble + temporal sweep **complete** (gate not cleared). **Active frontier:** Run 7 (`phase=head` only) or hybrid LLM pre-filter. See [HANDOFF.md](documents/development/HANDOFF.md).
@@ -505,6 +505,6 @@ ref-ball/
 
 6. ~~**Release strategy.**~~ **Resolved: full open-source.** All data (per-official profiles, player-official interaction tables, predictive model outputs) will be published with the SSAC27 submission. Sloan requires open-source; we're publishing everything — no anonymization, named officials.
 
-7. **Can any model see uncalled contact in broadcast video?** Frame-based Sonnet and GPT-6 Luna did not reliably separate league-judged illegal from marginal contact in L2M clips. Gemini native video (full clip, 10 fps) is untested. If it also fails, full-game uncalled contact needs human grading.
+7. ~~**Can any model see uncalled contact in broadcast video?**~~ **Not reliably (Sep 24).** Sonnet (frames), GPT-6 Luna (frames) and Gemini 3.8 Flash (native video, 10 fps) all fell at AUC 0.51-0.64 on L2M clips. Open follow-up: with broadcast audio, Gemini's "reaction suggests a foul" flag hit 5 of 29 missed calls and 0 of 32 marginal no-calls, but only on home-team plays. Worth testing as a pre-filter for human grading.
 
 8. **Why did the L2M missed-call rate halve?** 33% of league-judged fouls were missed in 2018-19 vs 13-17% in 2024-26. Officiating, report writing, or listing criteria; unexplained.

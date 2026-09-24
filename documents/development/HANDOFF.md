@@ -14,11 +14,11 @@ Everything from "What This Project Is Trying To Do" onward is the **July 2-3 sna
 - **Layer 2 (landing fouls): closed.** Run 7 was never run. The September side check found only ~10% of called NO clips contain landing contact.
 - **Layer 3 (uncalled contact): tested in L2M.** New pipeline in [`src/l2m_contact/`](../../src/l2m_contact/README.md): all 3,132 L2M reports (2018-19 to 2025-26), league referee clips (2023-24 pilot), LLM contact tags for 57,209 foul reviews, and a crew test. With contact type held constant, crews do not detectably differ in letting league-judged illegal contact go (omnibus p = 0.16-0.21, 0 of 84 officials pass FDR, held-out p = 0.16-0.19).
 - **Called fouls, full game:** coach's challenges give league verdicts on ~400 called fouls per season outside L2M, with the calling official named (`data/l2m_contact/coach_challenges.csv`).
-- **Video:** frame-based Sonnet and GPT-6 Luna could not reliably separate league-judged illegal from marginal contact in L2M clips (best AUC 0.64, not significant after correction).
+- **Video:** Sonnet (frames), GPT-6 Luna (frames) and Gemini 3.8 Flash (native video, 10 fps, Vertex) could not reliably separate league-judged illegal from marginal contact in L2M clips (AUC 0.51-0.64). With audio, Gemini's "reaction suggests a foul" flag was precise (5/29 missed calls, 0/32 marginal no-calls) but low recall and only on home-team plays.
 
 **Next steps, in order**
 
-1. **Gemini native-video test.** Whole clip, 10 fps, high media resolution, on the 61 uncalled clips Sonnet scored. Compare against Sonnet's AUC 0.64. If Gemini cannot beat it, treat broadcast video as closed for uncalled contact.
+1. ~~**Gemini native-video test.**~~ **Done (Sep 24):** muted AUC 0.62, with audio 0.63, vs Sonnet 0.64 on the same 61 clips; Gemini calls nearly everything marginal. Treat broadcast video as closed for seeing contact. To rerun or extend (`all` for the called test too; add `GEMINI_AUDIO=1` for the audio arm):
    ```bash
    gcloud auth application-default login
    gcloud config set project <project-with-credits>
