@@ -3,12 +3,14 @@
 **Per-official NBA shooting-foul profiles, predictive crew models, and contact-type classification — understanding how individual referees interpret contact differently.**
 
 > **Picking up development?** See [documents/development/HANDOFF.md](documents/development/HANDOFF.md) for current data inventory, findings, and the exact next steps to run.
+>
+> **September 2026 update:** [documents/development/SEPTEMBER-2026-FINDINGS.md](documents/development/SEPTEMBER-2026-FINDINGS.md) supersedes parts of this README. In short: broad referee free-throw effects partly survive controls, but player-specific fingerprints show no reliable out-of-sample predictive value; the landing-foul angle is closed; in L2M windows, crews do not differ in letting league-judged illegal contact go once contact type is held constant ([`src/l2m_contact/`](src/l2m_contact/)); and frame-based LLM vision models cannot reliably see illegal vs marginal contact in broadcast clips.
 
 ## The Strategy
 
 **Primary aim:** Understand how each individual NBA referee interprets contact. The aggregate question (do refs call different games?) is answered — ANOVA p=0.000003. The next question is *why*: do refs differ in how they interpret specific types of contact, starting with landing fouls?
 
-**Secondary aim:** Predict the officiating profile of a game from crew assignment. Steps 5-7 (predictive crew models + does-harden-choke merge) are complete. Game-level prediction is weak (R^2~0.005); player-level prediction is modest (R^2=0.13). The continuous prediction works (r=0.406) but crew assignment is not the mechanism behind playoff FTA collapse.
+**Secondary aim:** Predict the officiating profile of a game from crew assignment. Steps 5-7 (predictive crew models + does-harden-choke merge) are complete. Game-level prediction is weak (R^2~0.005); player-level prediction is modest (R^2=0.13). The continuous prediction works (r=0.406) but crew assignment is not the mechanism behind playoff FTA collapse. **Caveat (Sep 2026):** a controlled reanalysis with a strict chronological holdout (train through 2020-21, test 2023-25) found crew terms improve FTA/36 RMSE by only 0.02%, and player x official terms make it worse; both intervals include zero. Treat the r=0.406 result as descriptive, not validated prediction. See [SEPTEMBER-2026-FINDINGS.md](documents/development/SEPTEMBER-2026-FINDINGS.md) §1.
 
 **Key finding (2026-07-01):** Shooting foul heterogeneity is **independent** of non-shooting foul heterogeneity. Per-official SF rate and NSF rate are uncorrelated (r=0.152, p=0.15). After residualizing SF rate on NSF rate, 100% of the shooting foul ANOVA effect survives (η²: 0.032 vs 0.031 raw). The effect is foul-type-specific, not a volume artifact. Personal fouls show the largest effect (η²=0.064); Personal Take and Offensive Charge show no significant variance (p>0.05). See [HANDOFF.md](documents/development/HANDOFF.md) "Foul-Type Specificity Analysis" for full breakdown.
 
@@ -20,10 +22,10 @@ The dataset has three layers, each with a different novelty moat:
 |---|---|---|---|
 | **Layer 1: Per-official attribution** | Official name parsed from PBP `description` field | Weak (anyone can parse it) | **Complete** — 13,278 games ingested, 13,464 with crew |
 | **Player x official profiles** | FTA/36 deltas per player under each official, defense-adjusted | Medium (requires crew + game logs) | **Built (40 players)** — full crew, 3,846 pairs, ANOVA p=0.000003 |
-| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Active** — Run 5: **75% P / 83% R**; Run 4: **81% P / 59% R**; Run 6: **75% P / 62% R**; ensemble **69% P / 93% R**; **Run 7** (`phase=head`); pose **54% P standalone** |
-| **Layer 3: No-call detection** | Predicted missed fouls on non-called contact plays | Strong (requires video model + full-game video) | **Shelved** — L2M INC available for validation; video path not pursued |
+| **Layer 2: Contact-type classification** | Fine-tuned video classifier on landing fouls (LLM path exhausted) | Strong (video model + labels at scale) | **Paused (Sep 2026)** — best July runs: Run 5 **75% P / 83% R**, Run 4 **81% P / 59% R**; Run 7 never run. Sep 23 side check: only ~10% of called NO clips contain landing contact, so the landing angle is closed |
+| **Layer 3: No-call detection** | Uncalled contact and who let it go | Strong (requires labeled uncalled contact) | **Tested in L2M (Sep 2026)** — 57K L2M foul reviews tagged by an LLM hybrid; crew test null; broadcast-video detection not reliable. Full-game uncalled contact still needs human grading |
 
-**Current build order:** Layers 1 + player x official profiles + predictive models (Steps 1-7) are **complete**. DHC tooling merge (Step 8) is **complete**. Step 9 manual landing foul ground truth is **complete** (300/300 clips, merged to 335 rows). Step 10 LLM grader is **exhausted** (best: 55% precision, 98% recall). Step 10b frozen VideoMAE baseline tested — **zero signal**. Step 10c Colab/RunPod: Run 5 **75% P / 83% R** (best balance), Run 4 **81% P / 59% R** (best precision), Run 6 **75% P / 62% R** (`unfreeze_layers=6`, gate not cleared). Post-Run 5: ensemble **69% P / 93% R**, temporal window sweep best **77% P** — gate not cleared. **Active frontier: Run 7** — `phase=head` only (Run 4 path) or hybrid LLM pre-filter. Step 10e Pose Phases 0–4 **complete** (ensemble done, gate not cleared). See [HANDOFF.md](documents/development/HANDOFF.md) Step 10b.
+**Current build order (Sep 24, 2026):** Steps 1-9 **complete**. Layer 2 landing-foul classification **paused**: the July video runs never cleared the 85% precision gate, Run 7 was not run, and the September side check closed the landing angle. The September work built the **L2M contact pipeline** ([`src/l2m_contact/`](src/l2m_contact/)): all 3,132 L2M reports (2018-19 to 2025-26), league referee clips, LLM contact tags for 57,209 foul reviews, a crew test (null), coach's-challenge verdicts on called fouls, and a video test (not reliable). **Next:** a Gemini native-video run on the video-test sample, and human grading of the 65 remaining tag-audit rows. See [HANDOFF.md](documents/development/HANDOFF.md) and [SEPTEMBER-2026-FINDINGS.md](documents/development/SEPTEMBER-2026-FINDINGS.md).
 
 ## The Paper Sequence
 
@@ -39,6 +41,7 @@ Each paper builds on the dataset from the previous one. We do not need all three
 - Validation against L2M INC shooting fouls (league-audited ground truth) — **Layer 1 validated; player-derived suppressor score not confirmed (see Step 6)**
 - Does not require foul-type classification or a video model
 - **Status: Steps 1-7 complete. Findings support the claim but predictive R^2 is modest. Strongest result is descriptive heterogeneity (ANOVA p=0.000003) + crew interaction effects.**
+- **Sep 2026 controls reanalysis:** broad referee-level FTA associations partly survive controls (dispersion down ~29%, omnibus p ≈ 1.6e-7, 3 of 85 officials pass FDR), but crew and player x official terms add no reliable out-of-sample predictive value. The abstract's prediction claims should be revisited before submission.
 
 #### SSAC27 Submission (MIT Sloan Sports Analytics Conference 2027)
 
@@ -145,6 +148,14 @@ LAYER 2: CONTACT-TYPE CLASSIFICATION (Steps 9-12 — ACTIVE)
 12g. Temporal sweep         →  src/landing_foul_temporal_sweep.py →  eval-only window sweep ✓ (best 77% P)
 13. Per-official rates      →  src/landing_foul_video_predict.py →  batch inference (blocked on 12c gate)
 14. Variance analysis       →  (TBD)                             →  ANOVA on per-official rates
+
+L2M CONTACT (Sep 2026 — see src/l2m_contact/README.md)
+15. L2M reports + clips    →  src/l2m_contact/fetch_l2m_reports.py, fetch_crews.py, fetch_clips.py
+16. Contact tags           →  src/l2m_contact/classify_comments.py (rules), llm_tag.py + hybrid.py (LLM)
+                            →  data/l2m_contact/contact_tags.csv (57,209 foul reviews) ✓
+17. Crew test              →  src/l2m_contact/analyze_crews.py, heldout_null.py  →  null ✓
+18. Coach's challenges     →  src/l2m_contact/coach_challenges.py  →  data/l2m_contact/coach_challenges.csv ✓
+19. Video test             →  src/l2m_contact/video_test/  →  frame-based LLMs not reliable; Gemini video pending
 ```
 
 Steps 1-11 (data + labels) are **complete**. Step 12b frozen baseline is **complete** (zero signal). Step 12c fine-tuning: Run 5 **75% P / 83% R**, Run 4 **81% P / 59% R**, Run 6 **75% P / 62% R**. Step 12d anchors **complete** (284/284). Step 12f ensemble + temporal sweep **complete** (gate not cleared). **Active frontier:** Run 7 (`phase=head` only) or hybrid LLM pre-filter. See [HANDOFF.md](documents/development/HANDOFF.md).
@@ -322,7 +333,9 @@ Another sibling project on the same L2M data. Key distinction:
 
 ref-ball's claim must be tested *conditional on decision context* to avoid conflating assignment composition with competence. See HANDOFF Step 6 (L2M validation complete; CSF taxonomy conditioning still open).
 
-## Foul-type classification (Paper 2 — active frontier)
+## Foul-type classification (Paper 2 — paused, Sep 2026)
+
+> Paused. The September landing-contact side check found only ~10% of called NO clips contain landing contact, so the June grader's recall reflected a yes-bias and the landing angle is closed. The plan below is kept as the July record.
 
 ### Current approach: landing foul binary
 
@@ -374,6 +387,7 @@ ref-ball/
 ├── data/
 │   ├── foul_type_classifications.csv # Manual v3 ground truth (36 clips, from DHC)
 │   ├── landing_foul_classifications.csv  # Step 9 manual export (300 clips, git-tracked)
+│   ├── l2m_contact/                 # Sep 2026 tracked results: contact tags, audit, crew results, challenges, video test
 │   ├── landing_foul_ground_truth.csv       # Merged ground truth (335 rows) — run `make landing-merge`
 │   ├── raw/
 │   │   └── pbp/                     # PBP JSON (symlink → does-harden-choke)
@@ -428,7 +442,9 @@ ref-ball/
 │   ├── landing_foul_pose_classify.py # Step 10e: rules / XGBoost classifier (BUILT)
 │   ├── landing_foul_ensemble.py     # Step 10f: VideoMAE + pose ensemble (BUILT — 69% P / 93% R)
 │   ├── landing_foul_temporal_sweep.py # Step 10c: eval-only temporal window sweep (BUILT)
-│   └── generate_abstract_figures.py # SSAC27 abstract figures (Table 1 + Figure 1)
+│   ├── generate_abstract_figures.py # SSAC27 abstract figures (Table 1 + Figure 1)
+│   └── l2m_contact/                 # Sep 2026: L2M reports, clips, contact tags, crew test, video test
+│       └── README.md                # Pipeline steps and paths
 ├── output/
 │   ├── figures/
 │   │   ├── table_a_suppressor_amplifier.png    # SSAC27 Table 1: suppressor/amplifier profiles
@@ -438,6 +454,7 @@ ref-ball/
     ├── ssac27-abstract-draft.md         # SSAC27 Paper 1 abstract (v2, ~460 words)
     └── development/
         ├── HANDOFF.md               # Current state + next steps (start here)
+        ├── SEPTEMBER-2026-FINDINGS.md # Sep 2026 experiments and verdicts
         ├── HANDOFF-findings.md      # Detailed findings tables
         └── POSE-ESTIMATION-PLAN.md  # Pose estimation implementation plan (Step 10e)
 ```
@@ -468,16 +485,26 @@ ref-ball/
 
 12. **Dataset is the asset, papers are downstream.** Build once, query for Papers 1-3.
 
+13. **Landing-foul angle closed (Sep 23, 2026).** Only ~10% (95% CI 4-26%) of called NO clips contain landing contact; the June grader's 98% recall came from saying YES to three-point shooting fouls generally.
+
+14. **L2M reports are the labeled source for uncalled contact.** CNC/INC plays are contact the crew let go, rated by the league with a written comment and a referee clip. Used for tagging and the crew test; limited to the last two minutes of close games and to plays the league chose to list.
+
+15. **Contact tags come from an LLM hybrid, not rules.** GPT-6 Luna tags all rows; Sonnet re-checks rows flagged by a decision-blind rule. Rules scored 8/25 on human-graded rows; the hybrid 23/25 (optimistic: the prompt was developed on those rows).
+
 ## Open questions
 
 1. **Does official heterogeneity survive taxonomy conditioning?** cranky-scott-foster found context dominates error rates. CSF taxonomy import for L2M conditioning not yet done.
 
-2. **Can a fine-tuned video classifier reliably grade landing fouls?** LLM path exhausted (55% precision). Frozen VideoMAE baseline — zero signal. First Colab fine-tune run degenerate (51% precision, constant 0.587 prob on all clips) — likely full-clip temporal window. **Next:** manual per-clip anchors, then retrain. Target: ≥85% precision on YES.
+2. ~~**Can a fine-tuned video classifier reliably grade landing fouls?**~~ **Closed (Sep 2026).** No July run cleared the 85% precision gate, and the landing side check closed the angle.
 
-3. **Do landing foul calling rates vary significantly across officials?** This is the core Paper 2 hypothesis. Blocked on Step 10c classifier gate (after anchor + retrain).
+3. ~~**Do landing foul calling rates vary significantly across officials?**~~ **Superseded (Sep 2026)** by the closed landing angle. This is the core Paper 2 hypothesis. Blocked on Step 10c classifier gate (after anchor + retrain).
 
 4. **What is the right sample design for per-official classification?** Player-diverse sampling (used in DHC) vs. official-diverse sampling (needed here). Need enough clips per official for statistical power (~100-150 per ref, 10-15 refs).
 
 5. **Playoff assignment confound.** NBA assigns officials to playoff games strategically. RS->PO comparisons are descriptive, not causal. No individual-level "playoff whistle" found (rs_po_delta ~ 0).
 
 6. ~~**Release strategy.**~~ **Resolved: full open-source.** All data (per-official profiles, player-official interaction tables, predictive model outputs) will be published with the SSAC27 submission. Sloan requires open-source; we're publishing everything — no anonymization, named officials.
+
+7. **Can any model see uncalled contact in broadcast video?** Frame-based Sonnet and GPT-6 Luna did not reliably separate league-judged illegal from marginal contact in L2M clips. Gemini native video (full clip, 10 fps) is untested. If it also fails, full-game uncalled contact needs human grading.
+
+8. **Why did the L2M missed-call rate halve?** 33% of league-judged fouls were missed in 2018-19 vs 13-17% in 2024-26. Officiating, report writing, or listing criteria; unexplained.
