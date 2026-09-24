@@ -1,6 +1,48 @@
-# Development Handoff (July 2, 2026)
+# Development Handoff (updated September 24, 2026)
 
 Operational snapshot for a new developer or LLM picking up this codebase. For project goals, literature positioning, and long-term paper sequence, see the root [README.md](../../README.md).
+
+---
+
+## September 2026 — current state (START HERE)
+
+Everything from "What This Project Is Trying To Do" onward is the **July 2-3 snapshot**, kept as history. September results change several of its conclusions; details and numbers are in [SEPTEMBER-2026-FINDINGS.md](SEPTEMBER-2026-FINDINGS.md).
+
+**What changed**
+
+- **Paper 1 prediction claims:** a controlled reanalysis with a chronological holdout found no reliable out-of-sample value from crew or player x official terms (RMSE gain 0.02%, intervals include zero). Broad referee-level FTA differences partly survive controls. Revisit the SSAC27 abstract's prediction framing before the October 1 deadline.
+- **Layer 2 (landing fouls): closed.** Run 7 was never run. The September side check found only ~10% of called NO clips contain landing contact.
+- **Layer 3 (uncalled contact): tested in L2M.** New pipeline in [`src/l2m_contact/`](../../src/l2m_contact/README.md): all 3,132 L2M reports (2018-19 to 2025-26), league referee clips (2023-24 pilot), LLM contact tags for 57,209 foul reviews, and a crew test. With contact type held constant, crews do not detectably differ in letting league-judged illegal contact go (omnibus p = 0.16-0.21, 0 of 84 officials pass FDR, held-out p = 0.16-0.19).
+- **Called fouls, full game:** coach's challenges give league verdicts on ~400 called fouls per season outside L2M, with the calling official named (`data/l2m_contact/coach_challenges.csv`).
+- **Video:** frame-based Sonnet and GPT-6 Luna could not reliably separate league-judged illegal from marginal contact in L2M clips (best AUC 0.64, not significant after correction).
+
+**Next steps, in order**
+
+1. **Gemini native-video test.** Whole clip, 10 fps, high media resolution, on the 61 uncalled clips Sonnet scored. Compare against Sonnet's AUC 0.64. If Gemini cannot beat it, treat broadcast video as closed for uncalled contact.
+   ```bash
+   gcloud auth application-default login
+   gcloud config set project <project-with-credits>
+   GEMINI_PROVIDER=vertex python3 src/l2m_contact/video_test/gemini_video.py
+   python3 src/l2m_contact/video_test/video_test.py score
+   ```
+   Needs the 2023-24 clips in `data/clips/l2m/2023-24/` (`video_test.py download`). The Gemini API free tier (20 requests/day/model) is too small for this; use Vertex or a paid key.
+2. **Grade the 65 remaining tag-audit rows** (`python3 src/l2m_contact/audit_grader.py`, then `evaluate_tags.py`). The LLM prompt is frozen, so these rows give an honest accuracy for the hybrid tags. Only needed if the tags are used beyond the crew test.
+3. **Explain the L2M missed-call drift** (33% in 2018-19 to 13-17% in 2024-26) before using L2M rates across seasons.
+4. **Full-game uncalled contact** has no labeled source; if video fails, it needs human grading of candidate plays.
+
+**New data (September)**
+
+| Asset | Path | Count | Git |
+|---|---|---|---|
+| L2M report JSON | `data/raw/l2m/<season>/` | 3,132 games, 8 seasons | ignored |
+| L2M events table | `data/processed/l2m_contact/events.csv` | 64,302 rated plays | ignored (rebuild: `fetch_l2m_reports.py table`) |
+| 2025-26 crews | `data/l2m_contact/crews_extra.csv` | 415 games | tracked |
+| Referee clips, 2023-24 pilot | `data/clips/l2m/2023-24/` | 988 valid of 993 + 72 video-test clips | ignored |
+| Contact tags (LLM hybrid) | `data/l2m_contact/contact_tags.csv` | 57,209 foul reviews | tracked (ids + labels, no comment text) |
+| Tag audit sample / grades | `data/l2m_contact/tag_audit_sample.csv`, `tag_audit_grades.csv` | 90 rows / 25 graded | tracked |
+| Crew test results | `data/l2m_contact/results_rules/`, `results_hybrid/` | summary, per-official table, held-out null | tracked |
+| Coach's challenges | `data/l2m_contact/coach_challenges.csv` | 3,023 (2019-20 to 2022-23) | tracked |
+| Video test | `data/l2m_contact/video_test_sample.csv`, `video_test_outputs.csv`, `video_test_scores.json` | 172 clips; 279 model answers | tracked |
 
 ---
 
@@ -21,7 +63,7 @@ Operational snapshot for a new developer or LLM picking up this codebase. For pr
    - Run 6 (2026-07-03, RunPod RTX 3090, `unfreeze_layers=6`): **75% P, 62% R** — same precision as Run 5, worse recall (6 FPs / 11 FNs); gate not cleared.
    - Post-Run 5 (2026-07-02): ensemble (VideoMAE + pose) **69% P / 93% R**; temporal window sweep (15 configs) best **77% P** — none clear gate.
    - LLM describe → rules (57-val): 50% P, 93% R.
-   - **START HERE:** **Run 7** — `phase=head` only (Run 4 hit **81% P** at head epoch 5) or hybrid LLM pre-filter. See [Step 10b](#step-10b-fine-tuned-video-classifier--colab-run-6).
+   - *(July plan, superseded)* Run 7 — `phase=head` only or hybrid LLM pre-filter. Not run; the landing angle was closed in September. See [September 2026](#september-2026--current-state-start-here).
 
 **Completed work:** Per-official x player FTA profiles, predictive crew models (Steps 1-7), L2M validation, does-harden-choke merge, SSAC27 abstract draft + figures. See "Key Findings" below and [HANDOFF-findings.md](HANDOFF-findings.md) for details.
 
