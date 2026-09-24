@@ -14,9 +14,11 @@ repository, under [`src/l2m_contact/`](../../src/l2m_contact/). Artifacts for se
 3. The landing-foul angle is closed: called landing contact is rare, and the June grader's
    high recall came from a yes-bias.
 4. LLM vision models (Sonnet and GPT-6 Luna on frames, Gemini 3.8 Flash on native video) do
-   not reliably separate league-judged illegal from marginal contact in broadcast clips. With
-   audio, Gemini's "reaction suggests a foul" flag is precise (5 of 29 missed calls, 0 of 32
-   marginal no-calls) but low recall and home-biased.
+   not reliably separate league-judged illegal from marginal contact in broadcast clips, and
+   Luna cannot even separate contact from no contact (three prompts, cleaned labels). The
+   broadcast angle often hides the contact point. With audio, Gemini's "reaction suggests a
+   foul" flag is precise (5 of 29 missed calls, 0 of 32 marginal no-calls) but low recall and
+   home-biased. The video route is closed.
 5. League verdicts exist outside L2M only for called fouls (coach's challenges). Uncalled
    contact outside L2M still requires human grading.
 
@@ -190,3 +192,30 @@ million input / output tokens).
 
 Likely limits of broadcast video: one camera angle, contact shorter than frame spacing, and the
 play not exactly centered in the clip.
+
+**Contact-detector tests (Sep 24).** Reframed goal: the model need not judge legality, only whether
+contact happened; play-by-play supplies called vs uncalled, and crews are compared on call rate
+given contact. That needs a detector that (A) separates no contact from contact and (B) detects
+contact at the same rate on called and missed plays (no whistle bias). `video_test/contact_test.py`,
+GPT-6 Luna on 20 frames, 50 clips per class:
+
+| Version | Change | A: "contact" on no-contact vs contact plays | B: called vs missed |
+|---|---|---|---|
+| v1 | 2023-24; negatives = CNC tagged "none" | 57% vs 68% (AUC 0.59) | 62% vs 69% |
+| v2 | on-ball only, all seasons, strict no-contact wording, ball-following prompt | 59% vs 61% (AUC 0.57) | 76% vs 63% (p 0.19) |
+| v3 | v2 plus "is the contact point visible?" and "did the offensive player's motion change?" | AUC 0.44; visible on ~20%; when visible 77% vs 50% | motion change 30% vs 33% |
+
+v1's negatives were contaminated: the tagger's `none` included "no *illegal* contact" (mostly
+screens, which involve contact). v2 fixed the labels and restricted to on-ball plays; Luna still
+treated proximity as contact ("bodies appear to make contact", 87% confidence either way).
+Harris's review of the clearest false positive (White vs Embiid, Dec 18 2023, Q4 0:08.6) found the
+contact point hidden: the broadcast shows Embiid's back with the defender in front, so contact can
+only be inferred from whether his motion changes. v3 asked for exactly that; Luna then said
+"cannot see" on ~80% of plays, and its visibility and motion answers were noise or inverted (13 of
+its 39 "visible" answers describe the point as obscured). Gemini v2 was stopped after 6 of 197
+clips by Vertex throttling ($0.28); on the Embiid clip it also answered "clear contact" (95).
+
+**Verdict: stop.** Across frames and native video, three prompts and cleaned labels, no model
+separated contact from no contact in broadcast footage. The single broadcast angle hides many
+contact points, and the models answer confidently regardless. Full-game uncalled contact needs
+human grading (or footage with more angles).

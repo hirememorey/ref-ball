@@ -1,0 +1,81 @@
+{
+  "luna/A": {
+    "n": {
+      "no_contact": 49,
+      "contact": 49
+    },
+    "contact_answers": {
+      "no_contact": {
+        "yes": 10,
+        "cannot_see": 36,
+        "no": 3
+      },
+      "contact": {
+        "cannot_see": 39,
+        "yes": 5,
+        "no": 5
+      }
+    },
+    "yes_rate": {
+      "no_contact": 0.204,
+      "contact": 0.102
+    },
+    "auc_contact_vs_none": 0.441,
+    "fisher_p_yes_rate": 0.955,
+    "visible_rate": {
+      "no_contact": 0.265,
+      "contact": 0.204
+    },
+    "motion_change_yes_rate": {
+      "no_contact": 0.408,
+      "contact": 0.286
+    },
+    "visible_n": {
+      "no_contact": 13,
+      "contact": 10
+    },
+    "visible_yes_rate": {
+      "no_contact": 0.769,
+      "contact": 0.5
+    }
+  },
+  "luna/B": {
+    "n": {
+      "missed": 49,
+      "called": 50
+    },
+    "contact_answers": {
+      "missed": {
+        "cannot_see": 41,
+        "yes": 3,
+        "no": 5
+      },
+      "called": {
+        "cannot_see": 42,
+        "yes": 5,
+        "no": 3
+      }
+    },
+    "yes_rate": {
+      "missed": 0.061,
+      "called": 0.1
+    },
+    "fisher_p_two_sided": 0.715,
+    "visible_rate": {
+      "missed": 0.163,
+      "called": 0.16
+    },
+    "motion_change_yes_rate": {
+      "missed": 0.327,
+      "called": 0.3
+    },
+    "visible_n": {
+      "missed": 8,
+      "called": 8
+    },
+    "visible_yes_rate": {
+      "missed": 0.375,
+      "called": 0.625
+    }
+  }
+}

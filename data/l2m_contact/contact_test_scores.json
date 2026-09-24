@@ -1,0 +1,49 @@
+{
+  "luna/A": {
+    "n": {
+      "no_contact": 49,
+      "contact": 50
+    },
+    "contact_answers": {
+      "no_contact": {
+        "yes": 28,
+        "no": 17,
+        "cannot_see": 4
+      },
+      "contact": {
+        "yes": 34,
+        "no": 12,
+        "cannot_see": 4
+      }
+    },
+    "yes_rate": {
+      "no_contact": 0.571,
+      "contact": 0.68
+    },
+    "auc_contact_vs_none": 0.594,
+    "fisher_p_yes_rate": 0.1818
+  },
+  "luna/B": {
+    "n": {
+      "missed": 49,
+      "called": 50
+    },
+    "contact_answers": {
+      "missed": {
+        "yes": 34,
+        "no": 9,
+        "cannot_see": 6
+      },
+      "called": {
+        "no": 14,
+        "yes": 31,
+        "cannot_see": 5
+      }
+    },
+    "yes_rate": {
+      "missed": 0.694,
+      "called": 0.62
+    },
+    "fisher_p_two_sided": 0.5269
+  }
+}

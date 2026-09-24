@@ -505,6 +505,6 @@ ref-ball/
 
 6. ~~**Release strategy.**~~ **Resolved: full open-source.** All data (per-official profiles, player-official interaction tables, predictive model outputs) will be published with the SSAC27 submission. Sloan requires open-source; we're publishing everything — no anonymization, named officials.
 
-7. ~~**Can any model see uncalled contact in broadcast video?**~~ **Not reliably (Sep 24).** Sonnet (frames), GPT-6 Luna (frames) and Gemini 3.8 Flash (native video, 10 fps) all fell at AUC 0.51-0.64 on L2M clips. Open follow-up: with broadcast audio, Gemini's "reaction suggests a foul" flag hit 5 of 29 missed calls and 0 of 32 marginal no-calls, but only on home-team plays. Worth testing as a pre-filter for human grading.
+7. ~~**Can any model see uncalled contact in broadcast video?**~~ **No; video route closed (Sep 24).** Even detecting contact at all (not legality) failed: GPT-6 Luna could not separate no contact from contact across three prompts with cleaned labels, and the broadcast angle often hides the contact point. Before that: Sonnet (frames), GPT-6 Luna (frames) and Gemini 3.8 Flash (native video, 10 fps) all fell at AUC 0.51-0.64 on L2M clips. Open follow-up: with broadcast audio, Gemini's "reaction suggests a foul" flag hit 5 of 29 missed calls and 0 of 32 marginal no-calls, but only on home-team plays. Worth testing as a pre-filter for human grading.
 
 8. **Why did the L2M missed-call rate halve?** 33% of league-judged fouls were missed in 2018-19 vs 13-17% in 2024-26. Officiating, report writing, or listing criteria; unexplained.

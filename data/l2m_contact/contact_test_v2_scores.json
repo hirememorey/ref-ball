@@ -1,0 +1,70 @@
+{
+  "luna/A": {
+    "n": {
+      "no_contact": 49,
+      "contact": 49
+    },
+    "contact_answers": {
+      "no_contact": {
+        "yes": 29,
+        "no": 17,
+        "cannot_see": 3
+      },
+      "contact": {
+        "no": 18,
+        "yes": 30,
+        "cannot_see": 1
+      }
+    },
+    "yes_rate": {
+      "no_contact": 0.592,
+      "contact": 0.612
+    },
+    "auc_contact_vs_none": 0.567,
+    "fisher_p_yes_rate": 0.5
+  },
+  "luna/B": {
+    "n": {
+      "missed": 49,
+      "called": 50
+    },
+    "contact_answers": {
+      "missed": {
+        "yes": 31,
+        "no": 14,
+        "cannot_see": 4
+      },
+      "called": {
+        "yes": 38,
+        "no": 12
+      }
+    },
+    "yes_rate": {
+      "missed": 0.633,
+      "called": 0.76
+    },
+    "fisher_p_two_sided": 0.1941
+  },
+  "gemini/A": {
+    "n": {
+      "no_contact": 2,
+      "contact": 3
+    },
+    "contact_answers": {
+      "no_contact": {
+        "yes": 1,
+        "no": 1
+      },
+      "contact": {
+        "yes": 1,
+        "no": 2
+      }
+    },
+    "yes_rate": {
+      "no_contact": 0.5,
+      "contact": 0.333
+    },
+    "auc_contact_vs_none": 0.333,
+    "fisher_p_yes_rate": 0.9
+  }
+}

@@ -16,6 +16,8 @@ Everything from "What This Project Is Trying To Do" onward is the **July 2-3 sna
 - **Called fouls, full game:** coach's challenges give league verdicts on ~400 called fouls per season outside L2M, with the calling official named (`data/l2m_contact/coach_challenges.csv`).
 - **Video:** Sonnet (frames), GPT-6 Luna (frames) and Gemini 3.8 Flash (native video, 10 fps, Vertex) could not reliably separate league-judged illegal from marginal contact in L2M clips (AUC 0.51-0.64). With audio, Gemini's "reaction suggests a foul" flag was precise (5/29 missed calls, 0/32 marginal no-calls) but low recall and only on home-team plays.
 
+**Video route closed (Sep 24).** Contact-detector tests (detect contact only; let play-by-play say called vs uncalled) also failed: GPT-6 Luna could not separate no contact from contact across three prompts with cleaned labels, and the broadcast angle often hides the contact point. See SEPTEMBER-2026-FINDINGS.md §10.
+
 **Next steps, in order**
 
 1. ~~**Gemini native-video test.**~~ **Done (Sep 24):** muted AUC 0.62, with audio 0.63, vs Sonnet 0.64 on the same 61 clips; Gemini calls nearly everything marginal. Treat broadcast video as closed for seeing contact. To rerun or extend (`all` for the called test too; add `GEMINI_AUDIO=1` for the audio arm):
